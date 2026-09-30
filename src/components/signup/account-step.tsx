@@ -25,7 +25,7 @@ export function AccountStep({
 }: {
   error: string | null
   onError: (message: string | null) => void
-  onCreated: () => void
+  onCreated: (account: { name: string; email: string }) => void
 }) {
   const { t } = useLanguage()
   const [isPending, setIsPending] = useState(false)
@@ -79,7 +79,7 @@ export function AccountStep({
       return
     }
 
-    onCreated()
+    onCreated({ name, email })
   }
 
   async function handleGoogleSignUp() {

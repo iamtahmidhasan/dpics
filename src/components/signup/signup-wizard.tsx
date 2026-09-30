@@ -9,6 +9,7 @@ import { useState } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { AccountStep } from "@/components/signup/account-step"
 import { DetailsStep, type OnboardingDetails } from "@/components/signup/details-step"
+import { ProfileStep, type UserDetails, type UserSeed } from "@/components/signup/profile-step"
 import { RoleStep } from "@/components/signup/role-step"
 import { LAST_STEP, SIGNUP_STEPS, stepLabel } from "@/components/signup/signup-steps"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,20 +29,26 @@ const panelVariants = {
 type StepState = "done" | "current" | "todo"
 
 /**
- * Which stepper nodes act as jump targets. The step you are already on is not
- * one, and neither is the account form: the credentials it collects only exist
- * once Better Auth has created the account, so re-entering it cannot work.
- * Every later step is gated on what it actually depends on — the role step on
- * the account existing, the details step on a role having been picked.
+ * Which stepper nodes act as jump targets. The account form is never a target:
+ * the credentials it collects only exist once Better Auth has created the
+ * account, so re-entering it cannot work. Neither is the step you are on.
+ *
+ * Everything already reached can be revisited. The one forward jump worth
+ * offering is straight to the details step once a role has been picked — the
+ * other steps have to be submitted, because skipping them would lose what they
+ * collect.
  */
-function canJumpTo(index: number, step: number, role: SelfAssignableRole | null): boolean {
-  if (index === step) return false
+function canJumpTo(
+  index: number,
+  step: number,
+  furthest: number,
+  role: SelfAssignableRole | null
+): boolean {
+  if (index === 0 || index === step) return false
 
-  if (index === 0) return false
+  if (index <= furthest) return true
 
-  if (index === 1) return step >= 1
-
-  return role !== null
+  return index === LAST_STEP && index === furthest + 1 && role !== null
 }
 
 function StepNode({ index, state }: { index: number; state: StepState }) {
@@ -85,24 +92,50 @@ function StepLabel({ state, children }: { state: StepState; children: React.Reac
   )
 }
 
-export function SignupWizard({ startStep = 0 }: { startStep?: number }) {
+const EMPTY_SEED: UserSeed = { name: "", email: "", phone: "" }
+
+export function SignupWizard({
+  startStep = 0,
+  initialUser,
+}: {
+  startStep?: number
+  initialUser?: UserSeed | null
+}) {
   const router = useRouter()
   const { t } = useLanguage()
 
   const [step, setStep] = useState(startStep)
+  // The furthest step reached, which is what makes a node a jump target: steps
+  // past this one still have to be submitted rather than skipped.
+  const [furthest, setFurthest] = useState(startStep)
   const [direction, setDirection] = useState(1)
+  const [seed, setSeed] = useState<UserSeed>(initialUser ?? EMPTY_SEED)
+  const [user, setUser] = useState<UserDetails | null>(null)
   const [role, setRole] = useState<SelfAssignableRole | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
 
   function goTo(next: number) {
-    setDirection(next > step ? 1 : -1)
+    const target = Math.min(Math.max(next, 0), LAST_STEP)
+
+    setDirection(target > step ? 1 : -1)
     setError(null)
-    setStep(Math.min(Math.max(next, 0), LAST_STEP))
+    setStep(target)
+    setFurthest((current) => Math.max(current, target))
+  }
+
+  function handleAccountCreated(account: { name: string; email: string }) {
+    setSeed({ name: account.name, email: account.email, phone: "" })
+    goTo(1)
+  }
+
+  function handleProfileContinued(details: UserDetails) {
+    setUser(details)
+    goTo(2)
   }
 
   async function handleComplete(details: OnboardingDetails) {
-    if (!role) return
+    if (!role || !user) return
 
     setIsPending(true)
 
@@ -110,7 +143,7 @@ export function SignupWizard({ startStep = 0 }: { startStep?: number }) {
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, ...details }),
+        body: JSON.stringify({ role, user, ...details }),
       })
       const body = await response.json()
 
@@ -142,7 +175,7 @@ export function SignupWizard({ startStep = 0 }: { startStep?: number }) {
             {SIGNUP_STEPS.map((value, index) => {
               const state: StepState =
                 index < step ? "done" : index === step ? "current" : "todo"
-              const isJumpTarget = canJumpTo(index, step, role)
+              const isJumpTarget = canJumpTo(index, step, furthest, role)
               const label = t(stepLabel(value, role))
 
               return (
@@ -193,14 +226,30 @@ export function SignupWizard({ startStep = 0 }: { startStep?: number }) {
                 transition={{ duration: 0.28, ease: EASE }}
               >
                 {step === 0 ? (
-                  <AccountStep error={error} onError={setError} onCreated={() => goTo(1)} />
+                  <AccountStep
+                    error={error}
+                    onError={setError}
+                    onCreated={handleAccountCreated}
+                  />
                 ) : null}
 
                 {step === 1 ? (
-                  <RoleStep role={role} onSelect={setRole} onContinue={() => role && goTo(2)} />
+                  // Remounting on the seed change keeps the fields in step with
+                  // whichever account path got the wizard here.
+                  <ProfileStep
+                    key={seed.email}
+                    seed={seed}
+                    error={error}
+                    onError={setError}
+                    onContinue={handleProfileContinued}
+                  />
                 ) : null}
 
-                {step === 2 && role ? (
+                {step === 2 ? (
+                  <RoleStep role={role} onSelect={setRole} onContinue={() => role && goTo(3)} />
+                ) : null}
+
+                {step === 3 && role ? (
                   <DetailsStep
                     // Remounting on role change resets the form fields.
                     key={role}
@@ -208,7 +257,7 @@ export function SignupWizard({ startStep = 0 }: { startStep?: number }) {
                     error={error}
                     isPending={isPending}
                     onError={setError}
-                    onBack={() => goTo(1)}
+                    onBack={() => goTo(2)}
                     onComplete={handleComplete}
                   />
                 ) : null}

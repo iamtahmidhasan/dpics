@@ -11,20 +11,26 @@ import {
   type InstructorInput,
   type MemberInput,
   type Profile,
+  type ProfileInput,
 } from "@/lib/services/profile.service"
 import { isRecord, toEnum } from "@/lib/validation"
 
+export type UserInput = NonNullable<ProfileInput["user"]>
+
 export type OnboardingInput = {
   role: SelfAssignableRole
+  user: UserInput | null
   member: MemberInput | null
   instructor: InstructorInput | null
 }
 
 /**
- * Reads the body section that matches the picked role and validates it with the
+ * Reads the body sections that match the picked role and validates them with the
  * exact same rules `PATCH /api/profile` applies, so the wizard cannot smuggle
- * in a shape the rest of the app would reject. Everything outside that section
- * (status, verification, payment, committee roles) stays server managed.
+ * in a shape the rest of the app would reject. `user` is optional — a caller
+ * that already has a complete profile can claim a role on its own. Everything
+ * outside those sections (status, verification, payment, committee roles) stays
+ * server managed.
  */
 export function parseOnboardingInput(body: unknown): OnboardingInput {
   if (!isRecord(body)) throw ApiError.badRequest("Invalid request body")
@@ -38,15 +44,26 @@ export function parseOnboardingInput(body: unknown): OnboardingInput {
     )
   }
 
-  const input = parseProfileInput(role === Role.MEMBER ? { member: section } : { instructor: section })
+  const payload: Record<string, unknown> = {}
 
-  return { role, member: input.member ?? null, instructor: input.instructor ?? null }
+  if (isRecord(body.user)) payload.user = body.user
+  payload[role === Role.MEMBER ? "member" : "instructor"] = section
+
+  const input = parseProfileInput(payload)
+
+  return {
+    role,
+    user: input.user ?? null,
+    member: input.member ?? null,
+    instructor: input.instructor ?? null,
+  }
 }
 
 /**
- * Claims one society role for an account that has not claimed one yet and
- * creates the matching record. `Member.status` / `Instructor.status` default to
- * `PENDING`, so an administrator still verifies what was claimed here.
+ * Writes the basic information collected during sign-up, claims one society
+ * role for an account that has not claimed one yet, and creates the matching
+ * record. `Member.status` / `Instructor.status` default to `PENDING`, so an
+ * administrator still verifies what was claimed here.
  *
  * `roles` is only ever appended to, and only while the account holds nothing
  * but the default `USER` role. That makes this endpoint safe to replay: a second
@@ -66,10 +83,26 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
         throw ApiError.badRequest("This account already has a society role")
       }
 
-      await tx.user.update({
-        where: { id: userId },
-        data: { roles: [...user.roles, input.role] },
-      })
+      if (input.user) {
+        const { name, email, phone, images, selectedImageIndex } = input.user
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            name,
+            email,
+            phone,
+            image: images,
+            selactedImg: String(selectedImageIndex),
+            roles: [...user.roles, input.role],
+          },
+        })
+      } else {
+        await tx.user.update({
+          where: { id: userId },
+          data: { roles: [...user.roles, input.role] },
+        })
+      }
 
       if (input.member) {
         await tx.member.create({ data: { userId, ...input.member } })
