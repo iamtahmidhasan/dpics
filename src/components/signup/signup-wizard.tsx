@@ -92,6 +92,9 @@ function StepLabel({ state, children }: { state: StepState; children: React.Reac
   )
 }
 
+export type { SignupStudentIdPolicy } from "@/components/signup/details-step"
+import type { SignupStudentIdPolicy } from "@/components/signup/details-step"
+
 export type SignupPolicy = {
   isSignupEnabled: boolean
   isMemberSignupEnabled: boolean
@@ -107,6 +110,7 @@ export type SignupPolicy = {
     rocketPersonalNumber: string | null
     rocketAgentNumber: string | null
   }
+  studentId?: SignupStudentIdPolicy | null
 }
 
 const EMPTY_SEED: UserSeed = { name: "", email: "", phone: "" }
@@ -279,6 +283,7 @@ export function SignupWizard({
                     key={role}
                     role={role}
                     payment={signupPolicy?.payment}
+                    studentIdPolicy={signupPolicy?.studentId}
                     error={error}
                     isPending={isPending}
                     onError={setError}

@@ -38,3 +38,23 @@ export function paymentProviderLabel(t: TFn): (provider: PaymentProvider) => str
   return (provider) =>
     PAYMENT_PROVIDER_LABELS[provider] ? t(PAYMENT_PROVIDER_LABELS[provider]) : provider
 }
+
+export const STUDENT_ID_SETTINGS_LABELS = {
+  isAutoStudentIdEnabled: {
+    en: "Auto-generate student ID",
+    bn: "স্বয়ংক্রিয় স্টুডেন্ট আইডি তৈরি",
+  },
+  studentIdPrefix: {
+    en: "Student ID prefix",
+    bn: "স্টুডেন্ট আইডি প্রিফিক্স",
+  },
+  studentIdBatch: {
+    en: "Current batch code",
+    bn: "বর্তমান ব্যাচ কোড",
+  },
+  batchMemberLimit: {
+    en: "Batch member limit",
+    bn: "ব্যাচ সদস্য সীমা",
+  },
+} as const
+

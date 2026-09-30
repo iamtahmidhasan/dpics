@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, CheckCircle2, Loader2, TriangleAlert } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { TextField } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
@@ -11,6 +11,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import type { BatchMemberStats } from "@/lib/services/member-id.service"
 import type { Settings, SettingsInput } from "@/lib/services/settings.service"
 import { cn } from "cn"
 
@@ -57,12 +58,14 @@ function ToggleRow({ id, label, description, checked, disabled, onChange }: Togg
 
 function AdminSettingsInnerForm({
   settings,
+  initialStats,
   saving,
   error,
   saved,
   onSave,
 }: {
   settings: Settings
+  initialStats?: BatchMemberStats | null
   saving: boolean
   error: string | null
   saved: boolean
@@ -93,6 +96,45 @@ function AdminSettingsInnerForm({
     settings.rocketPersonalNumber ?? ""
   )
   const [rocketAgentNumber, setRocketAgentNumber] = useState(settings.rocketAgentNumber ?? "")
+
+  const [isAutoStudentIdEnabled, setIsAutoStudentIdEnabled] = useState(
+    settings.isAutoStudentIdEnabled ?? true
+  )
+  const [studentIdPrefix, setStudentIdPrefix] = useState(settings.studentIdPrefix ?? "DPICS")
+  const [studentIdBatch, setStudentIdBatch] = useState(settings.studentIdBatch ?? "24")
+  const [batchMemberLimit, setBatchMemberLimit] = useState(String(settings.batchMemberLimit ?? 0))
+  const [stats, setStats] = useState<BatchMemberStats | null>(initialStats ?? null)
+  const [statsLoading, setStatsLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const batch = studentIdBatch.trim()
+    const prefix = studentIdPrefix.trim().toUpperCase()
+
+    if (!batch) return
+
+    const timer = setTimeout(async () => {
+      setStatsLoading(true)
+      try {
+        const res = await fetch(
+          `/api/admin/settings/batch-stats?batch=${encodeURIComponent(batch)}&prefix=${encodeURIComponent(prefix)}`
+        )
+        if (res.ok && !cancelled) {
+          const data = await res.json()
+          setStats(data)
+        }
+      } catch {
+        // ignore background refresh errors
+      } finally {
+        if (!cancelled) setStatsLoading(false)
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [studentIdBatch, studentIdPrefix])
 
   const [validationError, setValidationError] = useState<string | null>(null)
 
@@ -125,6 +167,17 @@ function AdminSettingsInnerForm({
       return
     }
 
+    const limit = Number.parseInt(batchMemberLimit.trim() || "0", 10)
+    if (Number.isNaN(limit) || limit < 0) {
+      setValidationError(
+        t(
+          "Batch member limit must be a non-negative whole number",
+          "ব্যাচ সদস্য সীমা অবশ্যই একটি অ-ঋণাত্মক পূর্ণসংখ্যা হতে হবে"
+        )
+      )
+      return
+    }
+
     onSave({
       isSignupEnabled,
       isMemberSignupEnabled,
@@ -137,8 +190,18 @@ function AdminSettingsInnerForm({
       nagadAgentNumber: nagadAgentNumber.trim() || null,
       rocketPersonalNumber: rocketPersonalNumber.trim() || null,
       rocketAgentNumber: rocketAgentNumber.trim() || null,
+      isAutoStudentIdEnabled,
+      studentIdPrefix: studentIdPrefix.trim().toUpperCase() || "DPICS",
+      studentIdBatch: studentIdBatch.trim() || "24",
+      batchMemberLimit: limit,
     })
   }
+
+  const previewPrefix = `${studentIdPrefix.trim().toUpperCase() || "DPICS"}${studentIdBatch.trim() || "24"}`
+  const currentLimit = Number.parseInt(batchMemberLimit.trim() || "0", 10) || 0
+  const isLimitReached = Boolean(
+    currentLimit > 0 && stats && stats.totalMembers >= currentLimit
+  )
 
   const displayError = validationError || error
 
@@ -340,7 +403,133 @@ function AdminSettingsInnerForm({
         </CardContent>
       </Card>
 
-      {/* 3. Save button card & feedback */}
+      {/* 4. Student ID & Batch configuration */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>{t("Student ID & Batch settings", "স্টুডেন্ট আইডি ও ব্যাচ সেটিংস")}</CardTitle>
+          <CardDescription>
+            {t(
+              "Configure automatic DPICS[BATCH][xxxx] student ID generation, gap-filling, and batch member limits.",
+              "স্বয়ংক্রিয় DPICS[BATCH][xxxx] স্টুডেন্ট আইডি তৈরি, শূন্যস্থান পূরণ এবং ব্যাচ সদস্য সীমা নির্ধারণ করুন।"
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FieldGroup className="space-y-3">
+            <ToggleRow
+              id="auto-student-id-enabled"
+              label={t("Auto-generate student ID", "স্বয়ংক্রিয় স্টুডেন্ট আইডি তৈরি")}
+              description={t(
+                "Automatically assign IDs in DPICS[BATCH][xxxx] format starting from 0001 with gap filling.",
+                "০০০১ থেকে শুরু করে শূন্যস্থান পূরণসহ স্বয়ংক্রিয়ভাবে DPICS[BATCH][xxxx] ফরম্যাটে আইডি প্রদান করুন।"
+              )}
+              checked={isAutoStudentIdEnabled}
+              onChange={setIsAutoStudentIdEnabled}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <TextField
+                id="student-id-prefix"
+                label={t("ID prefix", "আইডি প্রিফিক্স")}
+                value={studentIdPrefix}
+                onChange={(val) => setStudentIdPrefix(val.toUpperCase())}
+                placeholder="DPICS"
+                disabled={!isAutoStudentIdEnabled}
+                hint={t("Default prefix before batch code", "ব্যাচ কোডের আগের প্রাথমিক প্রিফিক্স")}
+              />
+
+              <TextField
+                id="student-id-batch"
+                label={t("Current batch", "বর্তমান ব্যাচ")}
+                value={studentIdBatch}
+                onChange={setStudentIdBatch}
+                placeholder="24"
+                disabled={!isAutoStudentIdEnabled}
+                hint={t("Intake batch code (e.g. 24)", "ভর্তির ব্যাচ কোড (যেমন ২৪)")}
+              />
+
+              <div className="space-y-1">
+                <FieldLabel htmlFor="batch-member-limit">
+                  {t("Batch member limit", "ব্যাচ সদস্য সীমা")}
+                </FieldLabel>
+                <Input
+                  id="batch-member-limit"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={batchMemberLimit}
+                  onChange={(e) => setBatchMemberLimit(e.target.value)}
+                  placeholder="0"
+                  disabled={!isAutoStudentIdEnabled}
+                />
+                <FieldDescription>
+                  {t("Max members for this batch. 0 = unlimited.", "এই ব্যাচে সর্বোচ্চ সদস্য সংখ্যা। ০ দিলে সীমাহীন।")}
+                </FieldDescription>
+              </div>
+            </div>
+
+            {/* Live Preview & Batch Status Card */}
+            <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-foreground">
+                    {t("ID Format Preview:", "আইডি ফরম্যাট প্রিভিউ:")}
+                  </span>
+                  <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                    {previewPrefix}0001
+                  </span>
+                </div>
+                <span className="text-[0.6875rem] text-muted-foreground">
+                  {t("Starts from 0001 • Gaps reused first", "০০০১ থেকে শুরু • ফাঁকা আইডি আগে পূরণ")}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="rounded border bg-background p-2">
+                  <div className="text-muted-foreground text-[0.6875rem]">
+                    {t("Active Members", "বর্তমান সদস্য")}
+                  </div>
+                  <div className="font-heading font-semibold text-sm">
+                    {stats?.totalMembers ?? 0}
+                  </div>
+                </div>
+
+                <div className="rounded border bg-background p-2">
+                  <div className="text-muted-foreground text-[0.6875rem]">
+                    {t("Member Limit", "সদস্য সীমা")}
+                  </div>
+                  <div className="font-heading font-semibold text-sm">
+                    {currentLimit > 0 ? currentLimit : t("Unlimited", "সীমাহীন")}
+                  </div>
+                </div>
+
+                <div className="rounded border bg-background p-2">
+                  <div className="text-muted-foreground text-[0.6875rem]">
+                    {t("Next Generated ID", "পরবর্তী তৈরি আইডি")}
+                  </div>
+                  <div className="font-mono font-semibold text-sm text-primary">
+                    {statsLoading ? "..." : (stats?.nextAvailableId ?? (isLimitReached ? t("Limit reached", "সীমা পূর্ণ") : `${previewPrefix}0001`))}
+                  </div>
+                </div>
+
+                <div className="rounded border bg-background p-2">
+                  <div className="text-muted-foreground text-[0.6875rem]">
+                    {t("Batch Status", "ব্যাচ স্ট্যাটাস")}
+                  </div>
+                  <div className={cn(
+                    "font-semibold text-xs mt-0.5 inline-flex items-center gap-1",
+                    isLimitReached ? "text-destructive" : "text-success"
+                  )}>
+                    {isLimitReached ? t("Full (Closed)", "পূর্ণ (বন্ধ)") : t("Accepting", "চলমান")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      {/* 5. Save button card & feedback */}
       <Card size="sm">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
@@ -377,7 +566,13 @@ function AdminSettingsInnerForm({
   )
 }
 
-export function AdminSettingsForm({ initialSettings }: { initialSettings: Settings }) {
+export function AdminSettingsForm({
+  initialSettings,
+  initialStats,
+}: {
+  initialSettings: Settings
+  initialStats?: BatchMemberStats | null
+}) {
   const { t } = useLanguage()
   const [settings, setSettings] = useState(initialSettings)
   const [saving, setSaving] = useState(false)
@@ -417,6 +612,7 @@ export function AdminSettingsForm({ initialSettings }: { initialSettings: Settin
     <AdminSettingsInnerForm
       key={settings.updatedAt}
       settings={settings}
+      initialStats={initialStats}
       saving={saving}
       error={error}
       saved={saved}

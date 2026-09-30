@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { AdminSettingsForm } from "@/components/admin/admin-settings-form"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
+import { getBatchMemberStats } from "@/lib/services/member-id.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { requireAdmin } from "@/lib/session"
 
@@ -13,7 +14,11 @@ export const metadata: Metadata = {
 export default async function AdminSettingsPage() {
   await requireAdmin()
 
-  const [lang, settings] = await Promise.all([getLang(), getSettings()])
+  const [lang, settings, batchStats] = await Promise.all([
+    getLang(),
+    getSettings(),
+    getBatchMemberStats(),
+  ])
   const t = makeT(lang)
 
   return (
@@ -28,7 +33,7 @@ export default async function AdminSettingsPage() {
         </p>
       </div>
 
-      <AdminSettingsForm initialSettings={settings} />
+      <AdminSettingsForm initialSettings={settings} initialStats={batchStats} />
     </div>
   )
 }

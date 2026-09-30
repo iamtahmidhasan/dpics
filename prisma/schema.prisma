@@ -16,13 +16,13 @@ model User {
   id            String      @id @default(cuid())
   name          String
   email         String
-  emailVerified Boolean     
+  emailVerified Boolean
   image         String[]
   selactedImg   String?     @default("0")
   phone         String?     @unique
   isActive      Boolean     @default(true)
   createdAt     DateTime
-  updatedAt     DateTime      @updatedAt
+  updatedAt     DateTime    @updatedAt
   sessions      Session[]
   accounts      Account[]
   // System roles
@@ -38,30 +38,29 @@ model User {
   @@map("user")
 }
 
-
 model Member {
-  id                  String @id @default(cuid())
-  userId              String @unique
+  id     String @id @default(cuid())
+  userId String @unique
 
-  status              MembershipStatus @default(PENDING)
+  status MembershipStatus @default(PENDING)
 
-  joinedAt            DateTime?
-  expiresAt           DateTime?
+  joinedAt  DateTime?
+  expiresAt DateTime?
 
-  studentId           String? @unique
+  studentId String? @unique
 
-  whatsapp            String
-  department          Department
-  session             String
-  semester            Semester
-  shift               Shift
+  whatsapp   String
+  department Department
+  session    String
+  semester   Semester
+  shift      Shift
 
-  studentIdCardUrl    String?
-  nidorbirthUrl       String?
+  studentIdCardUrl String?
+  nidorbirthUrl    String?
 
-  verificationStatus  VerificationStatus @default(PENDING)
-  verifiedAt          DateTime?
-  verifiedById        String?
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  verifiedById       String?
 
   hasPaidMembershipFee Boolean        @default(false)
   paymentMethod        PaymentMethod?
@@ -113,7 +112,7 @@ model Committee {
 }
 
 model CommitteeRole {
-  id          String @id @default(cuid())
+  id String @id @default(cuid())
 
   committeeId String
 
@@ -125,30 +124,30 @@ model CommitteeRole {
 
   users UserCommitteeRole[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([committeeId, slug])
   @@index([committeeId])
 }
 
 model UserCommitteeRole {
-  id          String @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId      String
-  roleId      String
+  userId String
+  roleId String
 
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate DateTime?
+  endDate   DateTime?
 
-  isActive    Boolean @default(true)
+  isActive Boolean @default(true)
 
-  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  role CommitteeRole @relation(fields: [roleId],references: [id],onDelete: Cascade)
+  role CommitteeRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Same user cannot have the same committee role twice
   @@unique([userId, roleId])
@@ -157,14 +156,14 @@ model UserCommitteeRole {
 }
 
 model Session {
-  id           String   @id
-  expiresAt    DateTime
-  token        String
-  createdAt    DateTime
-  updatedAt    DateTime
-  ipAddress    String?
-  userAgent    String?
-  userId       String
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
@@ -211,6 +210,7 @@ enum Role {
   INSTRUCTOR
   ADMIN
 }
+
 enum MembershipStatus {
   PENDING
   ACTIVE
@@ -294,9 +294,13 @@ model Setting {
   rocketPersonalNumber String?
   rocketAgentNumber    String?
 
+  isAutoStudentIdEnabled Boolean @default(true)
+  studentIdPrefix        String  @default("DPICS")
+  studentIdBatch         String  @default("26")
+  batchMemberLimit       Int     @default(0)
+
   updatedAt   DateTime @updatedAt
   updatedById String?
 
   @@map("setting")
 }
-

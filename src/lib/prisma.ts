@@ -17,9 +17,24 @@ function createPrismaClient(): PrismaClient {
 
 // In development, hot-reloading can keep an older PrismaClient instance in memory
 // from before a migration or prisma generate ran.
-// Ensure the cached instance has newly added models (e.g. `setting`).
+// Ensure the cached instance has newly added models and fields (e.g. `setting.isAutoStudentIdEnabled`).
 const isClientValid = (client?: PrismaClient): client is PrismaClient => {
-  return Boolean(client && "setting" in client);
+  if (!client || !("setting" in client)) return false;
+  const fields = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: {
+          Setting?: {
+            fields?: Array<{ name: string }>;
+          };
+        };
+      };
+    }
+  )._runtimeDataModel?.models?.Setting?.fields;
+  if (fields && !fields.some((f) => f.name === "isAutoStudentIdEnabled")) {
+    return false;
+  }
+  return true;
 };
 
 if (!globalForPrisma.prisma || !isClientValid(globalForPrisma.prisma)) {

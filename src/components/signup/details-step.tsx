@@ -73,6 +73,15 @@ export type SignupPaymentDetails = {
   rocketAgentNumber: string | null
 }
 
+export type SignupStudentIdPolicy = {
+  isAutoEnabled: boolean
+  prefix: string
+  batch: string
+  isLimitReached: boolean
+  limit: number
+  totalMembers: number
+}
+
 function PaymentInstructionsPanel({
   payment,
   lang,
@@ -163,6 +172,7 @@ export type OnboardingDetails =
 export function DetailsStep({
   role,
   payment,
+  studentIdPolicy,
   error,
   isPending,
   onError,
@@ -171,6 +181,7 @@ export function DetailsStep({
 }: {
   role: SelfAssignableRole
   payment?: SignupPaymentDetails | null
+  studentIdPolicy?: SignupStudentIdPolicy | null
   error: string | null
   isPending: boolean
   onError: (message: string | null) => void
@@ -246,7 +257,7 @@ export function DetailsStep({
           session: member.session.trim(),
           semester: member.semester,
           shift: member.shift,
-          studentId: member.studentId.trim() || null,
+          studentId: studentIdPolicy?.isAutoEnabled ? null : (member.studentId.trim() || null),
           studentIdCardUrl: member.studentIdCardUrl.trim() || null,
           nidorbirthUrl: member.nidorbirthUrl.trim() || null,
           paymentMethod: isFeeRequired ? member.paymentMethod : null,
@@ -414,13 +425,32 @@ export function DetailsStep({
                 />
               </div>
 
-              <TextField
-                id="student-id"
-                label={t("Student id", "স্টুডেন্ট আইডি")}
-                value={member.studentId}
-                onChange={(studentId) => setMember((current) => ({ ...current, studentId }))}
-                placeholder="DPI-2024-001"
-              />
+              {studentIdPolicy?.isAutoEnabled ? (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">
+                      {t("Student ID", "স্টুডেন্ট আইডি")}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[0.6875rem] font-medium text-primary">
+                      {t("Auto-generated", "স্বয়ংক্রিয় বরাদ্দ")}
+                    </span>
+                  </div>
+                  <p className="text-xs/relaxed text-muted-foreground">
+                    {t(
+                      `Assigned automatically on registration in format: ${studentIdPolicy.prefix || "DPICS"}${studentIdPolicy.batch || "24"}xxxx (starting from 0001).`,
+                      `নিবন্ধন সম্পন্ন হলে স্বয়ংক্রিয়ভাবে এই ফরম্যাটে আইডি বরাদ্দ করা হবে: ${studentIdPolicy.prefix || "DPICS"}${studentIdPolicy.batch || "24"}xxxx (০০০১ থেকে শুরু)।`
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <TextField
+                  id="student-id"
+                  label={t("Student id", "স্টুডেন্ট আইডি")}
+                  value={member.studentId}
+                  onChange={(studentId) => setMember((current) => ({ ...current, studentId }))}
+                  placeholder="DPI-2024-001"
+                />
+              )}
 
               <TextField
                 id="student-id-card"

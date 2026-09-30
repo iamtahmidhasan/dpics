@@ -8,6 +8,7 @@ import { Role } from "@/generated/prisma/enums"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { isOnboarded, type SelfAssignableRole } from "@/lib/roles"
+import { getBatchMemberStats } from "@/lib/services/member-id.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { getSession } from "@/lib/session"
 
@@ -17,9 +18,10 @@ export const metadata: Metadata = {
 }
 
 export default async function SignUpPage() {
-  const [session, settings, lang] = await Promise.all([
+  const [session, settings, batchStats, lang] = await Promise.all([
     getSession(),
     getSettings(),
+    getBatchMemberStats(),
     getLang(),
   ])
   const user = session?.user
@@ -63,8 +65,12 @@ export default async function SignUpPage() {
   // the profile still needs collecting.
   const startStep = user && !isOnboarded(user) ? 1 : 0
 
+  const isMemberBatchFull = Boolean(
+    settings.isAutoStudentIdEnabled && batchStats.isLimitReached
+  )
+
   const availableRoles: SelfAssignableRole[] = []
-  if (settings.isMemberSignupEnabled) availableRoles.push(Role.MEMBER)
+  if (settings.isMemberSignupEnabled && !isMemberBatchFull) availableRoles.push(Role.MEMBER)
   if (settings.isInstructorSignupEnabled) availableRoles.push(Role.INSTRUCTOR)
 
   const signupPolicy: SignupPolicy = {
@@ -81,6 +87,14 @@ export default async function SignUpPage() {
       nagadAgentNumber: settings.nagadAgentNumber,
       rocketPersonalNumber: settings.rocketPersonalNumber,
       rocketAgentNumber: settings.rocketAgentNumber,
+    },
+    studentId: {
+      isAutoEnabled: settings.isAutoStudentIdEnabled,
+      prefix: settings.studentIdPrefix,
+      batch: settings.studentIdBatch,
+      isLimitReached: isMemberBatchFull,
+      limit: batchStats.limit,
+      totalMembers: batchStats.totalMembers,
     },
   }
 

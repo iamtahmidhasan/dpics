@@ -26,6 +26,10 @@ export type Settings = {
   nagadAgentNumber: string | null
   rocketPersonalNumber: string | null
   rocketAgentNumber: string | null
+  isAutoStudentIdEnabled: boolean
+  studentIdPrefix: string
+  studentIdBatch: string
+  batchMemberLimit: number
   updatedAt: string
   updatedById: string | null
 }
@@ -45,6 +49,10 @@ export const DEFAULT_SETTINGS: Settings = {
   nagadAgentNumber: null,
   rocketPersonalNumber: null,
   rocketAgentNumber: null,
+  isAutoStudentIdEnabled: true,
+  studentIdPrefix: "DPICS",
+  studentIdBatch: "24",
+  batchMemberLimit: 0,
   updatedAt: new Date(0).toISOString(),
   updatedById: null,
 }
@@ -62,6 +70,10 @@ const settingSelect = {
   nagadAgentNumber: true,
   rocketPersonalNumber: true,
   rocketAgentNumber: true,
+  isAutoStudentIdEnabled: true,
+  studentIdPrefix: true,
+  studentIdBatch: true,
+  batchMemberLimit: true,
   updatedAt: true,
   updatedById: true,
 } as const
@@ -80,6 +92,10 @@ function toMap(row: Prisma.SettingGetPayload<{ select: typeof settingSelect }>):
     nagadAgentNumber: row.nagadAgentNumber,
     rocketPersonalNumber: row.rocketPersonalNumber,
     rocketAgentNumber: row.rocketAgentNumber,
+    isAutoStudentIdEnabled: row.isAutoStudentIdEnabled,
+    studentIdPrefix: row.studentIdPrefix,
+    studentIdBatch: row.studentIdBatch,
+    batchMemberLimit: row.batchMemberLimit,
     updatedAt: row.updatedAt.toISOString(),
     updatedById: row.updatedById,
   }
@@ -90,16 +106,21 @@ export async function getSettings(): Promise<Settings> {
     return DEFAULT_SETTINGS
   }
 
-  const row = await prisma.setting.findUnique({
-    where: { id: SETTING_ID },
-    select: settingSelect,
-  })
+  try {
+    const row = await prisma.setting.findUnique({
+      where: { id: SETTING_ID },
+      select: settingSelect,
+    })
 
-  if (!row) {
+    if (!row) {
+      return DEFAULT_SETTINGS
+    }
+
+    return toMap(row)
+  } catch (error) {
+    console.error("Failed to load settings, using defaults:", error)
     return DEFAULT_SETTINGS
   }
-
-  return toMap(row)
 }
 
 export function parseSettingsInput(body: unknown): SettingsInput {
@@ -168,6 +189,33 @@ export function parseSettingsInput(body: unknown): SettingsInput {
       "Rocket agent number",
       MAX_PHONE_LENGTH
     ),
+    isAutoStudentIdEnabled:
+      body.isAutoStudentIdEnabled !== undefined
+        ? toBoolean(body.isAutoStudentIdEnabled, "Auto student ID enabled")
+        : true,
+    studentIdPrefix:
+      (toOptionalText(body.studentIdPrefix, "Student ID prefix", 20) ?? "DPICS")
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, "") || "DPICS",
+    studentIdBatch:
+      (toOptionalText(body.studentIdBatch, "Student ID batch", 20) ?? "24")
+        .replace(/[^A-Za-z0-9_-]/g, "") || "24",
+    batchMemberLimit: (() => {
+      if (typeof body.batchMemberLimit === "number") {
+        if (!Number.isInteger(body.batchMemberLimit) || body.batchMemberLimit < 0) {
+          throw ApiError.badRequest("Batch member limit must be a non-negative whole number")
+        }
+        return body.batchMemberLimit
+      }
+      if (typeof body.batchMemberLimit === "string") {
+        const trimmed = body.batchMemberLimit.trim()
+        if (trimmed && !/^\d+$/.test(trimmed)) {
+          throw ApiError.badRequest("Batch member limit must be a valid whole number")
+        }
+        return trimmed ? Number.parseInt(trimmed, 10) : 0
+      }
+      return 0
+    })(),
   }
 }
 

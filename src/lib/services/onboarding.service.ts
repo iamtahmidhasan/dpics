@@ -5,6 +5,7 @@ import { Role } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
 import { SELF_ASSIGNABLE_ROLES, type SelfAssignableRole } from "@/lib/roles"
+import { generateNextStudentId } from "@/lib/services/member-id.service"
 import {
   getProfile,
   parseProfileInput,
@@ -93,6 +94,10 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
                 isInstructorSignupEnabled: true,
                 isRegistrationFeeRequired: true,
                 registrationFee: true,
+                isAutoStudentIdEnabled: true,
+                studentIdPrefix: true,
+                studentIdBatch: true,
+                batchMemberLimit: true,
               },
             })
           : null
@@ -140,7 +145,22 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
       }
 
       if (input.member) {
-        await tx.member.create({ data: { userId, ...input.member } })
+        let studentId = input.member.studentId
+        if (settings?.isAutoStudentIdEnabled ?? true) {
+          studentId = await generateNextStudentId(
+            tx,
+            settings?.studentIdBatch,
+            settings?.studentIdPrefix
+          )
+        }
+
+        await tx.member.create({
+          data: {
+            userId,
+            ...input.member,
+            studentId,
+          },
+        })
       }
 
       if (input.instructor) {
