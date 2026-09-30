@@ -4,6 +4,7 @@ import { Check, Loader2, Plus, X } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
+import { EnumSelect } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -57,9 +58,6 @@ const EMPTY_INSTRUCTOR: InstructorForm = {
   bio: "",
   expertise: "",
 }
-
-const selectClassName =
-  "h-7 w-full min-w-0 rounded-md border border-input bg-input/20 px-2 text-xs/relaxed outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
 
 function toMemberForm(profile: Profile): MemberForm {
   if (!profile.member) return EMPTY_MEMBER
@@ -461,66 +459,35 @@ export function ProfileForm({
                 </Field>
               </div>
 
-              <Field>
-                <FieldLabel htmlFor="department">{t("Department", "বিভাগ")}</FieldLabel>
-                <select
-                  id="department"
-                  className={selectClassName}
-                  value={member.department}
-                  onChange={(event) =>
-                    setMember((current) => ({
-                      ...current,
-                      department: event.target.value as Department,
-                    }))
-                  }
-                >
-                  {Object.values(Department).map((value) => (
-                    <option key={value} value={value}>
-                      {tDepartment(value)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <EnumSelect
+                id="department"
+                label={t("Department", "বিভাগ")}
+                value={member.department}
+                options={Object.values(Department)}
+                labelFor={tDepartment}
+                onChange={(department) =>
+                  setMember((current) => ({ ...current, department }))
+                }
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="semester">{t("Semester", "সেমিস্টার")}</FieldLabel>
-                  <select
-                    id="semester"
-                    className={selectClassName}
-                    value={member.semester}
-                    onChange={(event) =>
-                      setMember((current) => ({
-                        ...current,
-                        semester: event.target.value as Semester,
-                      }))
-                    }
-                  >
-                    {Object.values(Semester).map((value) => (
-                      <option key={value} value={value}>
-                        {tSemester(value)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <EnumSelect
+                  id="semester"
+                  label={t("Semester", "সেমিস্টার")}
+                  value={member.semester}
+                  options={Object.values(Semester)}
+                  labelFor={tSemester}
+                  onChange={(semester) => setMember((current) => ({ ...current, semester }))}
+                />
 
-                <Field>
-                  <FieldLabel htmlFor="shift">{t("Shift", "শিফট")}</FieldLabel>
-                  <select
-                    id="shift"
-                    className={selectClassName}
-                    value={member.shift}
-                    onChange={(event) =>
-                      setMember((current) => ({ ...current, shift: event.target.value as Shift }))
-                    }
-                  >
-                    {Object.values(Shift).map((value) => (
-                      <option key={value} value={value}>
-                        {tShift(value)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <EnumSelect
+                  id="shift"
+                  label={t("Shift", "শিফট")}
+                  value={member.shift}
+                  options={Object.values(Shift)}
+                  labelFor={tShift}
+                  onChange={(shift) => setMember((current) => ({ ...current, shift }))}
+                />
               </div>
 
               <Field>

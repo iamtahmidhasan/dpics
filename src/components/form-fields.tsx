@@ -2,9 +2,13 @@
 
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-
-export const selectClassName =
-  "h-7 w-full min-w-0 rounded-md border border-input bg-input/20 px-2 text-xs/relaxed outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const textareaClassName =
   "w-full resize-y rounded-md border border-input bg-input/20 px-2 py-1.5 text-xs/relaxed outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
@@ -48,7 +52,11 @@ type EnumSelectProps<T extends string> = {
   emptyLabel?: string
 }
 
-/** Enum dropdown. There is no `ui/select.tsx` in this project yet, matching the admin table. */
+/**
+ * Enum dropdown. `items` is passed to the root as well as rendering the list,
+ * because the popup only mounts while it is open — without `items` the trigger
+ * would have no label for the value it is holding.
+ */
 export function EnumSelect<T extends string>({
   id,
   label,
@@ -62,24 +70,35 @@ export function EnumSelect<T extends string>({
   allowEmpty,
   emptyLabel,
 }: EnumSelectProps<T>) {
+  const describe = (option: T) => (labelFor ? labelFor(option) : option)
+  const selected = value === "" || value == null ? null : value
+
+  const items = [
+    ...(allowEmpty ? [{ value: null as T | null, label: emptyLabel ?? "" }] : []),
+    ...options.map((option) => ({ value: option, label: describe(option) })),
+  ]
+
   return (
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <select
-        id={id}
-        className={selectClassName}
-        value={value}
+      <Select
+        items={items}
+        value={selected}
+        onValueChange={(next) => onChange((next ?? "") as T)}
         disabled={disabled}
-        aria-invalid={!!error}
-        onChange={(event) => onChange(event.target.value as T)}
       >
-        {allowEmpty ? <option value="">{emptyLabel ?? ""}</option> : null}
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {labelFor ? labelFor(option) : option}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id={id} className="w-full" aria-invalid={!!error}>
+          <SelectValue placeholder={emptyLabel} />
+        </SelectTrigger>
+        <SelectContent align="start">
+          {allowEmpty ? <SelectItem value={null}>{emptyLabel ?? ""}</SelectItem> : null}
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {describe(option)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {hint && !error ? <FieldDescription>{hint}</FieldDescription> : null}
       {error ? <FieldError>{error}</FieldError> : null}
     </Field>

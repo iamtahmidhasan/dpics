@@ -18,12 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Role } from "@/generated/prisma/enums"
+import { DetailRow } from "@/components/form-fields"
 import {
   instructorStatusLabel,
   membershipStatusLabel,
 } from "@/lib/profile-labels"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
-import { DetailRow } from "./admin-user-fields"
 
 type BadgeVariant = VariantProps<typeof badgeVariants>["variant"]
 

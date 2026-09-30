@@ -29,3 +29,20 @@ export function hasRole(
 export function isAdmin(user: { roles?: unknown } | null | undefined): boolean {
   return hasRole(user, ADMIN_ROLE)
 }
+
+/**
+ * The roles an account may pick for itself during sign-up. `ADMIN` is absent on
+ * purpose: it can only ever be granted by somebody who already holds it.
+ */
+export const SELF_ASSIGNABLE_ROLES = [Role.MEMBER, Role.INSTRUCTOR] as const
+
+export type SelfAssignableRole = (typeof SELF_ASSIGNABLE_ROLES)[number]
+
+export function isSelfAssignableRole(value: unknown): value is SelfAssignableRole {
+  return typeof value === "string" && (SELF_ASSIGNABLE_ROLES as readonly string[]).includes(value)
+}
+
+/** True once the account holds a society facing role, so onboarding is finished. */
+export function isOnboarded(user: { roles?: unknown } | null | undefined): boolean {
+  return getUserRoles(user).some((role) => role === Role.MEMBER || role === Role.INSTRUCTOR)
+}

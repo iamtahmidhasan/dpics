@@ -2,6 +2,7 @@ import {
   Department,
   InstructorStatus,
   MembershipStatus,
+  Role,
   Semester,
   Shift,
   VerificationStatus,
@@ -100,6 +101,13 @@ export const PAYMENT_METHOD_LABELS: Record<string, LocalizedText> = {
   CASH: { en: "Cash", bn: "নগদ (ক্যাশ)" },
 }
 
+const ROLE_LABELS: Record<Role, LocalizedText> = {
+  [Role.USER]: { en: "User", bn: "ব্যবহারকারী" },
+  [Role.MEMBER]: { en: "Member", bn: "সদস্য" },
+  [Role.INSTRUCTOR]: { en: "Instructor", bn: "শিক্ষক" },
+  [Role.ADMIN]: { en: "Admin", bn: "প্রশাসক" },
+}
+
 export function departmentLabel(t: TFn): (value: Department) => string {
   return (value) => (DEPARTMENT_LABELS[value] ? t(DEPARTMENT_LABELS[value]) : humanize(value))
 }
@@ -133,6 +141,10 @@ export function paymentMethodLabel(t: TFn): (value: string) => string {
 
     return label ? t(label) : humanize(value)
   }
+}
+
+export function roleLabel(t: TFn): (value: Role) => string {
+  return (value) => (ROLE_LABELS[value] ? t(ROLE_LABELS[value]) : humanize(value))
 }
 
 export { humanize }

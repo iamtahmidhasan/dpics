@@ -3,6 +3,7 @@
 import { Check, Loader2, Plus, Star, X } from "lucide-react"
 import { useState } from "react"
 
+import { CheckboxField, EnumSelect, TextAreaField, TextField, fromDateTimeLocal, toDateTimeLocal } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,14 +30,6 @@ import {
   verificationStatusLabel,
 } from "@/lib/profile-labels"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
-import {
-  CheckboxField,
-  EnumSelect,
-  TextAreaField,
-  TextField,
-  fromDateTimeLocal,
-  toDateTimeLocal,
-} from "./admin-user-fields"
 
 type Errors = Record<string, string | undefined>
 

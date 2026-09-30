@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -79,6 +86,13 @@ export function UsersTable({ initialData }: { initialData: UserListResult }) {
   const [page, setPage] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // The popup only mounts while it is open, so the trigger needs `items` to
+  // know what to render for the value it currently holds.
+  const roleFilterItems = useMemo(
+    () => Object.values(Role).map((value) => ({ value, label: value })),
+    []
+  )
+
   const { data, isLoading, error } = useAdminUsers(
     { page, search, role, refreshKey },
     initialData
@@ -119,22 +133,29 @@ export function UsersTable({ initialData }: { initialData: UserListResult }) {
             />
           </div>
 
-          <select
-            value={role}
-            onChange={(event) => {
-              setRole(event.target.value as Role | "")
+          <Select
+            items={roleFilterItems}
+            value={role === "" ? null : role}
+            onValueChange={(next) => {
+              setRole((next ?? "") as Role | "")
               setPage(1)
             }}
-            aria-label={t("Filter by role", "ভূমিকা দিয়ে ফিল্টার করুন")}
-            className="h-7 rounded-md border border-input bg-input/20 px-2 text-xs/relaxed outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
           >
-            <option value="">{t("All roles", "সব ভূমিকা")}</option>
-            {Object.values(Role).map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              aria-label={t("Filter by role", "ভূমিকা দিয়ে ফিল্টার করুন")}
+              className="w-full sm:w-40"
+            >
+              <SelectValue placeholder={t("All roles", "সব ভূমিকা")} />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value={null}>{t("All roles", "সব ভূমিকা")}</SelectItem>
+              {Object.values(Role).map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Button
             variant="ghost"
