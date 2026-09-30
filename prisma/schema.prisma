@@ -17,7 +17,8 @@ model User {
   name          String
   email         String
   emailVerified Boolean     
-  image         String[]    
+  image         String[]
+  selactedImg   String?     @default("0")
   phone         String?     @unique
   isActive      Boolean     @default(true)
   createdAt     DateTime

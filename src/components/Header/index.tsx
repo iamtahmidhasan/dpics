@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/sheet'
 import { signOut, useSession } from '@/lib/auth-client'
 import type { LocalizedText } from '@/lib/i18n'
+import { isAdmin as hasAdminRole } from '@/lib/roles'
 
 const SITE = {
   title: 'DPI Computing Society',
@@ -327,6 +328,7 @@ export function Header() {
   }
 
   const user = session?.user
+  const isAdmin = hasAdminRole(user)
   const initials = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase()
 
   return (
@@ -396,6 +398,11 @@ export function Header() {
                   <DropdownMenuItem render={<Link href="/dashboard" />}>
                     {t("Dashboard", "ড্যাশবোর্ড")}
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem render={<Link href="/admin" />}>
+                      {t("Admin Panel", "অ্যাডমিন প্যানেল")}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     {t("Sign out", "সাইন আউট")}
