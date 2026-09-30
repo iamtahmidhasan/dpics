@@ -9,9 +9,27 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from 'cn'
 import { useLanguage } from '@/components/language-provider'
-import type { NavItem } from '@/lib/site-config'
+import type { LocalizedText } from '@/lib/i18n'
 
 const CLOSE_DELAY_MS = 220
+
+export type NavLink = {
+  label: LocalizedText
+  href: string
+  description?: LocalizedText
+  image?: string
+}
+
+export type NavColumn = {
+  title?: LocalizedText
+  links: NavLink[]
+}
+
+export type NavItem = {
+  label: LocalizedText
+  href: string
+  columns: NavColumn[]
+}
 
 export function DesktopNav({
   items,

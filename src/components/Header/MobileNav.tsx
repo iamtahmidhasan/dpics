@@ -7,10 +7,16 @@ import { useState } from 'react'
 
 import { cn } from 'cn'
 import { useLanguage } from '@/components/language-provider'
-import type { MobileNavItem } from '@/lib/site-config'
+import type { LocalizedText } from '@/lib/i18n'
 
 const linkClass =
   'flex w-full items-center gap-2 overflow-hidden rounded-none p-2 text-left text-xs ring-sidebar-ring outline-hidden transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground'
+
+export type MobileNavItem = {
+  label: LocalizedText
+  href: string
+  children: { label: LocalizedText; href: string }[]
+}
 
 export function MobileNav({
   items,

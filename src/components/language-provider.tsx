@@ -1,7 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { createContext, useContext, useMemo } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
 import {
   DEFAULT_LANG,
@@ -30,13 +29,19 @@ export function useLanguage(): LanguageContextValue {
 }
 
 export function LanguageProvider({
-  lang,
+  lang: initialLang,
   children,
 }: {
   lang: Lang
   children: React.ReactNode
 }) {
-  const router = useRouter()
+  const [lang, setCurrentLang] = useState<Lang>(initialLang)
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.lang = lang
+    root.dataset.lang = lang
+  }, [lang])
 
   const value = useMemo<LanguageContextValue>(
     () => ({
@@ -44,10 +49,10 @@ export function LanguageProvider({
       t: makeT(lang),
       setLang: (next: Lang) => {
         document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
-        router.refresh()
+        setCurrentLang(next)
       },
     }),
-    [lang, router]
+    [lang]
   )
 
   return (

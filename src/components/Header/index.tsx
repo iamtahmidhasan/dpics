@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
-import { DesktopNav } from '@/components/Header/DesktopNav'
-import { MobileNav } from '@/components/Header/MobileNav'
+import { DesktopNav, type NavItem } from '@/components/Header/DesktopNav'
+import { MobileNav, type MobileNavItem } from '@/components/Header/MobileNav'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useLanguage } from '@/components/language-provider'
 import { ThemeSwitcher } from '@/components/theme-switcher'
@@ -28,13 +28,222 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { signOut, useSession } from '@/lib/auth-client'
-import {
-  BANNER,
-  MOBILE_ITEMS,
-  NAV_ITEMS,
-  SITE,
-  SOCIAL_LINKS,
-} from '@/lib/site-config'
+import type { LocalizedText } from '@/lib/i18n'
+
+const SITE = {
+  title: 'DPI Computing Society',
+  tagline: {
+    en: 'Learn, build, and grow together',
+    bn: 'শিখুন, তৈরি করুন, একসাথে এগিয়ে যান',
+  } satisfies LocalizedText,
+  logo: '/dpicslogo.png',
+}
+
+const BANNER = {
+  text: {
+    en: 'Registration is starting now!',
+    bn: 'রেজিস্ট্রেশন শুরু হয়ে গেছে!',
+  } satisfies LocalizedText,
+  href: '/about',
+  links: [
+    { label: { en: 'Events', bn: 'ইভেন্ট' }, href: '/events' },
+    { label: { en: 'Join', bn: 'যোগদান' }, href: '/sign-up' },
+  ],
+}
+
+const SOCIAL_LINKS: { platform: string; url: string }[] = []
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    label: { en: 'Home', bn: 'হোম' },
+    href: '/',
+    columns: [],
+  },
+  {
+    label: { en: 'About', bn: 'পরিচিতি' },
+    href: '/about',
+    columns: [
+      {
+        title: { en: 'The Society', bn: 'সংগঠন' },
+        links: [
+          {
+            label: { en: 'Who We Are', bn: 'আমরা কারা' },
+            href: '/about',
+            description: {
+              en: 'Our mission, vision and story',
+              bn: 'আমাদের লক্ষ্য, দৃষ্টিভঙ্গি ও গল্প',
+            },
+          },
+          {
+            label: { en: 'Our Team', bn: 'আমাদের টিম' },
+            href: '/about#team',
+            description: {
+              en: 'Meet the executive panel',
+              bn: 'কার্যনির্বাহী কমিটির সাথে পরিচিত হন',
+            },
+          },
+          {
+            label: { en: 'Membership', bn: 'সদস্যপদ' },
+            href: '/about#membership',
+            description: {
+              en: 'How to join the society',
+              bn: 'সোসাইটিতে যোগদানের নিয়ম',
+            },
+          },
+        ],
+      },
+      {
+        title: { en: 'Get Involved', bn: 'যুক্ত হোন' },
+        links: [
+          {
+            label: { en: 'Join Us', bn: 'যোগ দিন' },
+            href: '/sign-up',
+            description: {
+              en: 'Create your member account',
+              bn: 'আপনার সদস্য অ্যাকাউন্ট তৈরি করুন',
+            },
+          },
+          {
+            label: { en: 'Contact', bn: 'যোগাযোগ' },
+            href: '/contact',
+            description: {
+              en: 'Reach the society',
+              bn: 'সোসাইটির সাথে যোগাযোগ করুন',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: { en: 'Events', bn: 'ইভেন্ট' },
+    href: '/events',
+    columns: [
+      {
+        title: { en: 'What We Run', bn: 'আমাদের আয়োজন' },
+        links: [
+          {
+            label: { en: 'Upcoming Events', bn: 'আসন্ন ইভেন্ট' },
+            href: '/events',
+            description: {
+              en: 'Workshops, sessions and contests',
+              bn: 'ওয়ার্কশপ, সেশন ও প্রতিযোগিতা',
+            },
+          },
+          {
+            label: { en: 'Past Events', bn: 'অতীতের ইভেন্ট' },
+            href: '/events#past',
+            description: {
+              en: 'Recap of what we have hosted',
+              bn: 'আমাদের আয়োজিত কার্যক্রমের সারসংক্ষেপ',
+            },
+          },
+          {
+            label: { en: 'Competitions', bn: 'প্রতিযোগিতা' },
+            href: '/events#competitions',
+            description: {
+              en: 'Inter-department programming contests',
+              bn: 'বিভাগীয় প্রোগ্রামিং প্রতিযোগিতা',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: { en: 'Committee', bn: 'কমিটি' },
+    href: '/committee',
+    columns: [
+      {
+        title: { en: 'Committees', bn: 'কমিটিসমূহ' },
+        links: [
+          {
+            label: { en: 'Executive', bn: 'কার্যনির্বাহী' },
+            href: '/committee#executive',
+            description: {
+              en: 'Leadership and coordination',
+              bn: 'নেতৃত্ব ও সমন্বয়',
+            },
+          },
+          {
+            label: { en: 'Technical', bn: 'টেকনিক্যাল' },
+            href: '/committee#technical',
+            description: {
+              en: 'Workshops and technical sessions',
+              bn: 'ওয়ার্কশপ ও টেকনিক্যাল সেশন',
+            },
+          },
+          {
+            label: { en: 'Events', bn: 'ইভেন্ট' },
+            href: '/committee#events',
+            description: {
+              en: 'Event planning and logistics',
+              bn: 'ইভেন্ট পরিকল্পনা ও ব্যবস্থাপনা',
+            },
+          },
+          {
+            label: { en: 'Outreach', bn: 'প্রচার' },
+            href: '/committee#outreach',
+            description: {
+              en: 'Campus and community engagement',
+              bn: 'ক্যাম্পাস ও কমিউনিটি সংগঠন',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: { en: 'Resources', bn: 'রিসোর্স' },
+    href: '/resources',
+    columns: [
+      {
+        title: { en: 'Learning', bn: 'শেখা' },
+        links: [
+          {
+            label: { en: 'Roadmaps', bn: 'রোডম্যাপ' },
+            href: '/resources#roadmaps',
+            description: {
+              en: 'Curated learning paths',
+              bn: 'বাছাই করা শেখার পথ',
+            },
+          },
+          {
+            label: { en: 'Notes & Slides', bn: 'নোট ও স্লাইড' },
+            href: '/resources#notes',
+            description: {
+              en: 'Materials from past sessions',
+              bn: 'অতীতের সেশনের উপকরণ',
+            },
+          },
+          {
+            label: { en: 'Problem Sets', bn: 'প্রব্লেম সেট' },
+            href: '/resources#problems',
+            description: {
+              en: 'Practice and contests archive',
+              bn: 'অনুশীলনী ও প্রতিযোগিতার ভাণ্ডার',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: { en: 'Contact', bn: 'যোগাযোগ' },
+    href: '/contact',
+    columns: [],
+  },
+]
+
+const MOBILE_ITEMS: MobileNavItem[] = NAV_ITEMS.map(
+  ({ label, href, columns }) => ({
+    label,
+    href,
+    children: columns.flatMap((col) =>
+      col.links.map((link) => ({ label: link.label, href: link.href }))
+    ),
+  })
+)
 
 const BANNER_STORAGE_KEY = 'banner-dismissed'
 const BANNER_EVENT = 'banner-dismissed-change'
