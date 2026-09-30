@@ -14,19 +14,23 @@ export default function DashboardPage() {
     }
   }, [isPending, session, router]);
 
-  if (isPending) return <p className="text-center mt-8 text-white">Loading...</p>;
-  if (!session?.user) return <p className="text-center mt-8 text-white">Redirecting...</p>;
+  if (isPending)
+    return <p className="mt-8 text-center text-muted-foreground">Loading...</p>;
+  if (!session?.user)
+    return (
+      <p className="mt-8 text-center text-muted-foreground">Redirecting...</p>
+    );
 
-  const { user } = session; 
+  const { user } = session;
 
   return (
-    <main className="max-w-md h-screen flex items-center justify-center flex-col mx-auto p-6 space-y-4 text-white">
+    <main className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center space-y-4 p-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <p>Welcome, {user.name || "User"}!</p>
       <p>Email: {user.email}</p>
       <button
         onClick={() => signOut()}
-        className="w-full bg-white text-black font-medium rounded-md px-4 py-2 hover:bg-gray-200"
+        className="w-full rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground hover:bg-primary/80"
       >
         Sign Out
       </button>

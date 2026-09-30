@@ -146,7 +146,7 @@ export function LoginForm({
           </form>
           <div className="relative hidden bg-muted md:block">
             <Image
-              src="/placeholder.svg"
+              src="/login.webp"
               alt=""
               fill
               unoptimized
