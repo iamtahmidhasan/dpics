@@ -35,6 +35,15 @@ export async function requireAdmin(): Promise<AuthSession> {
   return session
 }
 
+/** Route handler guard: throws a 401 `ApiError` instead of redirecting. */
+export async function requireUserApi(): Promise<AuthSession> {
+  const session = await getSession()
+
+  if (!session?.user) throw ApiError.unauthorized()
+
+  return session
+}
+
 /** Route handler guard: throws a 401/403 `ApiError` instead of redirecting. */
 export async function requireAdminApi(): Promise<AuthSession> {
   const session = await getSession()

@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client"
 import { Role } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
+import { resolveUserImage } from "@/lib/user-image"
 
 export const DEFAULT_USER_PAGE_SIZE = 20
 export const MAX_USER_PAGE_SIZE = 100
@@ -64,41 +65,6 @@ const userSelect = {
     },
   },
 } as const
-
-function isImageSource(value: string): boolean {
-  return value.startsWith("/") || /^https?:\/\//.test(value)
-}
-
-/**
- * `selactedImg` points at the picture the user picked from their `image` array.
- * Falls back to the first picture (then to a direct url) when the stored value
- * is missing or out of range.
- */
-function resolveUserImage(
-  images: string[] | null,
-  selactedImg: string | null
-): { avatar: string | null; selectedImageIndex: number | null } {
-  const list = images ?? []
-
-  if (list.length === 0) {
-    return {
-      avatar: isImageSource(selactedImg ?? "") ? selactedImg : null,
-      selectedImageIndex: null,
-    }
-  }
-
-  const index = Number.parseInt(selactedImg ?? "", 10)
-
-  if (Number.isInteger(index) && index >= 0 && index < list.length) {
-    return { avatar: list[index], selectedImageIndex: index }
-  }
-
-  if (isImageSource(selactedImg ?? "")) {
-    return { avatar: selactedImg, selectedImageIndex: null }
-  }
-
-  return { avatar: list[0], selectedImageIndex: 0 }
-}
 
 function toPositiveInt(value: unknown, fallback: number, max: number): number {
   const parsed = typeof value === "string" ? Number.parseInt(value, 10) : Number(value)

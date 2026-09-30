@@ -3,6 +3,14 @@ import { prismaAdapter } from "better-auth/adapters/prisma"
 
 import { Role } from "@/generated/prisma/enums"
 import prisma from "@/lib/prisma"
+import { normalizeImageList } from "@/lib/user-image"
+
+/** Keeps `selactedImg` inside the bounds of the list it points into. */
+function clampSelectedImage(selactedImg: unknown, imageCount: number): string {
+  const index = Number.parseInt(typeof selactedImg === "string" ? selactedImg : "", 10)
+
+  return Number.isInteger(index) && index >= 0 && index < imageCount ? String(index) : "0"
+}
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -41,6 +49,48 @@ export const auth = betterAuth({
         type: "string",
         required: false,
         input: true,
+      },
+    },
+  },
+  databaseHooks: {
+    // `User.image` is a `String[]`, but Better Auth still models `image` as a
+    // single string. Social providers hand over one avatar url, which Prisma
+    // rejects with `Expected UserCreateimageInput or String[], provided String`,
+    // so every value is widened to a list before it reaches the database.
+    //
+    // The casts below are deliberate: this schema is the source of truth, and
+    // Better Auth's own `User` type has not caught up with it. Spreading the
+    // real value keeps the runtime behaviour correct.
+    user: {
+      create: {
+        before: async (user) => {
+          const image = normalizeImageList(user.image)
+
+          return {
+            data: {
+              ...user,
+              image: image as unknown as typeof user.image,
+              selactedImg: clampSelectedImage(user.selactedImg, image.length),
+            },
+          }
+        },
+      },
+      update: {
+        before: async (user) => {
+          // Only touch `image` when the payload actually carries it, otherwise
+          // a partial update would wipe the pictures already on the account.
+          if (user.image === undefined) return
+
+          const image = normalizeImageList(user.image)
+
+          return {
+            data: {
+              ...user,
+              image: image as unknown as typeof user.image,
+              selactedImg: clampSelectedImage(user.selactedImg, image.length),
+            },
+          }
+        },
       },
     },
   },

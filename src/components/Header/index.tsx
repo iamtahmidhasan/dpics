@@ -30,6 +30,7 @@ import {
 import { signOut, useSession } from '@/lib/auth-client'
 import type { LocalizedText } from '@/lib/i18n'
 import { isAdmin as hasAdminRole } from '@/lib/roles'
+import { resolveUserImage } from '@/lib/user-image'
 
 const SITE = {
   title: 'DPI Computing Society',
@@ -330,6 +331,12 @@ export function Header() {
   const user = session?.user
   const isAdmin = hasAdminRole(user)
   const initials = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase()
+  // `User.image` is a list, so the session hands back an array where
+  // `next/image` expects a single url.
+  const avatar = resolveUserImage(
+    user?.image as unknown as string[] | undefined,
+    user?.selactedImg ?? null
+  ).avatar
 
   return (
     <>
@@ -379,9 +386,9 @@ export function Header() {
                     />
                   }
                 >
-                  {user.image ? (
+                  {avatar ? (
                     <Image
-                      src={user.image}
+                      src={avatar}
                       alt={user.name || user.email || SITE.title}
                       width={32}
                       height={32}
@@ -398,6 +405,9 @@ export function Header() {
                   <DropdownMenuItem render={<Link href="/dashboard" />}>
                     {t("Dashboard", "ড্যাশবোর্ড")}
                   </DropdownMenuItem>
+                  <DropdownMenuItem render={<Link href="/profile" />}>
+                    {t("Profile", "প্রোফাইল")}
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem render={<Link href="/admin" />}>
                       {t("Admin Panel", "অ্যাডমিন প্যানেল")}
@@ -413,6 +423,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon-lg"
+                nativeButton={false}
                 render={<Link href="/sign-in" aria-label="Sign in" />}
               >
                 <User className="size-5" />
