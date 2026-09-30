@@ -26,7 +26,9 @@ export default function DashboardPage() {
       <p>Email: {user.email}</p>
       <button
         onClick={() => signOut()}
-        className="w-full bg-white text-black font-medium rounded-md px-4 py-2 hover:bg-gray-200">
+        className="w-full bg-white text-black font-medium rounded-md px-4 py-2 hover:bg-gray-200"
+      >
+        Sign Out
       </button>
     </main>
   );
