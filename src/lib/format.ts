@@ -11,3 +11,17 @@ export function formatTaka(amount: number, lang: Lang | string = "en"): string {
 
   return `৳${formatted}`
 }
+
+/**
+ * Formats an ISO date string or Date into localized date representation.
+ */
+export function formatDate(
+  value: string | Date | null | undefined,
+  locale: string = "en-US",
+  options: Intl.DateTimeFormatOptions = { dateStyle: "medium" }
+): string {
+  if (!value) return "—"
+  const date = typeof value === "string" ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return "—"
+  return new Intl.DateTimeFormat(locale, options).format(date)
+}

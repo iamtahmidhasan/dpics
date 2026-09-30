@@ -9,11 +9,16 @@ import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "cn"
-import { AdminAccountForm, AdminInstructorForm, AdminMemberForm } from "./admin-user-forms"
+import {
+  AdminAccountForm,
+  AdminCommitteeForm,
+  AdminInstructorForm,
+  AdminMemberForm,
+} from "./admin-user-forms"
 import { AdminUserOverview } from "./admin-user-overview"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 
-const SECTIONS = ["overview", "account", "member", "instructor"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee"] as const
 
 type Section = (typeof SECTIONS)[number]
 
@@ -36,6 +41,7 @@ export function AdminUserDetailView({
     account: { en: "Account", bn: "অ্যাকাউন্ট" },
     member: { en: "Membership", bn: "সদস্যপদ" },
     instructor: { en: "Instructor", bn: "শিক্ষক" },
+    committee: { en: "Committee", bn: "কমিটি" },
   }
 
   async function save(payload: Record<string, unknown>) {
@@ -156,7 +162,13 @@ export function AdminUserDetailView({
         </p>
       ) : null}
 
-      {section === "overview" ? <AdminUserOverview user={user} isSelf={isSelf} /> : null}
+      {section === "overview" ? (
+        <AdminUserOverview
+          user={user}
+          isSelf={isSelf}
+          onManageCommittees={() => setSection("committee")}
+        />
+      ) : null}
 
       {/* Remounting on `updatedAt` resets the form fields to the saved values. */}
       {section === "account" ? (
@@ -184,6 +196,14 @@ export function AdminUserDetailView({
           user={user}
           saving={saving}
           onSave={save}
+        />
+      ) : null}
+
+      {section === "committee" ? (
+        <AdminCommitteeForm
+          key={`committee-${user.updatedAt}`}
+          user={user}
+          onUserUpdated={setUser}
         />
       ) : null}
     </div>

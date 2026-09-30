@@ -7,6 +7,7 @@ import { useMemo } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge, badgeVariants } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -44,9 +45,11 @@ function VerificationBadge({ status }: { status: string | null }) {
 export function AdminUserOverview({
   user,
   isSelf,
+  onManageCommittees,
 }: {
   user: AdminUserDetail
   isSelf: boolean
+  onManageCommittees?: () => void
 }) {
   const { t, lang } = useLanguage()
 
@@ -203,8 +206,13 @@ export function AdminUserOverview({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card size="sm">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t("Committee roles", "কমিটির ভূমিকা")}</CardTitle>
+            {onManageCommittees && (
+              <Button variant="outline" size="xs" onClick={onManageCommittees}>
+                {t("Manage", "পরিচালনা")}
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {user.committeeRoles.length === 0 ? (

@@ -73,6 +73,8 @@ export type AdminInstructorDetail = {
 
 export type AdminCommitteeRole = {
   id: string
+  roleId: string
+  committeeId: string
   roleName: string
   roleSlug: string
   committeeName: string
@@ -211,14 +213,16 @@ const adminUserSelect = {
   committeeRoles: {
     select: {
       id: true,
+      roleId: true,
       isActive: true,
       startDate: true,
       endDate: true,
       role: {
         select: {
+          committeeId: true,
           name: true,
           slug: true,
-          committee: { select: { name: true, slug: true } },
+          committee: { select: { id: true, name: true, slug: true } },
         },
       },
     },
@@ -290,6 +294,8 @@ function toMap(row: AdminUserRow, sessions: AdminSessionSummary): AdminUserDetai
       : null,
     committeeRoles: row.committeeRoles.map((entry) => ({
       id: entry.id,
+      roleId: entry.roleId,
+      committeeId: entry.role.committeeId,
       roleName: entry.role.name,
       roleSlug: entry.role.slug,
       committeeName: entry.role.committee.name,

@@ -110,11 +110,12 @@ type TextFieldProps = {
   label: string
   value: string
   onChange: (value: string) => void
-  type?: "text" | "email" | "tel" | "url" | "datetime-local"
+  type?: "text" | "email" | "tel" | "url" | "datetime-local" | "date"
   placeholder?: string
   error?: string
   hint?: string
   disabled?: boolean
+  required?: boolean
   autoComplete?: string
 }
 
@@ -128,11 +129,15 @@ export function TextField({
   error,
   hint,
   disabled,
+  required,
   autoComplete,
 }: TextFieldProps) {
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </FieldLabel>
       <Input
         id={id}
         name={id}
@@ -140,6 +145,7 @@ export function TextField({
         value={value}
         placeholder={placeholder}
         disabled={disabled}
+        required={required}
         autoComplete={autoComplete}
         aria-invalid={!!error}
         onChange={(event) => onChange(event.target.value)}

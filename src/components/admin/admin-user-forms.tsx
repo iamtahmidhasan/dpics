@@ -1,15 +1,19 @@
 "use client"
 
-import { Check, Loader2, Plus, Star, X } from "lucide-react"
-import { useState } from "react"
+import { Award, Calendar, Check, Loader2, Plus, Star, Trash2, X } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 
 import { CheckboxField, EnumSelect, TextAreaField, TextField, fromDateTimeLocal, toDateTimeLocal } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { formatDate } from "@/lib/format"
+import type { CommitteeOption } from "@/lib/services/committee.service"
 import {
   Department,
   InstructorStatus,
@@ -29,7 +33,7 @@ import {
   shiftLabel,
   verificationStatusLabel,
 } from "@/lib/profile-labels"
-import type { AdminUserDetail } from "@/lib/services/admin-user.service"
+import type { AdminCommitteeRole, AdminUserDetail } from "@/lib/services/admin-user.service"
 
 type Errors = Record<string, string | undefined>
 
@@ -686,5 +690,367 @@ export function AdminInstructorForm({
         </form>
       </CardContent>
     </Card>
+  )
+}
+
+export function AdminCommitteeForm({
+  user,
+  onUserUpdated,
+}: {
+  user: AdminUserDetail
+  onUserUpdated: (user: AdminUserDetail) => void
+}) {
+  const { t, lang } = useLanguage()
+  const locale = lang === "bn" ? "bn-BD" : "en-US"
+
+  const [committees, setCommittees] = useState<CommitteeOption[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(true)
+
+  // Assignment form state
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState("")
+  const [selectedRoleId, setSelectedRoleId] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [isActive, setIsActive] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  // Action states for existing roles
+  const [mutatingId, setMutatingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/admin/committee-options")
+        if (res.ok) {
+          const data = await res.json()
+          const commList = (data.committees || []) as CommitteeOption[]
+          setCommittees(commList)
+          if (commList.length > 0) {
+            setSelectedCommitteeId(commList[0].id)
+            if (commList[0].roles?.length > 0) {
+              setSelectedRoleId(commList[0].roles[0].id)
+            }
+          }
+        }
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+    load()
+  }, [])
+
+  const currentCommittee = committees.find((c) => c.id === selectedCommitteeId)
+  const availableRoles = currentCommittee?.roles || []
+
+  function handleCommitteeChange(newCommId: string) {
+    setSelectedCommitteeId(newCommId)
+    const comm = committees.find((c) => c.id === newCommId)
+    if (comm && comm.roles.length > 0) {
+      setSelectedRoleId(comm.roles[0].id)
+    } else {
+      setSelectedRoleId("")
+    }
+  }
+
+  async function handleAssign(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedRoleId) {
+      setError(t("Please select a committee role", "অনুগ্রহ করে একটি পদবি নির্বাচন করুন"))
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/committee-roles`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roleId: selectedRoleId,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          isActive,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error?.message ?? "Failed to assign committee role")
+
+      onUserUpdated(data as AdminUserDetail)
+      setSuccess(t("Committee role assigned successfully.", "কমিটির পদবি সফলভাবে নিযুক্ত হয়েছে।"))
+      setStartDate("")
+      setEndDate("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign role")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleToggleActive(roleEntry: AdminCommitteeRole) {
+    setMutatingId(roleEntry.id)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/committee-roles/${roleEntry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isActive: !roleEntry.isActive,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error?.message ?? "Failed to update role")
+
+      onUserUpdated(data as AdminUserDetail)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role")
+    } finally {
+      setMutatingId(null)
+    }
+  }
+
+  async function handleRemoveRole(userRoleId: string) {
+    setMutatingId(userRoleId)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/committee-roles/${userRoleId}`, {
+        method: "DELETE",
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error?.message ?? "Failed to remove role")
+
+      onUserUpdated(data as AdminUserDetail)
+      setSuccess(t("Committee role removed.", "কমিটির পদবি অপসারিত হয়েছে।"))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove role")
+    } finally {
+      setMutatingId(null)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Current Committee Roles */}
+      <Card size="sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="size-4 text-primary" />
+                {t("Appointed Committee Roles", "নিযুক্ত কমিটির ভূমিকা")}
+              </CardTitle>
+              <CardDescription>
+                {t(
+                  "All society committees and executive roles currently or previously held by this user.",
+                  "এই ব্যবহারকারীর বর্তমান বা পূর্ববর্তী সমস্ত কমিটির পদবি।"
+                )}
+              </CardDescription>
+            </div>
+            <Badge variant="outline">
+              {user.committeeRoles.length} {t("roles", "পদবি")}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {user.committeeRoles.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">
+              {t("This user has no committee roles assigned yet.", "এই ব্যবহারকারীর কোনো কমিটির পদবি নেই।")}
+            </p>
+          ) : (
+            <div className="divide-y divide-border/60">
+              {user.committeeRoles.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                >
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-foreground">
+                        {entry.roleName}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        • {entry.committeeName}
+                      </span>
+                      <Badge variant={entry.isActive ? "success" : "muted"} className="text-[10px]">
+                        {entry.isActive ? t("Active", "সক্রিয়") : t("Ended", "সমাপ্ত")}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground tabular-nums">
+                      <Calendar className="size-3" />
+                      {entry.startDate || entry.endDate ? (
+                        <span>
+                          {formatDate(entry.startDate, locale)} — {formatDate(entry.endDate, locale)}
+                        </span>
+                      ) : (
+                        <span>{t("No specific dates set", "নির্দিষ্ট মেয়াদ নির্ধারিত নেই")}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => handleToggleActive(entry)}
+                      disabled={mutatingId === entry.id}
+                    >
+                      {entry.isActive ? t("Mark ended", "সমাপ্ত করুন") : t("Set active", "সক্রিয় করুন")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleRemoveRole(entry.id)}
+                      disabled={mutatingId === entry.id}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={t("Remove role", "পদবি অপসারণ")}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Assign New Committee Role */}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Plus className="size-4 text-primary" />
+            {t("Assign New Committee Role", "নতুন কমিটির পদবি নিয়োগ করুন")}
+          </CardTitle>
+          <CardDescription>
+            {t(
+              "Select a committee and role to appoint this user to.",
+              "ব্যবহারকারীকে নিয়োগ করতে একটি কমিটি ও পদবি নির্বাচন করুন।"
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingOptions ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+              <Loader2 className="size-3.5 animate-spin" />
+              {t("Loading committees...", "কমিটি লোড হচ্ছে...")}
+            </div>
+          ) : committees.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-2">
+              <p>{t("No committees available. Please create a committee first.", "কোনো কমিটি উপলব্ধ নেই। অনুগ্রহ করে প্রথমে একটি কমিটি তৈরি করুন।")}</p>
+              <Link
+                href="/admin/committees"
+                className="mt-2 inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+              >
+                {t("Go to Committees", "কমিটি ব্যবস্থাপনায় যান")} →
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleAssign} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label htmlFor="user-committee-select" className="text-xs font-medium text-foreground block">
+                    {t("Committee", "কমিটি")} *
+                  </label>
+                  <select
+                    id="user-committee-select"
+                    value={selectedCommitteeId}
+                    onChange={(e) => handleCommitteeChange(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs/relaxed focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {committees.map((comm) => (
+                      <option key={comm.id} value={comm.id}>
+                        {comm.name} {!comm.isActive ? `(${t("Inactive", "নিষ্ক্রিয়")})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="user-role-select" className="text-xs font-medium text-foreground block">
+                    {t("Role", "পদবি")} *
+                  </label>
+                  <select
+                    id="user-role-select"
+                    value={selectedRoleId}
+                    onChange={(e) => setSelectedRoleId(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs/relaxed focus:outline-none focus:ring-1 focus:ring-primary"
+                    disabled={availableRoles.length === 0}
+                  >
+                    {availableRoles.length === 0 ? (
+                      <option value="">{t("No roles in this committee", "এই কমিটিতে পদবি নেই")}</option>
+                    ) : (
+                      availableRoles.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id="assign-start-date"
+                  label={t("Tenure start date (optional)", "শুরুর তারিখ (ঐচ্ছিক)")}
+                  type="date"
+                  value={startDate}
+                  onChange={setStartDate}
+                />
+                <TextField
+                  id="assign-end-date"
+                  label={t("Tenure end date (optional)", "শেষের তারিখ (ঐচ্ছিক)")}
+                  type="date"
+                  value={endDate}
+                  onChange={setEndDate}
+                />
+              </div>
+
+              <CheckboxField
+                id="assign-is-active"
+                label={t("Active role", "সক্রিয় পদবি")}
+                checked={isActive}
+                onChange={setIsActive}
+                hint={t("Mark as active or uncheck if recording past service", "সক্রিয় রাখুন বা পূর্ববর্তী দায়িত্বের ক্ষেত্রে টিক চিহ্ন তুলে দিন")}
+              />
+
+              {error && (
+                <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                  {error}
+                </p>
+              )}
+
+              {success && (
+                <p className="rounded-md bg-success/10 px-3 py-2 text-xs font-medium text-success">
+                  {success}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={isSubmitting || availableRoles.length === 0}>
+                  {isSubmitting ? (
+                    <Loader2 className="animate-spin" data-icon="inline-start" />
+                  ) : (
+                    <Check data-icon="inline-start" />
+                  )}
+                  {isSubmitting ? t("Assigning...", "নিয়োগ হচ্ছে...") : t("Assign committee role", "কমিটিতে নিয়োগ দিন")}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
