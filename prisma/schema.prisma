@@ -13,29 +13,157 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String      @id @default(cuid())
   name          String
   email         String
-  emailVerified Boolean
-  image         String?
+  emailVerified Boolean     
+  image         String[]    
+  phone         String?     @unique
+  isActive      Boolean     @default(true)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  // System roles
+  roles         Role[]      @default([USER])
+  // Optional profiles
+  member        Member?
+  instructor    Instructor?
+
+  // Committee roles
+  committeeRoles UserCommitteeRole[]
 
   @@unique([email])
   @@map("user")
 }
 
+
+model Member {
+  id                  String @id @default(cuid())
+  userId              String @unique
+
+  status              MembershipStatus @default(PENDING)
+
+  joinedAt            DateTime?
+  expiresAt           DateTime?
+
+  studentId           String? @unique
+
+  whatsapp            String
+  department          Department
+  session             String
+  semester            Semester
+  shift               Shift
+
+  studentIdCardUrl    String?
+  nidorbirthUrl       String?
+
+  verificationStatus  VerificationStatus @default(PENDING)
+  verifiedAt          DateTime?
+  verifiedById        String?
+
+  hasPaidMembershipFee Boolean        @default(false)
+  paymentMethod        PaymentMethod?
+  senderNumber         String?
+  transactionId        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([department])
+  @@index([session])
+  @@index([semester])
+  @@index([status])
+  @@index([transactionId])
+}
+
+model Instructor {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  instructorId String? @unique
+
+  bio       String?
+  expertise String?
+
+  status InstructorStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Committee {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String  @unique
+  description String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles CommitteeRole[]
+}
+
+model CommitteeRole {
+  id          String @id @default(cuid())
+
+  committeeId String
+
+  name        String
+  slug        String
+  description String?
+
+  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+
+  users UserCommitteeRole[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([committeeId, slug])
+  @@index([committeeId])
+}
+
+model UserCommitteeRole {
+  id          String @id @default(cuid())
+
+  userId      String
+  roleId      String
+
+  startDate   DateTime?
+  endDate     DateTime?
+
+  isActive    Boolean @default(true)
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  role CommitteeRole @relation(fields: [roleId],references: [id],onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Same user cannot have the same committee role twice
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime
-  updatedAt DateTime
-  ipAddress String?
-  userAgent String?
-  userId    String
+  id           String   @id
+  expiresAt    DateTime
+  token        String
+  createdAt    DateTime
+  updatedAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  userId       String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([token])
@@ -70,4 +198,80 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+// ============================================================
+// SYSTEM ROLES
+// ============================================================
+
+enum Role {
+  USER
+  MEMBER
+  INSTRUCTOR
+  ADMIN
+}
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REJECTED
+  CANCELLED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentMethod {
+  BKASH
+  NAGAD
+  ROCKET
+  HAND_TO_HAND
+  CASH
+}
+
+enum Department {
+  COMPUTER_SCIENCE_AND_TECHNOLOGY
+  CIVIL_TECHNOLOGY
+  ELECTRICAL_TECHNOLOGY
+  ELECTRONICS_TECHNOLOGY
+  MECHANICAL_TECHNOLOGY
+  POWER_TECHNOLOGY
+  RAC_TECHNOLOGY
+  ARCHITECTURE_TECHNOLOGY
+  FOOD_TECHNOLOGY
+  CHEMICAL_TECHNOLOGY
+  TELECOMMUNICATION_TECHNOLOGY
+  AUTOMOBILE_TECHNOLOGY
+  CONSTRUCTION_TECHNOLOGY
+  ENVIRONMENTAL_TECHNOLOGY
+  GRAPHIC_DESIGN_TECHNOLOGY
+  SURVEYING_TECHNOLOGY
+  OTHER
+}
+
+enum Semester {
+  FIRST
+  SECOND
+  THIRD
+  FOURTH
+  FIFTH
+  SIXTH
+  SEVENTH
+  EIGHTH
+}
+
+enum Shift {
+  MORNING
+  DAY
+}
+
+enum InstructorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
 }
