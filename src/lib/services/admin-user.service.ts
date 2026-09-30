@@ -518,3 +518,29 @@ export async function updateAdminUser(
 
   return getAdminUserDetail(id)
 }
+
+export async function deleteAdminUser(id: string, actingAdminId: string): Promise<void> {
+  if (!id) throw ApiError.badRequest("User id is required")
+
+  if (id === actingAdminId) {
+    throw ApiError.badRequest("You cannot delete your own admin account")
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, name: true, email: true },
+  })
+
+  if (!user) {
+    throw ApiError.notFound("User not found")
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.userCommitteeRole.deleteMany({ where: { userId: id } })
+    await tx.member.deleteMany({ where: { userId: id } })
+    await tx.instructor.deleteMany({ where: { userId: id } })
+    await tx.session.deleteMany({ where: { userId: id } })
+    await tx.account.deleteMany({ where: { userId: id } })
+    await tx.user.delete({ where: { id } })
+  })
+}

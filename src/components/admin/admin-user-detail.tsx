@@ -1,13 +1,24 @@
 "use client"
 
-import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react"
+import { CheckCircle2, Loader2, Trash2, TriangleAlert } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "cn"
 import {
   AdminAccountForm,
@@ -30,11 +41,16 @@ export function AdminUserDetailView({
   isSelf: boolean
 }) {
   const { t } = useLanguage()
+  const router = useRouter()
   const [user, setUser] = useState(initialUser)
   const [section, setSection] = useState<Section>("overview")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const LABELS: Record<Section, { en: string; bn: string }> = {
     overview: { en: "Overview", bn: "ওভারভিউ" },
@@ -71,6 +87,31 @@ export function AdminUserDetailView({
     }
   }
 
+  async function handleDelete() {
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: "DELETE",
+      })
+
+      const body = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          body?.error?.message ?? t("Failed to delete user", "ব্যবহারকারী মুছে ফেলতে ব্যর্থ হয়েছে")
+        )
+      }
+
+      router.push("/admin/users")
+      router.refresh()
+    } catch (cause: unknown) {
+      setDeleteError(cause instanceof Error ? cause.message : t("Request failed", "অনুরোধ ব্যর্থ হয়েছে"))
+      setIsDeleting(false)
+    }
+  }
+
   const initials = (user.name || user.email || "?").trim().charAt(0).toUpperCase()
 
   return (
@@ -101,12 +142,15 @@ export function AdminUserDetailView({
           </div>
         </div>
 
-        <Link
-          href="/admin/users"
-          className="rounded-md border border-border px-2.5 py-1.5 text-xs/relaxed transition-colors hover:bg-muted"
-        >
-          {t("Back to users", "ব্যবহারকারীদের ফিরুন")}
-        </Link>
+        <div className="flex items-center gap-2">
+
+          <Link
+            href="/admin/users"
+            className="rounded-md border border-border px-2.5 py-1.5 text-xs/relaxed transition-colors hover:bg-muted"
+          >
+            {t("Back to users", "ব্যবহারকারীদের ফিরুন")}
+          </Link>
+        </div>
       </div>
 
       <nav aria-label={t("User sections", "ব্যবহারকারী বিভাগ")} className="border-b border-border">
@@ -206,6 +250,98 @@ export function AdminUserDetailView({
           onUserUpdated={setUser}
         />
       ) : null}
+
+      {/* Danger Zone */}
+      {!isSelf && (
+        <Card className="border-destructive/30 bg-destructive/5 mt-6">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="size-4" />
+              {t("Danger zone", "বিপদজনক অঞ্চল")}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {t(
+                "Permanently delete this user and all associated records (membership, student ID, instructor profile, committee roles, and active sessions).",
+                "এই ব্যবহারকারী এবং তার সমস্ত সম্পর্কিত তথ্য (সদস্যপদ, স্টুডেন্ট আইডি, শিক্ষক প্রোফাইল, কমিটি পদবি এবং সেশন) স্থায়ীভাবে মুছে ফেলুন।"
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-end pt-0">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="size-3.5" data-icon="inline-start" />
+              {t("Delete user", "ব্যবহারকারী মুছুন")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          if (!open) setDeleteError(null)
+          setShowDeleteDialog(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="size-5" />
+              {t("Delete user permanently?", "ব্যবহারকারী স্থায়ীভাবে মুছে ফেলবেন?")}
+            </DialogTitle>
+            <DialogDescription className="space-y-2 text-xs/relaxed pt-2">
+              <span>
+                {t(
+                  `Are you sure you want to delete "${user.name}" (${user.email})?`,
+                  `আপনি কি নিশ্চিত যে "${user.name}" (${user.email}) মুছে ফেলতে চান?`
+                )}
+              </span>
+              <span className="block text-destructive/90 font-medium">
+                {t(
+                  "This action cannot be undone. All data across all models (membership profile, student ID, instructor profile, committee roles, sessions, and login accounts) will be deleted immediately.",
+                  "এই কাজটি অপরিবর্তনীয়। এই ব্যবহারকারীর সাথে সম্পর্কিত সমস্ত তথ্য (সদস্য প্রোফাইল, স্টুডেন্ট আইডি, শিক্ষক প্রোফাইল, কমিটি পদবি, সেশন এবং অ্যাকাউন্ট লগইন) অবিলম্বে স্থায়ীভাবে মুছে যাবে।"
+                )}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              {deleteError}
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              {t("Cancel", "বাতিল")}
+            </Button>
+            <Button
+              variant="destructive"
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+              ) : (
+                <Trash2 data-icon="inline-start" />
+              )}
+              {isDeleting
+                ? t("Deleting...", "মুছে ফেলা হচ্ছে...")
+                : t("Confirm delete", "মুছে ফেলা নিশ্চিত করুন")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

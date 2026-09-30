@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { toErrorResponse } from "@/lib/api-error"
 import {
+  deleteAdminUser,
   getAdminUserDetail,
   parseAdminUserInput,
   updateAdminUser,
@@ -27,6 +28,19 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/ad
     const input = parseAdminUserInput(await request.json())
 
     return NextResponse.json(await updateAdminUser(id, input, session.user.id))
+  } catch (error) {
+    return toErrorResponse(error)
+  }
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext<"/api/admin/users/[id]">) {
+  try {
+    const session = await requireAdminApi()
+    const { id } = await context.params
+
+    await deleteAdminUser(id, session.user.id)
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     return toErrorResponse(error)
   }
