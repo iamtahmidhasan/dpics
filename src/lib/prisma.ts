@@ -6,15 +6,35 @@ const adapter = new PrismaPg({
 });
 
 const globalForPrisma = global as unknown as {
-  prisma: PrismaClient;
+  prisma?: PrismaClient;
 };
 
-const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+function createPrismaClient(): PrismaClient {
+  return new PrismaClient({
     adapter,
   });
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// In development, hot-reloading can keep an older PrismaClient instance in memory
+// from before a migration or prisma generate ran.
+// Ensure the cached instance has newly added models (e.g. `setting`).
+const isClientValid = (client?: PrismaClient): client is PrismaClient => {
+  return Boolean(client && "setting" in client);
+};
+
+if (!globalForPrisma.prisma || !isClientValid(globalForPrisma.prisma)) {
+  globalForPrisma.prisma = createPrismaClient();
+}
+
+const prisma = new Proxy(globalForPrisma.prisma, {
+  get(target, prop, receiver) {
+    if (!isClientValid(globalForPrisma.prisma)) {
+      globalForPrisma.prisma = createPrismaClient();
+    }
+    const current = globalForPrisma.prisma || target;
+    return Reflect.get(current, prop, receiver);
+  },
+});
 
 export default prisma;
+

@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth"
+import { APIError, betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 
 import { Role } from "@/generated/prisma/enums"
@@ -64,6 +64,19 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          const settings = prisma.setting
+            ? await prisma.setting.findUnique({
+                where: { id: "global" },
+                select: { isSignupEnabled: true },
+              })
+            : null
+
+          if (settings && !settings.isSignupEnabled) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Registration is currently closed",
+            })
+          }
+
           const image = normalizeImageList(user.image)
 
           return {

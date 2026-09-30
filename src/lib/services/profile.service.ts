@@ -5,6 +5,7 @@ import {
   Department,
   InstructorStatus,
   MembershipStatus,
+  PaymentMethod,
   Role,
   Semester,
   Shift,
@@ -22,10 +23,12 @@ import {
   MAX_PHONE_LENGTH,
   MAX_SESSION_LENGTH,
   MAX_STUDENT_ID_LENGTH,
+  MAX_TRANSACTION_ID_LENGTH,
   MAX_WHATSAPP_LENGTH,
   isRecord,
   toEnum,
   toImages,
+  toOptionalEnum,
   toOptionalText,
   toSelectedImageIndex,
   toText,
@@ -98,6 +101,9 @@ export type MemberInput = {
   studentId: string | null
   studentIdCardUrl: string | null
   nidorbirthUrl: string | null
+  paymentMethod?: PaymentMethod | null
+  senderNumber?: string | null
+  transactionId?: string | null
 }
 
 export type InstructorInput = {
@@ -280,6 +286,26 @@ export function parseProfileInput(body: unknown): ProfileInput {
       studentId: toOptionalText(body.member.studentId, "Student id", MAX_STUDENT_ID_LENGTH),
       studentIdCardUrl: toUrl(body.member.studentIdCardUrl, "Student id card"),
       nidorbirthUrl: toUrl(body.member.nidorbirthUrl, "Nid or birth certificate"),
+      paymentMethod:
+        "paymentMethod" in body.member
+          ? toOptionalEnum(
+              body.member.paymentMethod,
+              "Payment method",
+              Object.values(PaymentMethod)
+            )
+          : undefined,
+      senderNumber:
+        "senderNumber" in body.member
+          ? toOptionalText(body.member.senderNumber, "Sender number", MAX_PHONE_LENGTH)
+          : undefined,
+      transactionId:
+        "transactionId" in body.member
+          ? toOptionalText(
+              body.member.transactionId,
+              "Transaction id",
+              MAX_TRANSACTION_ID_LENGTH
+            )
+          : undefined,
     }
   }
 

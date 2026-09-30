@@ -9,8 +9,14 @@ import { useLanguage } from "@/components/language-provider"
 import { roleOption } from "@/components/signup/signup-steps"
 import { Button } from "@/components/ui/button"
 import { FieldError, FieldGroup } from "@/components/ui/field"
-import { Department, Role, Semester, Shift } from "@/generated/prisma/enums"
-import { departmentLabel, semesterLabel, shiftLabel } from "@/lib/profile-labels"
+import { Department, PaymentMethod, Role, Semester, Shift } from "@/generated/prisma/enums"
+import { formatTaka } from "@/lib/format"
+import {
+  departmentLabel,
+  paymentMethodLabel,
+  semesterLabel,
+  shiftLabel,
+} from "@/lib/profile-labels"
 import type { SelfAssignableRole } from "@/lib/roles"
 import type { InstructorInput, MemberInput } from "@/lib/services/profile.service"
 
@@ -25,6 +31,9 @@ type MemberForm = {
   studentId: string
   studentIdCardUrl: string
   nidorbirthUrl: string
+  paymentMethod: PaymentMethod
+  senderNumber: string
+  transactionId: string
 }
 
 type InstructorForm = {
@@ -42,12 +51,108 @@ const EMPTY_MEMBER: MemberForm = {
   studentId: "",
   studentIdCardUrl: "",
   nidorbirthUrl: "",
+  paymentMethod: PaymentMethod.BKASH,
+  senderNumber: "",
+  transactionId: "",
 }
 
 const EMPTY_INSTRUCTOR: InstructorForm = {
   instructorId: "",
   bio: "",
   expertise: "",
+}
+
+export type SignupPaymentDetails = {
+  isRegistrationFeeRequired: boolean
+  fee: number
+  bkashPersonalNumber: string | null
+  bkashAgentNumber: string | null
+  nagadPersonalNumber: string | null
+  nagadAgentNumber: string | null
+  rocketPersonalNumber: string | null
+  rocketAgentNumber: string | null
+}
+
+function PaymentInstructionsPanel({
+  payment,
+  lang,
+}: {
+  payment: SignupPaymentDetails
+  lang: string
+}) {
+  const { t } = useLanguage()
+
+  const providers = [
+    {
+      name: "bKash",
+      label: { en: "bKash", bn: "বিকাশ" },
+      personal: payment.bkashPersonalNumber,
+      agent: payment.bkashAgentNumber,
+    },
+    {
+      name: "Nagad",
+      label: { en: "Nagad", bn: "নগদ" },
+      personal: payment.nagadPersonalNumber,
+      agent: payment.nagadAgentNumber,
+    },
+    {
+      name: "Rocket",
+      label: { en: "Rocket", bn: "রকেট" },
+      personal: payment.rocketPersonalNumber,
+      agent: payment.rocketAgentNumber,
+    },
+  ].filter((p) => Boolean(p.personal || p.agent))
+
+  return (
+    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/10 pb-3">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-primary">
+            {t("Registration Fee Instructions", "নিবন্ধন ফি সংক্রান্ত নির্দেশনা")}
+          </h3>
+          <p className="text-xs/relaxed text-muted-foreground mt-0.5">
+            {t(
+              "Please send the registration fee to any of the numbers below. An administrator will verify your payment manually.",
+              "অনুগ্রহ করে নিচের যেকোনো নম্বরে নিবন্ধন ফি পাঠান। নিবন্ধনের পর একজন প্রশাসক আপনার পেমেন্ট ম্যানুয়ালি যাচাই করবেন।"
+            )}
+          </p>
+        </div>
+        <div className="flex items-baseline gap-1.5 rounded-md bg-background px-3 py-1.5 border shadow-2xs">
+          <span className="text-xs text-muted-foreground">{t("Fee:", "ফি:")}</span>
+          <span className="font-heading text-base font-bold text-foreground">
+            {formatTaka(payment.fee, lang)}
+          </span>
+        </div>
+      </div>
+
+      {providers.length > 0 ? (
+        <div className="space-y-2">
+          {providers.map((p) => (
+            <div
+              key={p.name}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/80 bg-background/80 px-3 py-2 text-xs"
+            >
+              <span className="font-semibold text-foreground">{t(p.label)}</span>
+              <div className="flex flex-wrap items-center gap-3 text-xs/relaxed">
+                {p.personal ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">{t("Personal:", "পার্সোনাল:")}</span>
+                    <span className="font-mono font-medium">{p.personal}</span>
+                  </span>
+                ) : null}
+                {p.agent ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">{t("Agent:", "এজেন্ট:")}</span>
+                    <span className="font-mono font-medium">{p.agent}</span>
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 /** The wizard merges this into the `POST /api/onboarding` body alongside `role`. */
@@ -57,6 +162,7 @@ export type OnboardingDetails =
 
 export function DetailsStep({
   role,
+  payment,
   error,
   isPending,
   onError,
@@ -64,18 +170,41 @@ export function DetailsStep({
   onComplete,
 }: {
   role: SelfAssignableRole
+  payment?: SignupPaymentDetails | null
   error: string | null
   isPending: boolean
   onError: (message: string | null) => void
   onBack: () => void
   onComplete: (details: OnboardingDetails) => void
 }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const tDepartment = departmentLabel(t)
   const tSemester = semesterLabel(t)
   const tShift = shiftLabel(t)
+  const tPaymentMethod = paymentMethodLabel(t)
 
-  const [member, setMember] = useState<MemberForm>(EMPTY_MEMBER)
+  const isFeeRequired = Boolean(payment?.isRegistrationFeeRequired && payment.fee > 0)
+
+  const availablePaymentMethods: PaymentMethod[] = []
+  if (payment?.bkashPersonalNumber || payment?.bkashAgentNumber) {
+    availablePaymentMethods.push(PaymentMethod.BKASH)
+  }
+  if (payment?.nagadPersonalNumber || payment?.nagadAgentNumber) {
+    availablePaymentMethods.push(PaymentMethod.NAGAD)
+  }
+  if (payment?.rocketPersonalNumber || payment?.rocketAgentNumber) {
+    availablePaymentMethods.push(PaymentMethod.ROCKET)
+  }
+
+  const paymentMethodOptions: PaymentMethod[] =
+    availablePaymentMethods.length > 0
+      ? availablePaymentMethods
+      : [PaymentMethod.BKASH, PaymentMethod.NAGAD, PaymentMethod.ROCKET]
+
+  const [member, setMember] = useState<MemberForm>(() => ({
+    ...EMPTY_MEMBER,
+    paymentMethod: paymentMethodOptions[0] ?? PaymentMethod.BKASH,
+  }))
   const [instructor, setInstructor] = useState<InstructorForm>(EMPTY_INSTRUCTOR)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -97,6 +226,15 @@ export function DetailsStep({
         nextErrors.session = t("Session is required", "সেশন আবশ্যক")
       }
 
+      if (isFeeRequired) {
+        if (!member.senderNumber.trim()) {
+          nextErrors.senderNumber = t("Sender number is required", "প্রেরক নম্বর আবশ্যক")
+        }
+        if (!member.transactionId.trim()) {
+          nextErrors.transactionId = t("Transaction ID is required", "ট্রানজেকশন আইডি আবশ্যক")
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -111,6 +249,9 @@ export function DetailsStep({
           studentId: member.studentId.trim() || null,
           studentIdCardUrl: member.studentIdCardUrl.trim() || null,
           nidorbirthUrl: member.nidorbirthUrl.trim() || null,
+          paymentMethod: isFeeRequired ? member.paymentMethod : null,
+          senderNumber: isFeeRequired ? member.senderNumber.trim() || null : null,
+          transactionId: isFeeRequired ? member.transactionId.trim() || null : null,
         },
       })
 
@@ -162,6 +303,70 @@ export function DetailsStep({
         <FieldGroup>
           {role === Role.MEMBER ? (
             <>
+              {isFeeRequired && payment ? (
+                <>
+                  <PaymentInstructionsPanel payment={payment} lang={lang} />
+
+                  <div className="rounded-lg border border-border/80 bg-background/60 p-4 space-y-3">
+                    <div className="border-b border-border/60 pb-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                        {t("Payment Verification Details", "পেমেন্ট যাচাইকরণের তথ্য")}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {t(
+                          "Enter the payment method, your sender mobile number, and the transaction ID from the confirmation SMS.",
+                          "আপনি যে পদ্ধতিতে ফি পাঠিয়েছেন, আপনার প্রেরক নম্বর এবং ফিরতি কনফার্মেশন মেসেজের ট্রানজেকশন আইডি দিন।"
+                        )}
+                      </p>
+                    </div>
+
+                    <EnumSelect
+                      id="payment-method"
+                      label={t("Payment method", "পেমেন্ট পদ্ধতি")}
+                      value={member.paymentMethod}
+                      options={paymentMethodOptions}
+                      labelFor={tPaymentMethod}
+                      onChange={(paymentMethod) =>
+                        setMember((current) => ({ ...current, paymentMethod }))
+                      }
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <TextField
+                        id="sender-number"
+                        label={t("Sender number", "প্রেরক নম্বর")}
+                        type="tel"
+                        value={member.senderNumber}
+                        onChange={(senderNumber) =>
+                          setMember((current) => ({ ...current, senderNumber }))
+                        }
+                        placeholder="01XXXXXXXXX"
+                        error={errors.senderNumber}
+                        hint={t(
+                          "The mobile number you paid from",
+                          "যে নম্বর থেকে টাকা পাঠানো হয়েছে"
+                        )}
+                      />
+
+                      <TextField
+                        id="transaction-id"
+                        label={t("Transaction id", "ট্রানজেকশন আইডি")}
+                        value={member.transactionId}
+                        onChange={(transactionId) =>
+                          setMember((current) => ({ ...current, transactionId }))
+                        }
+                        placeholder="e.g. 9J8A7B6C5"
+                        error={errors.transactionId}
+                        hint={t(
+                          "TrxID from confirmation SMS",
+                          "কনফার্মেশন এসএমএসের TrxID"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
                   id="whatsapp"

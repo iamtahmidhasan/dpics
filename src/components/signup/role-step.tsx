@@ -13,14 +13,22 @@ const EASE = [0.25, 0.1, 0.25, 1] as const
 
 export function RoleStep({
   role,
+  availableRoles,
   onSelect,
   onContinue,
 }: {
   role: SelfAssignableRole | null
+  availableRoles?: readonly SelfAssignableRole[]
   onSelect: (role: SelfAssignableRole) => void
   onContinue: () => void
 }) {
   const { t } = useLanguage()
+
+  const options = availableRoles
+    ? ROLE_OPTIONS.filter((option) => availableRoles.includes(option.role))
+    : ROLE_OPTIONS
+
+  const isRoleValid = role !== null && options.some((opt) => opt.role === role)
 
   return (
     <div className="space-y-5">
@@ -34,8 +42,16 @@ export function RoleStep({
         </p>
       </div>
 
-      <div role="radiogroup" className="grid gap-3 sm:grid-cols-2">
-        {ROLE_OPTIONS.map((option, index) => {
+      {options.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          {t(
+            "No roles are currently open for registration.",
+            "বর্তমানে নিবন্ধনের জন্য কোনো ভূমিকা উপলব্ধ নেই।"
+          )}
+        </div>
+      ) : (
+        <div role="radiogroup" className="grid gap-3 sm:grid-cols-2">
+          {options.map((option, index) => {
           const Icon = option.icon
           const isSelected = option.role === role
 
@@ -103,9 +119,10 @@ export function RoleStep({
           )
         })}
       </div>
+      )}
 
       <div className="flex justify-end">
-        <Button type="button" size="lg" onClick={onContinue} disabled={!role}>
+        <Button type="button" size="lg" onClick={onContinue} disabled={!isRoleValid}>
           {t("Continue", "পরবর্তী")}
           <ArrowRight data-icon="inline-end" />
         </Button>

@@ -11,6 +11,7 @@ export const MAX_URL_LENGTH = 2048
 export const MAX_BIO_LENGTH = 1000
 export const MAX_EXPERTISE_LENGTH = 500
 export const MAX_IMAGES = 5
+export const MAX_REGISTRATION_FEE = 999_999
 
 const MAX_DATE_LENGTH = 40
 

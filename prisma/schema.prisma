@@ -276,3 +276,27 @@ enum InstructorStatus {
   SUSPENDED
   REJECTED
 }
+
+model Setting {
+  id String @id @default("global")
+
+  isSignupEnabled           Boolean @default(true)
+  isMemberSignupEnabled     Boolean @default(true)
+  isInstructorSignupEnabled Boolean @default(true)
+
+  isRegistrationFeeRequired Boolean @default(false)
+  registrationFee           Int     @default(0)
+
+  bkashPersonalNumber  String?
+  bkashAgentNumber     String?
+  nagadPersonalNumber  String?
+  nagadAgentNumber     String?
+  rocketPersonalNumber String?
+  rocketAgentNumber    String?
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("setting")
+}
+

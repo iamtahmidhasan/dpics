@@ -92,14 +92,33 @@ function StepLabel({ state, children }: { state: StepState; children: React.Reac
   )
 }
 
+export type SignupPolicy = {
+  isSignupEnabled: boolean
+  isMemberSignupEnabled: boolean
+  isInstructorSignupEnabled: boolean
+  availableRoles: readonly SelfAssignableRole[]
+  payment: {
+    isRegistrationFeeRequired: boolean
+    fee: number
+    bkashPersonalNumber: string | null
+    bkashAgentNumber: string | null
+    nagadPersonalNumber: string | null
+    nagadAgentNumber: string | null
+    rocketPersonalNumber: string | null
+    rocketAgentNumber: string | null
+  }
+}
+
 const EMPTY_SEED: UserSeed = { name: "", email: "", phone: "" }
 
 export function SignupWizard({
   startStep = 0,
   initialUser,
+  signupPolicy,
 }: {
   startStep?: number
   initialUser?: UserSeed | null
+  signupPolicy?: SignupPolicy | null
 }) {
   const router = useRouter()
   const { t } = useLanguage()
@@ -246,7 +265,12 @@ export function SignupWizard({
                 ) : null}
 
                 {step === 2 ? (
-                  <RoleStep role={role} onSelect={setRole} onContinue={() => role && goTo(3)} />
+                  <RoleStep
+                    role={role}
+                    availableRoles={signupPolicy?.availableRoles}
+                    onSelect={setRole}
+                    onContinue={() => role && goTo(3)}
+                  />
                 ) : null}
 
                 {step === 3 && role ? (
@@ -254,6 +278,7 @@ export function SignupWizard({
                     // Remounting on role change resets the form fields.
                     key={role}
                     role={role}
+                    payment={signupPolicy?.payment}
                     error={error}
                     isPending={isPending}
                     onError={setError}

@@ -83,6 +83,41 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
         throw ApiError.badRequest("This account already has a society role")
       }
 
+      const settings =
+        "setting" in tx && tx.setting
+          ? await tx.setting.findUnique({
+              where: { id: "global" },
+              select: {
+                isSignupEnabled: true,
+                isMemberSignupEnabled: true,
+                isInstructorSignupEnabled: true,
+                isRegistrationFeeRequired: true,
+                registrationFee: true,
+              },
+            })
+          : null
+
+      if (input.role === Role.MEMBER && settings && !settings.isMemberSignupEnabled) {
+        throw ApiError.badRequest("Member signup is currently closed")
+      }
+
+      if (input.role === Role.INSTRUCTOR && settings && !settings.isInstructorSignupEnabled) {
+        throw ApiError.badRequest("Instructor signup is currently closed")
+      }
+
+      if (
+        input.role === Role.MEMBER &&
+        settings?.isRegistrationFeeRequired &&
+        settings.registrationFee > 0
+      ) {
+        if (!input.member?.senderNumber?.trim()) {
+          throw ApiError.badRequest("Sender number is required")
+        }
+        if (!input.member?.transactionId?.trim()) {
+          throw ApiError.badRequest("Transaction ID is required")
+        }
+      }
+
       if (input.user) {
         const { name, email, phone, images, selectedImageIndex } = input.user
 
