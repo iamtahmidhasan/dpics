@@ -1,25 +1,27 @@
+import type { LocalizedText } from "@/lib/i18n"
+
 export type NavLink = {
-  label: string
+  label: LocalizedText
   href: string
-  description?: string
+  description?: LocalizedText
   image?: string
 }
 
 export type NavColumn = {
-  title?: string
+  title?: LocalizedText
   links: NavLink[]
 }
 
 export type NavItem = {
-  label: string
+  label: LocalizedText
   href: string
   columns: NavColumn[]
 }
 
 export type MobileNavItem = {
-  label: string
+  label: LocalizedText
   href: string
-  children: { label: string; href: string }[]
+  children: { label: LocalizedText; href: string }[]
 }
 
 export type SocialLink = {
@@ -29,162 +31,235 @@ export type SocialLink = {
 
 export const SITE = {
   title: "DPI Computing Society",
-  tagline: "Learn, build, and grow together",
-  description:
-    "A student-led computing community where we learn, build, and grow together through workshops, events, and collaboration.",
+  tagline: {
+    en: "Learn, build, and grow together",
+    bn: "শিখুন, তৈরি করুন, একসাথে এগিয়ে যান",
+  } satisfies LocalizedText,
+  description: {
+    en: "A student-led computing community where we learn, build, and grow together through workshops, events, and collaboration.",
+    bn: "একটি শিক্ষার্থী-পরিচালিত কম্পিউটিং কমিউনিটি, যেখানে ওয়ার্কশপ, ইভেন্ট ও সহযোগিতার মাধ্যমে আমরা শিখি, তৈরি করি এবং একসাথে এগিয়ে যাই।",
+  } satisfies LocalizedText,
   logo: "/dpicslogo.png",
 }
 
 export const CONTACT = {
-  email: "info@dpics.org",
-  address: "Dhaka Government Polytechnic Institute",
+  email: "info@dpics.edu.bd",
+  address: "Daffodil Polytechnic Institute, Dhanmondi, Dhaka",
 }
 
 export const BANNER = {
-  text: "Registration is starting now!",
+  text: {
+    en: "Registration is starting now!",
+    bn: "রেজিস্ট্রেশন শুরু হয়ে গেছে!",
+  } satisfies LocalizedText,
   href: "/about",
   links: [
-    { label: "Events", href: "/events" },
-    { label: "Join", href: "/sign-up" },
+    { label: { en: "Events", bn: "ইভেন্ট" }, href: "/events" },
+    { label: { en: "Join", bn: "যোগদান" }, href: "/sign-up" },
   ],
 }
 
 export const SOCIAL_LINKS: SocialLink[] = []
 
 export const INVOLVE_LINKS: NavLink[] = [
-  { label: "Join the Society", href: "/sign-up" },
-  { label: "Membership", href: "/about#membership" },
-  { label: "Member Sign in", href: "/sign-in" },
-  { label: "Dashboard", href: "/dashboard" },
+  {
+    label: { en: "Join the Society", bn: "সোসাইটিতে যোগ দিন" },
+    href: "/sign-up",
+  },
+  {
+    label: { en: "Membership", bn: "সদস্যপদ" },
+    href: "/about#membership",
+  },
+  {
+    label: { en: "Member Sign in", bn: "সদস্য লগইন" },
+    href: "/sign-in",
+  },
+  {
+    label: { en: "Dashboard", bn: "ড্যাশবোর্ড" },
+    href: "/dashboard",
+  },
 ]
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Home", href: "/", columns: [] },
   {
-    label: "About",
+    label: { en: "Home", bn: "হোম" },
+    href: "/",
+    columns: [],
+  },
+  {
+    label: { en: "About", bn: "পরিচিতি" },
     href: "/about",
     columns: [
       {
-        title: "The Society",
+        title: { en: "The Society", bn: "সংগঠন" },
         links: [
           {
-            label: "Who We Are",
+            label: { en: "Who We Are", bn: "আমরা কারা" },
             href: "/about",
-            description: "Our mission, vision and story",
+            description: {
+              en: "Our mission, vision and story",
+              bn: "আমাদের লক্ষ্য, দৃষ্টিভঙ্গি ও গল্প",
+            },
           },
           {
-            label: "Our Team",
+            label: { en: "Our Team", bn: "আমাদের টিম" },
             href: "/about#team",
-            description: "Meet the executive panel",
+            description: {
+              en: "Meet the executive panel",
+              bn: "কার্যনির্বাহী কমিটির সাথে পরিচিত হন",
+            },
           },
           {
-            label: "Membership",
+            label: { en: "Membership", bn: "সদস্যপদ" },
             href: "/about#membership",
-            description: "How to join the society",
+            description: {
+              en: "How to join the society",
+              bn: "সোসাইটিতে যোগদানের নিয়ম",
+            },
           },
         ],
       },
       {
-        title: "Get Involved",
+        title: { en: "Get Involved", bn: "যুক্ত হোন" },
         links: [
           {
-            label: "Join Us",
+            label: { en: "Join Us", bn: "যোগ দিন" },
             href: "/sign-up",
-            description: "Create your member account",
+            description: {
+              en: "Create your member account",
+              bn: "আপনার সদস্য অ্যাকাউন্ট তৈরি করুন",
+            },
           },
           {
-            label: "Contact",
+            label: { en: "Contact", bn: "যোগাযোগ" },
             href: "/contact",
-            description: "Reach the society",
+            description: {
+              en: "Reach the society",
+              bn: "সোসাইটির সাথে যোগাযোগ করুন",
+            },
           },
         ],
       },
     ],
   },
   {
-    label: "Events",
+    label: { en: "Events", bn: "ইভেন্ট" },
     href: "/events",
     columns: [
       {
-        title: "What We Run",
+        title: { en: "What We Run", bn: "আমাদের আয়োজন" },
         links: [
           {
-            label: "Upcoming Events",
+            label: { en: "Upcoming Events", bn: "আসন্ন ইভেন্ট" },
             href: "/events",
-            description: "Workshops, sessions and contests",
+            description: {
+              en: "Workshops, sessions and contests",
+              bn: "ওয়ার্কশপ, সেশন ও প্রতিযোগিতা",
+            },
           },
           {
-            label: "Past Events",
+            label: { en: "Past Events", bn: "অতীতের ইভেন্ট" },
             href: "/events#past",
-            description: "Recap of what we have hosted",
+            description: {
+              en: "Recap of what we have hosted",
+              bn: "আমাদের আয়োজিত কার্যক্রমের সারসংক্ষেপ",
+            },
           },
           {
-            label: "Competitions",
+            label: { en: "Competitions", bn: "প্রতিযোগিতা" },
             href: "/events#competitions",
-            description: "Inter-department programming contests",
+            description: {
+              en: "Inter-department programming contests",
+              bn: "বিভাগীয় প্রোগ্রামিং প্রতিযোগিতা",
+            },
           },
         ],
       },
     ],
   },
   {
-    label: "Committee",
+    label: { en: "Committee", bn: "কমিটি" },
     href: "/committee",
     columns: [
       {
-        title: "Committees",
+        title: { en: "Committees", bn: "কমিটিসমূহ" },
         links: [
           {
-            label: "Executive",
+            label: { en: "Executive", bn: "কার্যনির্বাহী" },
             href: "/committee#executive",
-            description: "Leadership and coordination",
+            description: {
+              en: "Leadership and coordination",
+              bn: "নেতৃত্ব ও সমন্বয়",
+            },
           },
           {
-            label: "Technical",
+            label: { en: "Technical", bn: "টেকনিক্যাল" },
             href: "/committee#technical",
-            description: "Workshops and technical sessions",
+            description: {
+              en: "Workshops and technical sessions",
+              bn: "ওয়ার্কশপ ও টেকনিক্যাল সেশন",
+            },
           },
           {
-            label: "Events",
+            label: { en: "Events", bn: "ইভেন্ট" },
             href: "/committee#events",
-            description: "Event planning and logistics",
+            description: {
+              en: "Event planning and logistics",
+              bn: "ইভেন্ট পরিকল্পনা ও ব্যবস্থাপনা",
+            },
           },
           {
-            label: "Outreach",
+            label: { en: "Outreach", bn: "প্রচার" },
             href: "/committee#outreach",
-            description: "Campus and community engagement",
+            description: {
+              en: "Campus and community engagement",
+              bn: "ক্যাম্পাস ও কমিউনিটি সংগঠন",
+            },
           },
         ],
       },
     ],
   },
   {
-    label: "Resources",
+    label: { en: "Resources", bn: "রিসোর্স" },
     href: "/resources",
     columns: [
       {
-        title: "Learning",
+        title: { en: "Learning", bn: "শেখা" },
         links: [
           {
-            label: "Roadmaps",
+            label: { en: "Roadmaps", bn: "রোডম্যাপ" },
             href: "/resources#roadmaps",
-            description: "Curated learning paths",
+            description: {
+              en: "Curated learning paths",
+              bn: "বাছাই করা শেখার পথ",
+            },
           },
           {
-            label: "Notes & Slides",
+            label: { en: "Notes & Slides", bn: "নোট ও স্লাইড" },
             href: "/resources#notes",
-            description: "Materials from past sessions",
+            description: {
+              en: "Materials from past sessions",
+              bn: "অতীতের সেশনের উপকরণ",
+            },
           },
           {
-            label: "Problem Sets",
+            label: { en: "Problem Sets", bn: "প্রব্লেম সেট" },
             href: "/resources#problems",
-            description: "Practice and contests archive",
+            description: {
+              en: "Practice and contests archive",
+              bn: "অনুশীলনী ও প্রতিযোগিতার ভাণ্ডার",
+            },
           },
         ],
       },
     ],
   },
-  { label: "Contact", href: "/contact", columns: [] },
+  {
+    label: { en: "Contact", bn: "যোগাযোগ" },
+    href: "/contact",
+    columns: [],
+  },
 ]
 
 export const MOBILE_ITEMS: MobileNavItem[] = NAV_ITEMS.map(
@@ -196,3 +271,17 @@ export const MOBILE_ITEMS: MobileNavItem[] = NAV_ITEMS.map(
     ),
   })
 )
+
+export const FOOTER = {
+  exploreHeading: { en: "Explore", bn: "ঘুরে দেখুন" } satisfies LocalizedText,
+  involveHeading: { en: "Get Involved", bn: "যুক্ত হোন" } satisfies LocalizedText,
+  contactHeading: { en: "Contact", bn: "যোগাযোগ" } satisfies LocalizedText,
+  rights: {
+    en: "All rights reserved.",
+    bn: "সর্বস্বত্ব সংরক্ষিত।",
+  } satisfies LocalizedText,
+  bottomLine: {
+    en: "Learn, build, and grow together.",
+    bn: "শিখুন, তৈরি করুন, একসাথে এগিয়ে যান।",
+  } satisfies LocalizedText,
+}

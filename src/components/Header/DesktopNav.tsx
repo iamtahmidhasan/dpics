@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from 'cn'
+import { useLanguage } from '@/components/language-provider'
 import type { NavItem } from '@/lib/site-config'
 
 const CLOSE_DELAY_MS = 220
@@ -24,6 +25,7 @@ export function DesktopNav({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathname = usePathname()
   const [lastPathname, setLastPathname] = useState(pathname)
+  const { t } = useLanguage()
 
   const clearClose = useCallback(() => {
     if (closeTimer.current) {
@@ -86,7 +88,7 @@ export function DesktopNav({
         )
         return (
           <div
-            key={item.label}
+            key={item.href}
             onMouseEnter={() => open(i)}
             onFocus={() => open(i)}
           >
@@ -97,14 +99,14 @@ export function DesktopNav({
                 aria-expanded={isActive}
                 className={cn(triggerClass, 'flex items-center gap-1')}
               >
-                {item.label}
+                {t(item.label)}
                 <ChevronDown
                   className={cn('size-3.5 transition-transform', isActive && 'rotate-180')}
                 />
               </Link>
             ) : (
               <Link href={item.href} className={triggerClass}>
-                {item.label}
+                {t(item.label)}
               </Link>
             )}
           </div>
@@ -128,12 +130,12 @@ export function DesktopNav({
                 <div key={ci} className="min-w-48 flex-1">
                   {col.title && (
                     <p className="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                      {col.title}
+                      {t(col.title)}
                     </p>
                   )}
                   <ul className="space-y-1">
                     {col.links.map((link) => (
-                      <li key={link.label}>
+                      <li key={link.href}>
                         <Link
                           href={link.href}
                           className="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
@@ -142,7 +144,7 @@ export function DesktopNav({
                             <span className="relative size-11 shrink-0 overflow-hidden rounded-md bg-muted">
                               <Image
                                 src={link.image}
-                                alt={link.label}
+                                alt={t(link.label)}
                                 fill
                                 sizes="44px"
                                 className="object-cover"
@@ -150,10 +152,12 @@ export function DesktopNav({
                             </span>
                           )}
                           <span>
-                            <span className="block text-sm font-medium">{link.label}</span>
+                            <span className="block text-sm font-medium">
+                              {t(link.label)}
+                            </span>
                             {link.description && (
                               <span className="mt-0.5 block text-xs text-muted-foreground">
-                                {link.description}
+                                {t(link.description)}
                               </span>
                             )}
                           </span>

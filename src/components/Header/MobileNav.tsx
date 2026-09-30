@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 import { cn } from 'cn'
+import { useLanguage } from '@/components/language-provider'
 import type { MobileNavItem } from '@/lib/site-config'
 
 const linkClass =
@@ -20,6 +21,7 @@ export function MobileNav({
 }) {
   const pathname = usePathname()
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const { t } = useLanguage()
 
   return (
     <div className="flex flex-col gap-px">
@@ -28,7 +30,7 @@ export function MobileNav({
         const isOpen = openIndex === i
         const isActive = pathname === item.href
         return (
-          <div key={item.label}>
+          <div key={item.href}>
             {hasChildren ? (
               <div className="flex w-full items-center">
                 <Link
@@ -37,12 +39,12 @@ export function MobileNav({
                   data-active={isActive || undefined}
                   className={cn(linkClass, 'flex-1')}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </Link>
                 <button
                   type="button"
                   aria-expanded={isOpen}
-                  aria-label={`Toggle ${item.label} submenu`}
+                  aria-label={t(`Toggle ${item.label.en} submenu`, `${item.label.bn} সাবমেনু টগল করুন`)}
                   onClick={() => setOpenIndex(isOpen ? null : i)}
                   className="flex size-9 shrink-0 items-center justify-center text-sidebar-foreground/60 transition-colors outline-hidden hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:text-sidebar-foreground"
                 >
@@ -61,7 +63,7 @@ export function MobileNav({
                 data-active={isActive || undefined}
                 className={linkClass}
               >
-                {item.label}
+                {t(item.label)}
               </Link>
             )}
 
@@ -74,13 +76,15 @@ export function MobileNav({
               >
                 {item.children.map((child) => (
                   <Link
-                    key={child.label}
+                    key={child.href}
                     href={child.href}
                     onClick={onNavigate}
                     data-active={pathname === child.href || undefined}
                     className={linkClass}
                   >
-                    <span className="text-sidebar-foreground/60">{child.label}</span>
+                    <span className="text-sidebar-foreground/60">
+                      {t(child.label)}
+                    </span>
                   </Link>
                 ))}
               </div>

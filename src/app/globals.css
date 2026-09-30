@@ -131,3 +131,11 @@
     @apply font-sans;
   }
 }
+
+/* Unlayered so it wins over the next/font layer that sets --font-inter.
+   Keyed off a data attribute, not a class, because next-themes owns the
+   <html class> attribute for light/dark and a class change here would make
+   React rewrite that attribute on router.refresh(), resetting the theme. */
+[data-lang="bn"] {
+  --font-inter: var(--font-hind-siliguri);
+}

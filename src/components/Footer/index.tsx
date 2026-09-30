@@ -4,8 +4,11 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { Separator } from "@/components/ui/separator"
+import { makeT } from "@/lib/i18n"
+import { getLang } from "@/lib/i18n-server"
 import {
   CONTACT,
+  FOOTER,
   INVOLVE_LINKS,
   NAV_ITEMS,
   SITE,
@@ -13,14 +16,14 @@ import {
   type NavLink,
 } from "@/lib/site-config"
 
-function FooterLink({ link }: { link: NavLink }) {
+function FooterLink({ link, t }: { link: NavLink; t: ReturnType<typeof makeT> }) {
   return (
     <Link
       href={link.href}
       className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
-      <span>{link.label}</span>
       <ArrowRight className="size-3.5 shrink-0 transition-transform duration-200 group-hover:translate-x-1" />
+      <span>{t(link.label)}</span>
     </Link>
   )
 }
@@ -33,7 +36,9 @@ function FooterHeading({ children }: { children: ReactNode }) {
   )
 }
 
-export function Footer() {
+export async function Footer() {
+  const t = makeT(await getLang())
+
   return (
     <footer className="mt-auto border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
@@ -49,15 +54,13 @@ export function Footer() {
               />
               <span className="flex flex-col leading-tight">
                 <span className="text-base">{SITE.title}</span>
-                {SITE.tagline && (
-                  <span className="text-[10px] font-normal text-muted-foreground">
-                    {SITE.tagline}
-                  </span>
-                )}
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  {t(SITE.tagline)}
+                </span>
               </span>
             </Link>
             <p className="max-w-xs text-sm text-balance text-muted-foreground">
-              {SITE.description}
+              {t(SITE.description)}
             </p>
             {SOCIAL_LINKS.length > 0 && (
               <div className="flex items-center gap-4">
@@ -77,29 +80,29 @@ export function Footer() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <FooterHeading>Explore</FooterHeading>
+            <FooterHeading>{t(FOOTER.exploreHeading)}</FooterHeading>
             <ul className="flex flex-col gap-2.5">
               {NAV_ITEMS.map((item) => (
-                <li key={item.label}>
-                  <FooterLink link={{ label: item.label, href: item.href }} />
+                <li key={item.href}>
+                  <FooterLink link={{ label: item.label, href: item.href }} t={t} />
                 </li>
               ))}
             </ul>
           </div>
 
           <div className="flex flex-col gap-4">
-            <FooterHeading>Get Involved</FooterHeading>
+            <FooterHeading>{t(FOOTER.involveHeading)}</FooterHeading>
             <ul className="flex flex-col gap-2.5">
               {INVOLVE_LINKS.map((link) => (
-                <li key={link.label}>
-                  <FooterLink link={link} />
+                <li key={link.href}>
+                  <FooterLink link={link} t={t} />
                 </li>
               ))}
             </ul>
           </div>
 
           <div className="flex flex-col gap-4">
-            <FooterHeading>Contact</FooterHeading>
+            <FooterHeading>{t(FOOTER.contactHeading)}</FooterHeading>
             <ul className="flex flex-col gap-3">
               <li>
                 <a
@@ -122,9 +125,9 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
           <p>
-            &copy; {new Date().getFullYear()} {SITE.title}. All rights reserved.
+            &copy; {new Date().getFullYear()} {SITE.title}. {t(FOOTER.rights)}
           </p>
-          <p>Learn, build, and grow together.</p>
+          <p>{t(FOOTER.bottomLine)}</p>
         </div>
       </div>
     </footer>

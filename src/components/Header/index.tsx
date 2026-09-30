@@ -5,10 +5,12 @@ import { Menu, User, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { DesktopNav } from '@/components/Header/DesktopNav'
 import { MobileNav } from '@/components/Header/MobileNav'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { useLanguage } from '@/components/language-provider'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,6 +59,7 @@ function getBannerDismissed() {
 
 export function Header() {
   const { data: session } = useSession()
+  const { t } = useLanguage()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
@@ -86,20 +89,20 @@ export function Header() {
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
           {banner.href ? (
             <Link href={banner.href} className="transition-colors hover:text-muted-foreground">
-              {banner.text}
+              {t(banner.text)}
             </Link>
           ) : (
-            <span>{banner.text}</span>
+            <span>{t(banner.text)}</span>
           )}
           {banner.links.length > 0 && (
             <div className="flex items-center gap-4">
               {banner.links.map((link) => (
                 <Link
-                  key={`${link.label}-${link.href}`}
+                  key={`${link.label.en}-${link.href}`}
                   href={link.href}
                   className="transition-colors hover:text-muted-foreground"
                 >
-                  {link.label}
+                  {t(link.label)}
                 </Link>
               ))}
             </div>
@@ -141,12 +144,10 @@ export function Header() {
               className="h-8 w-auto rounded-lg"
             />
             <span className="flex flex-col leading-tight">
-              <span className="text-lg">{SITE.title}</span>
-              {SITE.tagline && (
-                <span className="hidden text-[10px] font-normal text-muted-foreground sm:block">
-                  {SITE.tagline}
-                </span>
-              )}
+              <span className="text-sm">{SITE.title}</span>
+              <span className="text-[10px] font-normal text-muted-foreground">
+                {t(SITE.tagline)}
+              </span>
             </span>
           </Link>
 
@@ -154,6 +155,7 @@ export function Header() {
 
           <div className="flex items-center gap-1">
             <ThemeSwitcher />
+            <LanguageSwitcher />
 
             {user ? (
               <DropdownMenu>
@@ -183,11 +185,11 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" sideOffset={8}>
                   <DropdownMenuItem render={<Link href="/dashboard" />}>
-                    Dashboard
+                    {t("Dashboard", "ড্যাশবোর্ড")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
-                    Sign out
+                    {t("Sign out", "সাইন আউট")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -243,7 +245,7 @@ export function Header() {
                 <div className="flex-1 overflow-y-auto">
                   <div className="p-1">
                     <p className="px-2 pb-2 pt-3 text-xs font-semibold text-sidebar-foreground/60">
-                      Navigation
+                      {t("Navigation", "নেভিগেশন")}
                     </p>
                     <MobileNav
                       items={MOBILE_ITEMS}
