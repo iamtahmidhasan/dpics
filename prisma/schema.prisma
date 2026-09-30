@@ -22,7 +22,7 @@ model User {
   phone         String?     @unique
   isActive      Boolean     @default(true)
   createdAt     DateTime
-  updatedAt     DateTime
+  updatedAt     DateTime      @updatedAt
   sessions      Session[]
   accounts      Account[]
   // System roles

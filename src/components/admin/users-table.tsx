@@ -3,6 +3,7 @@
 import type { VariantProps } from "class-variance-authority"
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
 import { useAdminUsers } from "@/components/admin/use-admin-users"
@@ -191,7 +192,12 @@ export function UsersTable({ initialData }: { initialData: UserListResult }) {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{user.name}</span>
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="font-medium text-foreground underline-offset-4 hover:underline"
+                        >
+                          {user.name}
+                        </Link>
                         <span className="text-muted-foreground">{user.email}</span>
                       </div>
                     </TableCell>
