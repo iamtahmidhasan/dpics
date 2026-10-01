@@ -1,9 +1,8 @@
 import type { VariantProps } from "class-variance-authority"
 
-import { PostCategory, PostStatus } from "@/generated/prisma/enums"
+import { PostStatus } from "@/generated/prisma/enums"
 import type { badgeVariants } from "@/components/ui/badge"
 import type { LocalizedText, TFn } from "@/lib/i18n"
-
 import { humanize } from "@/lib/profile-labels"
 
 type BadgeVariants = NonNullable<VariantProps<typeof badgeVariants>["variant"]>
@@ -16,17 +15,6 @@ const POST_STATUS_LABELS: Record<PostStatus, LocalizedText> = {
   [PostStatus.ARCHIVED]: { en: "Archived", bn: "আর্কাইভ" },
 }
 
-const POST_CATEGORY_LABELS: Record<PostCategory, LocalizedText> = {
-  [PostCategory.ANNOUNCEMENT]: { en: "Announcement", bn: "ঘোষণা" },
-  [PostCategory.TUTORIAL]: { en: "Tutorial", bn: "টিউটোরিয়াল" },
-  [PostCategory.WORKSHOP]: { en: "Workshop", bn: "ওয়ার্কশপ" },
-  [PostCategory.EVENT_RECAP]: { en: "Event recap", bn: "ইভেন্ট রিক্যাপ" },
-  [PostCategory.TECHNICAL]: { en: "Technical", bn: "টেকনিক্যাল" },
-  [PostCategory.RESEARCH]: { en: "Research", bn: "গবেষণা" },
-  [PostCategory.ACHIEVEMENT]: { en: "Achievement", bn: "অর্জন" },
-  [PostCategory.GENERAL]: { en: "General", bn: "সাধারণ" },
-}
-
 export function postStatusLabel(t: TFn): (value: PostStatus) => string {
   return (value) => {
     const label = POST_STATUS_LABELS[value]
@@ -35,11 +23,21 @@ export function postStatusLabel(t: TFn): (value: PostStatus) => string {
   }
 }
 
-export function postCategoryLabel(t: TFn): (value: PostCategory) => string {
-  return (value) => {
-    const label = POST_CATEGORY_LABELS[value]
+export function categoryLabel(
+  category: { name: string; nameBn?: string | null } | null | undefined,
+  lang: string
+): string {
+  if (!category) return ""
+  return lang === "bn" && category.nameBn ? category.nameBn : category.name
+}
 
-    return label ? t(label) : humanize(value)
+export function postCategoryLabel(
+  t: TFn
+): (category: { name: string; nameBn?: string | null } | string | null | undefined) => string {
+  return (cat) => {
+    if (!cat) return ""
+    if (typeof cat === "string") return cat
+    return cat.nameBn ? t(cat.name, cat.nameBn) : cat.name
   }
 }
 
@@ -58,5 +56,3 @@ export function postStatusBadgeVariant(value: PostStatus): BadgeVariants {
       return "secondary"
   }
 }
-
-export { POST_CATEGORY_LABELS, POST_STATUS_LABELS, humanize }

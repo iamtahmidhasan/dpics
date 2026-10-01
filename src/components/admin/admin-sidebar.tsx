@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, FileText, Settings, Shield, Users } from "lucide-react"
+import { Award, FileText, FolderTree, Settings, Shield, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -27,6 +27,11 @@ const NAV_ITEMS = [
     href: "/admin/posts" as const,
     label: { en: "Posts", bn: "পোস্ট" },
     icon: FileText,
+  },
+  {
+    href: "/admin/category" as const,
+    label: { en: "Categories", bn: "ক্যাটাগরি" },
+    icon: FolderTree,
   },
   {
     href: "/admin/settings" as const,

@@ -26,8 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PostCategory, PostStatus } from "@/generated/prisma/enums"
-import { POST_CATEGORY_LABELS, postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
+import { PostStatus } from "@/generated/prisma/enums"
+import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import { cn } from "cn"
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -42,14 +42,31 @@ const STATUS_TABS: { value: string; label: { en: string; bn: string } }[] = [
   { value: PostStatus.ARCHIVED, label: { en: "Archived", bn: "আর্কাইভ" } },
 ]
 
+type CategoryItem = {
+  id: string
+  name: string
+  nameBn: string | null
+  slug: string
+}
+
 export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayload }) {
   const { t, lang } = useLanguage()
   const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState(ALL)
   const [category, setCategory] = useState(ALL)
+  const [categoryList, setCategoryList] = useState<CategoryItem[]>([])
   const [page, setPage] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    fetch("/api/categories?type=post")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setCategoryList(data)
+      })
+      .catch(() => {})
+  }, [])
 
   const { data, isLoading, error } = useAdminPosts(
     { page, search, status, category, refreshKey },
@@ -113,8 +130,7 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
             <Input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder={t("Search title or author", "শিরোনাম বা লেখক খুঁজুন")}
-              aria-label={t("Search posts", "পোস্ট খুঁজুন")}
+              placeholder={t("Filter by title or tag…", "শিরোনাম বা ট্যাগ দিয়ে খুঁজুন…")}
               className="pl-7"
             />
           </div>
@@ -131,9 +147,9 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t("All categories", "সব বিভাগ")}</SelectItem>
-              {Object.values(PostCategory).map((value) => (
-                <SelectItem key={value} value={value}>
-                  {t(POST_CATEGORY_LABELS[value])}
+              {categoryList.map((cat) => (
+                <SelectItem key={cat.id} value={cat.slug}>
+                  {lang === "bn" && cat.nameBn ? `${cat.nameBn} (${cat.name})` : cat.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -185,10 +201,12 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
                   data.posts.map((post) => (
                     <TableRow key={post.id}>
                       <TableCell className="max-w-72">
-                        <span className="line-clamp-1 font-medium">{post.title}</span>
+                        <span className="line-clamp-1 font-medium">
+                          {lang === "bn" && post.titleBn ? `${post.titleBn} (${post.title})` : post.title}
+                        </span>
                         {post.category ? (
                           <span className="text-muted-foreground text-[0.6875rem]">
-                            {t(POST_CATEGORY_LABELS[post.category])}
+                            {lang === "bn" && post.category.nameBn ? post.category.nameBn : post.category.name}
                           </span>
                         ) : null}
                       </TableCell>
@@ -218,11 +236,9 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
                       <TableCell className="text-right">
                         <Link
                           href={`/admin/posts/${post.id}`}
-                          className={buttonVariants({ variant: "outline", size: "xs" })}
+                          className={buttonVariants({ variant: "ghost", size: "xs" })}
                         >
-                          {post.status === PostStatus.PENDING
-                            ? t("Review", "পর্যালোচনা")
-                            : t("Edit", "সম্পাদনা")}
+                          {t("Edit", "সম্পাদনা")}
                         </Link>
                       </TableCell>
                     </TableRow>
@@ -233,29 +249,29 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground text-[0.6875rem]">
-            {t(`${data.total} posts`, `${data.total}টি পোস্ট`)}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {t(
+              `Showing ${(data.page - 1) * data.pageSize + (data.posts.length > 0 ? 1 : 0)}–${(data.page - 1) * data.pageSize + data.posts.length} of ${data.total}`,
+              `${data.total} টির মধ্যে ${(data.page - 1) * data.pageSize + (data.posts.length > 0 ? 1 : 0)}–${(data.page - 1) * data.pageSize + data.posts.length} দেখানো হচ্ছে`
+            )}
           </span>
 
           <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              disabled={!hasPrev}
+              size="xs"
+              disabled={!hasPrev || isLoading}
               onClick={() => setPage((value) => Math.max(1, value - 1))}
             >
               {t("Previous", "আগের")}
             </Button>
-            <span className="text-muted-foreground px-1 text-[0.6875rem]">
-              {data.page} / {Math.max(1, data.totalPages)}
-            </span>
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              disabled={!hasNext}
+              size="xs"
+              disabled={!hasNext || isLoading}
               onClick={() => setPage((value) => value + 1)}
             >
               {t("Next", "পরের")}

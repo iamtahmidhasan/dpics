@@ -34,11 +34,12 @@ const REQUIRED_MODELS = [
   "verification",
   "setting",
   "post",
+  "category",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {
   Setting: "isAutoStudentIdEnabled",
-  Post: "readingMinutes",
+  Post: "categoryId",
 };
 
 type RuntimeDataModel = {

@@ -1,7 +1,6 @@
-import { PostCategory, PostStatus } from "@/generated/prisma/enums"
+import { PostStatus } from "@/generated/prisma/enums"
 import type { PostListFilters } from "@/lib/services/post.service"
 
-const POST_CATEGORY_VALUES = Object.values(PostCategory) as PostCategory[]
 const POST_STATUS_VALUES = Object.values(PostStatus) as PostStatus[]
 
 function firstValue(value: string | string[] | undefined | null): string {
@@ -19,8 +18,8 @@ function asPositiveInt(value: string): number | undefined {
 
 /**
  * Read filters are lenient on purpose: they arrive from a url, so an unknown
- * category or status is ignored rather than turned into a 400. Writes go
- * through the strict parsers in the service.
+ * status is ignored rather than turned into a 400. Writes go through the strict
+ * parsers in the service.
  */
 function asEnum<T extends string>(
   value: string,
@@ -33,8 +32,9 @@ function asEnum<T extends string>(
 
 export function toPostCategoryFilter(
   value: string | string[] | undefined | null
-): PostCategory | null {
-  return asEnum(firstValue(value), POST_CATEGORY_VALUES)
+): string | null {
+  const val = firstValue(value).trim()
+  return val.length > 0 && val !== "all" && val !== "none" ? val : null
 }
 
 export function toPostStatusFilter(

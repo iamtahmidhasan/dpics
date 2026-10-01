@@ -1,7 +1,7 @@
 import "server-only"
 
 import { Prisma } from "@/generated/prisma/client"
-import { PostCategory, PostStatus } from "@/generated/prisma/enums"
+import { PostStatus } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
 import { deriveExcerpt, estimateReadingMinutes, stripMarkdown } from "@/lib/markdown"
 import prisma from "@/lib/prisma"
@@ -10,7 +10,6 @@ import {
   isRecord,
   toBoolean,
   toEnum,
-  toOptionalEnum,
   toOptionalText,
   toText,
   toUrl,
@@ -30,7 +29,6 @@ import {
 import { toPostSlug } from "@/lib/post-slug"
 
 export const POST_STATUSES = Object.values(PostStatus) as PostStatus[]
-export const POST_CATEGORIES = Object.values(PostCategory) as PostCategory[]
 
 export {
   DEFAULT_POST_PAGE_SIZE,
@@ -55,13 +53,23 @@ export type PostAuthor = {
   avatar: string | null
 }
 
+export type PostCategoryInfo = {
+  id: string
+  name: string
+  nameBn: string | null
+  slug: string
+}
+
 export type PostSummary = {
   id: string
   title: string
+  titleBn: string | null
   slug: string
   excerpt: string | null
+  excerptBn: string | null
   coverImage: string | null
-  category: PostCategory | null
+  categoryId: string | null
+  category: PostCategoryInfo | null
   tags: string[]
   status: PostStatus
   isFeatured: boolean
@@ -77,6 +85,7 @@ export type MyPostSummary = Omit<PostSummary, "author">
 
 export type MyPostDetail = MyPostSummary & {
   content: string
+  contentBn: string | null
   ogImage: string | null
   seoTitle: string | null
   seoDescription: string | null
@@ -115,7 +124,7 @@ export type PostActor = {
 export type PostListFilters = {
   page?: number
   pageSize?: number
-  category?: PostCategory | null
+  category?: string | null
   tag?: string | null
   q?: string | null
   status?: PostStatus | null
@@ -132,12 +141,15 @@ export type PostAdminUpdateInput = Partial<PostInput> & {
 
 export type PostInput = {
   title: string
+  titleBn: string | null
   slug: string
   excerpt: string | null
+  excerptBn: string | null
   content: string
+  contentBn: string | null
   coverImage: string | null
   ogImage: string | null
-  category: PostCategory | null
+  categoryId: string | null
   tags: string[]
   isFeatured: boolean
   seoTitle: string | null
@@ -145,8 +157,7 @@ export type PostInput = {
 }
 
 // ============================================================================
-// Row shapes — hand written so the mappers stay typed without importing the
-// generated payload types into every call site.
+// Row shapes
 // ============================================================================
 
 type AuthorRow = {
@@ -157,15 +168,26 @@ type AuthorRow = {
   selactedImg: string | null
 }
 
+type CategoryRow = {
+  id: string
+  name: string
+  nameBn: string | null
+  slug: string
+}
+
 type PostRow = {
   id: string
   title: string
+  titleBn: string | null
   slug: string
   excerpt: string | null
+  excerptBn: string | null
   content: string
+  contentBn: string | null
   coverImage: string | null
   ogImage: string | null
-  category: PostCategory | null
+  categoryId: string | null
+  category?: CategoryRow | null
   tags: string[]
   isFeatured: boolean
   status: PostStatus
@@ -192,6 +214,13 @@ const AUTHOR_SELECT = {
   selactedImg: true,
 } satisfies Prisma.UserSelect
 
+const CATEGORY_SELECT = {
+  id: true,
+  name: true,
+  nameBn: true,
+  slug: true,
+} satisfies Prisma.CategorySelect
+
 // ============================================================================
 // Small helpers
 // ============================================================================
@@ -200,12 +229,6 @@ function toIso(value: Date | null): string | null {
   return value ? value.toISOString() : null
 }
 
-/**
- * Tags are lowercased, hyphenated, de-duplicated and bounded so `?tag=` filters
- * stay predictable. The form already normalises as you type, but the API has to
- * be safe on its own: a hand written `POST` body must not be able to smuggle in
- * a tag with spaces or a `#` prefix.
- */
 function toTags(value: unknown): string[] {
   if (!Array.isArray(value)) return []
 
@@ -264,10 +287,20 @@ function mapSummary(row: PostRowWithAuthor): PostSummary {
   return {
     id: row.id,
     title: row.title,
+    titleBn: row.titleBn,
     slug: row.slug,
     excerpt: row.excerpt,
+    excerptBn: row.excerptBn,
     coverImage: row.coverImage,
-    category: row.category,
+    categoryId: row.categoryId,
+    category: row.category
+      ? {
+          id: row.category.id,
+          name: row.category.name,
+          nameBn: row.category.nameBn,
+          slug: row.category.slug,
+        }
+      : null,
     tags: row.tags,
     status: row.status,
     isFeatured: row.isFeatured,
@@ -284,10 +317,20 @@ function mapMySummary(row: PostRow): MyPostSummary {
   return {
     id: row.id,
     title: row.title,
+    titleBn: row.titleBn,
     slug: row.slug,
     excerpt: row.excerpt,
+    excerptBn: row.excerptBn,
     coverImage: row.coverImage,
-    category: row.category,
+    categoryId: row.categoryId,
+    category: row.category
+      ? {
+          id: row.category.id,
+          name: row.category.name,
+          nameBn: row.category.nameBn,
+          slug: row.category.slug,
+        }
+      : null,
     tags: row.tags,
     status: row.status,
     isFeatured: row.isFeatured,
@@ -303,6 +346,7 @@ function mapMyDetail(row: PostRow): MyPostDetail {
   return {
     ...mapMySummary(row),
     content: row.content,
+    contentBn: row.contentBn,
     ogImage: row.ogImage,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
@@ -312,29 +356,36 @@ function mapMyDetail(row: PostRow): MyPostDetail {
 }
 
 // ============================================================================
-// Parsers — every untrusted value goes through src/lib/validation.ts
+// Parsers
 // ============================================================================
 
 export function parsePostInput(body: unknown): PostInput {
   if (!isRecord(body)) throw ApiError.badRequest("Invalid request body")
 
   const title = toText(body.title, "Title", { max: MAX_POST_TITLE_LENGTH })
+  const titleBn = toOptionalText(body.titleBn, "Title (Bangla)", MAX_POST_TITLE_LENGTH)
   const content = toText(body.content, "Content", { max: MAX_POST_CONTENT_LENGTH })
+  const contentBn = toOptionalText(body.contentBn, "Content (Bangla)", MAX_POST_CONTENT_LENGTH)
   const rawSlug = toOptionalText(body.slug, "Slug", MAX_POST_SLUG_LENGTH)
   const slug = rawSlug ? toPostSlug(rawSlug) : toPostSlug(title)
 
   if (!slug) throw ApiError.badRequest("Slug is required")
 
+  const rawCat = body.categoryId !== undefined ? body.categoryId : body.category
+  const categoryId = rawCat && rawCat !== "none" ? toOptionalText(rawCat, "Category", 50) : null
+
   return {
     title,
+    titleBn,
     slug,
     excerpt: toOptionalText(body.excerpt, "Excerpt", MAX_POST_EXCERPT_LENGTH),
+    excerptBn: toOptionalText(body.excerptBn, "Excerpt (Bangla)", MAX_POST_EXCERPT_LENGTH),
     content,
+    contentBn,
     coverImage: toUrl(body.coverImage, "Cover image"),
     ogImage: toUrl(body.ogImage, "OG image"),
-    category: toOptionalEnum(body.category, "Category", POST_CATEGORIES),
+    categoryId,
     tags: toTags(body.tags),
-    // Authors never flag their own post as featured; that is an admin decision.
     isFeatured: false,
     seoTitle: toOptionalText(body.seoTitle, "SEO title", MAX_POST_TITLE_LENGTH),
     seoDescription: toOptionalText(
@@ -345,11 +396,6 @@ export function parsePostInput(body: unknown): PostInput {
   }
 }
 
-/**
- * Partial update. Absent keys stay `undefined` so Prisma leaves the stored value
- * alone. There is deliberately no `status` here: the workflow is only ever
- * moved through `submitPost`, `withdrawPost` and `reviewPost`.
- */
 export function parsePostUpdateInput(body: unknown): Partial<PostInput> {
   if (!isRecord(body)) throw ApiError.badRequest("Invalid request body")
 
@@ -359,11 +405,13 @@ export function parsePostUpdateInput(body: unknown): Partial<PostInput> {
     update.title = toText(body.title, "Title", { max: MAX_POST_TITLE_LENGTH })
   }
 
+  if (body.titleBn !== undefined) {
+    update.titleBn = toOptionalText(body.titleBn, "Title (Bangla)", MAX_POST_TITLE_LENGTH)
+  }
+
   if (body.slug !== undefined) {
     const slug = toPostSlug(toOptionalText(body.slug, "Slug", MAX_POST_SLUG_LENGTH) ?? "")
-
     if (!slug) throw ApiError.badRequest("Slug is required")
-
     update.slug = slug
   }
 
@@ -371,8 +419,16 @@ export function parsePostUpdateInput(body: unknown): Partial<PostInput> {
     update.excerpt = toOptionalText(body.excerpt, "Excerpt", MAX_POST_EXCERPT_LENGTH)
   }
 
+  if (body.excerptBn !== undefined) {
+    update.excerptBn = toOptionalText(body.excerptBn, "Excerpt (Bangla)", MAX_POST_EXCERPT_LENGTH)
+  }
+
   if (body.content !== undefined) {
     update.content = toText(body.content, "Content", { max: MAX_POST_CONTENT_LENGTH })
+  }
+
+  if (body.contentBn !== undefined) {
+    update.contentBn = toOptionalText(body.contentBn, "Content (Bangla)", MAX_POST_CONTENT_LENGTH)
   }
 
   if (body.coverImage !== undefined) {
@@ -383,8 +439,9 @@ export function parsePostUpdateInput(body: unknown): Partial<PostInput> {
     update.ogImage = toUrl(body.ogImage, "OG image")
   }
 
-  if (body.category !== undefined) {
-    update.category = toOptionalEnum(body.category, "Category", POST_CATEGORIES)
+  if (body.categoryId !== undefined || body.category !== undefined) {
+    const rawCat = body.categoryId !== undefined ? body.categoryId : body.category
+    update.categoryId = rawCat && rawCat !== "none" ? toOptionalText(rawCat, "Category", 50) : null
   }
 
   if (body.tags !== undefined) {
@@ -406,7 +463,6 @@ export function parsePostUpdateInput(body: unknown): Partial<PostInput> {
   return update
 }
 
-/** Admin payloads may additionally set `status` and `isFeatured`. */
 export function parsePostAdminInput(body: unknown): PostAdminUpdateInput {
   const update = parsePostUpdateInput(body) as PostAdminUpdateInput
   const fields = body as Record<string, unknown>
@@ -437,12 +493,6 @@ export function parseReviewInput(body: unknown): PostReviewInput {
 // Workflow guards
 // ============================================================================
 
-/**
- * The core rule: once a post has been approved it is frozen for its author.
- * Members and instructors may only edit or delete while the post is still inside
- * the review loop (DRAFT / PENDING / REJECTED) — archiving a live post is an
- * admin action. Admins bypass the gate entirely.
- */
 function assertCanModifyOwnPost(status: PostStatus, actor: PostActor): void {
   if (actor.isAdmin) return
 
@@ -464,7 +514,10 @@ function assertOwnership(authorId: string, actor: PostActor): void {
 async function findPostRow(id: string): Promise<PostRow> {
   if (!id) throw ApiError.badRequest("Post id is required")
 
-  const post = await prisma.post.findUnique({ where: { id } })
+  const post = await prisma.post.findUnique({
+    where: { id },
+    include: { category: { select: CATEGORY_SELECT } },
+  })
 
   if (!post) throw ApiError.notFound("Post not found")
 
@@ -476,7 +529,10 @@ async function findPostRowWithAuthor(id: string): Promise<PostRowWithAuthor> {
 
   const post = await prisma.post.findUnique({
     where: { id },
-    include: { author: { select: AUTHOR_SELECT } },
+    include: {
+      author: { select: AUTHOR_SELECT },
+      category: { select: CATEGORY_SELECT },
+    },
   })
 
   if (!post) throw ApiError.notFound("Post not found")
@@ -492,24 +548,28 @@ async function assertSlugAvailable(slug: string, ownId?: string): Promise<void> 
   }
 }
 
-/** `publishedAt` only ever holds a value while the post is actually live. */
 function publishedAtFor(status: PostStatus, current: Date | null): Date | null {
   return status === PostStatus.PUBLISHED ? (current ?? new Date()) : null
 }
 
-/** Keeps the derived excerpt and reading time in step with the body. */
 function derivedFields(
   input: Partial<PostInput>
-): { excerpt?: string | null; readingMinutes?: number } {
-  if (input.content === undefined) return {}
+): { excerpt?: string | null; excerptBn?: string | null; readingMinutes?: number } {
+  const result: { excerpt?: string | null; excerptBn?: string | null; readingMinutes?: number } = {}
 
-  return {
-    // Only re-derive when the author did not supply their own excerpt.
-    ...(input.excerpt === undefined
-      ? { excerpt: deriveExcerpt(input.content, null, MAX_POST_EXCERPT_LENGTH) }
-      : {}),
-    readingMinutes: estimateReadingMinutes(input.content),
+  if (input.content !== undefined) {
+    if (input.excerpt === undefined) {
+      result.excerpt = deriveExcerpt(input.content, null, MAX_POST_EXCERPT_LENGTH)
+    }
+    const combinedContent = `${input.content}\n\n${input.contentBn ?? ""}`
+    result.readingMinutes = estimateReadingMinutes(combinedContent)
   }
+
+  if (input.contentBn && input.excerptBn === undefined) {
+    result.excerptBn = deriveExcerpt(input.contentBn, null, MAX_POST_EXCERPT_LENGTH)
+  }
+
+  return result
 }
 
 // ============================================================================
@@ -523,15 +583,26 @@ export async function listPublishedPosts(
   const pageSize = clampPageSize(filters.pageSize)
   const term = filters.q?.trim()
 
+  const categoryWhere: Prisma.PostWhereInput = filters.category
+    ? {
+        OR: [
+          { categoryId: filters.category },
+          { category: { slug: filters.category } },
+        ],
+      }
+    : {}
+
   const where: Prisma.PostWhereInput = {
     status: PostStatus.PUBLISHED,
-    ...(filters.category ? { category: filters.category } : {}),
+    ...categoryWhere,
     ...(filters.tag ? { tags: { has: filters.tag.toLowerCase() } } : {}),
     ...(term
       ? {
           OR: [
             { title: { contains: term, mode: "insensitive" as const } },
+            { titleBn: { contains: term, mode: "insensitive" as const } },
             { excerpt: { contains: term, mode: "insensitive" as const } },
+            { excerptBn: { contains: term, mode: "insensitive" as const } },
             { tags: { has: term.toLowerCase() } },
           ],
         }
@@ -544,7 +615,10 @@ export async function listPublishedPosts(
       orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { author: { select: AUTHOR_SELECT } },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        category: { select: CATEGORY_SELECT },
+      },
     }),
     prisma.post.count({ where }),
   ])
@@ -557,7 +631,10 @@ export async function getPublishedPostBySlug(slug: string): Promise<PublicPostDe
 
   const post = await prisma.post.findFirst({
     where: { slug, status: PostStatus.PUBLISHED },
-    include: { author: { select: AUTHOR_SELECT } },
+    include: {
+      author: { select: AUTHOR_SELECT },
+      category: { select: CATEGORY_SELECT },
+    },
   })
 
   if (!post) throw ApiError.notFound("Post not found")
@@ -570,22 +647,37 @@ export async function getPublishedPostBySlug(slug: string): Promise<PublicPostDe
 
 /** Category and tag facets for the `/posts` filter chips. */
 export async function listPostFacets(): Promise<{
-  categories: { category: PostCategory; count: number }[]
+  categories: { id: string; name: string; nameBn: string | null; slug: string; count: number }[]
   tags: { tag: string; count: number }[]
 }> {
-  // One narrow query beats two aggregations here: the published set is small,
-  // and counting in JS keeps the nullable enum and the array column in one pass.
   const rows = await prisma.post.findMany({
     where: { status: PostStatus.PUBLISHED },
-    select: { category: true, tags: true },
+    select: {
+      category: { select: CATEGORY_SELECT },
+      tags: true,
+    },
   })
 
-  const categoryCounts = new Map<PostCategory, number>()
+  const categoryMap = new Map<
+    string,
+    { id: string; name: string; nameBn: string | null; slug: string; count: number }
+  >()
   const tagCounts = new Map<string, number>()
 
   for (const row of rows) {
     if (row.category) {
-      categoryCounts.set(row.category, (categoryCounts.get(row.category) ?? 0) + 1)
+      const existing = categoryMap.get(row.category.id)
+      if (existing) {
+        existing.count += 1
+      } else {
+        categoryMap.set(row.category.id, {
+          id: row.category.id,
+          name: row.category.name,
+          nameBn: row.category.nameBn,
+          slug: row.category.slug,
+          count: 1,
+        })
+      }
     }
 
     for (const tag of row.tags) {
@@ -594,9 +686,7 @@ export async function listPostFacets(): Promise<{
   }
 
   return {
-    categories: [...categoryCounts.entries()]
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count),
+    categories: [...categoryMap.values()].sort((a, b) => b.count - a.count),
     tags: [...tagCounts.entries()]
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
@@ -611,14 +701,24 @@ export async function listPostsForAdmin(
   const pageSize = clampPageSize(filters.pageSize)
   const term = filters.q?.trim()
 
+  const categoryWhere: Prisma.PostWhereInput = filters.category
+    ? {
+        OR: [
+          { categoryId: filters.category },
+          { category: { slug: filters.category } },
+        ],
+      }
+    : {}
+
   const where: Prisma.PostWhereInput = {
     ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.category ? { category: filters.category } : {}),
+    ...categoryWhere,
     ...(filters.tag ? { tags: { has: filters.tag.toLowerCase() } } : {}),
     ...(term
       ? {
           OR: [
             { title: { contains: term, mode: "insensitive" as const } },
+            { titleBn: { contains: term, mode: "insensitive" as const } },
             { slug: { contains: term, mode: "insensitive" as const } },
             { tags: { has: term.toLowerCase() } },
             { author: { name: { contains: term, mode: "insensitive" as const } } },
@@ -633,7 +733,10 @@ export async function listPostsForAdmin(
       orderBy: [{ updatedAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { author: { select: AUTHOR_SELECT } },
+      include: {
+        author: { select: AUTHOR_SELECT },
+        category: { select: CATEGORY_SELECT },
+      },
     }),
     prisma.post.count({ where }),
   ])
@@ -667,14 +770,24 @@ export async function getMyPosts(
   const pageSize = clampPageSize(filters.pageSize)
   const term = filters.q?.trim()
 
+  const categoryWhere: Prisma.PostWhereInput = filters.category
+    ? {
+        OR: [
+          { categoryId: filters.category },
+          { category: { slug: filters.category } },
+        ],
+      }
+    : {}
+
   const where: Prisma.PostWhereInput = {
     authorId: userId,
     ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.category ? { category: filters.category } : {}),
+    ...categoryWhere,
     ...(term
       ? {
           OR: [
             { title: { contains: term, mode: "insensitive" as const } },
+            { titleBn: { contains: term, mode: "insensitive" as const } },
             { tags: { has: term.toLowerCase() } },
           ],
         }
@@ -687,6 +800,9 @@ export async function getMyPosts(
       orderBy: [{ updatedAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: {
+        category: { select: CATEGORY_SELECT },
+      },
     }),
     prisma.post.count({ where }),
   ])
@@ -702,7 +818,6 @@ export async function getMyPost(id: string, actor: PostActor): Promise<MyPostDet
   return mapMyDetail(row)
 }
 
-/** Per status totals for the "my posts" and admin metric cards. */
 export async function getPostCounts(
   userId?: string
 ): Promise<Record<PostStatus, number> & { total: number }> {
@@ -740,22 +855,30 @@ export async function createPost(
   await assertSlugAvailable(input.slug)
 
   try {
+    const combinedContent = `${input.content}\n\n${input.contentBn ?? ""}`
     const created = await prisma.post.create({
       data: {
         title: input.title,
+        titleBn: input.titleBn,
         slug: input.slug,
         excerpt: deriveExcerpt(input.content, input.excerpt, MAX_POST_EXCERPT_LENGTH),
+        excerptBn: input.contentBn
+          ? deriveExcerpt(input.contentBn, input.excerptBn, MAX_POST_EXCERPT_LENGTH)
+          : input.excerptBn,
         content: input.content,
+        contentBn: input.contentBn,
         coverImage: input.coverImage,
         ogImage: input.ogImage,
-        category: input.category,
+        categoryId: input.categoryId,
         tags: input.tags,
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
-        readingMinutes: estimateReadingMinutes(input.content),
+        readingMinutes: estimateReadingMinutes(combinedContent),
         authorId: actor.userId,
-        // Authors always start from DRAFT; publishing is an admin decision.
         status: PostStatus.DRAFT,
+      },
+      include: {
+        category: { select: CATEGORY_SELECT },
       },
     })
 
@@ -783,7 +906,10 @@ export async function updatePost(
     await assertSlugAvailable(input.slug, existing.id)
   }
 
-  await prisma.post.update({ where: { id }, data: { ...input, ...derivedFields(input) } })
+  await prisma.post.update({
+    where: { id },
+    data: { ...input, ...derivedFields(input) },
+  })
 
   return getMyPost(id, actor)
 }
@@ -797,7 +923,6 @@ export async function deletePost(id: string, actor: PostActor): Promise<void> {
   await prisma.post.delete({ where: { id } })
 }
 
-/** DRAFT / REJECTED -> PENDING. */
 export async function submitPost(id: string, actor: PostActor): Promise<MyPostDetail> {
   const existing = await findPostRow(id)
 
@@ -808,7 +933,7 @@ export async function submitPost(id: string, actor: PostActor): Promise<MyPostDe
     throw ApiError.badRequest("Only a draft or a rejected post can be sent for review")
   }
 
-  if (!stripMarkdown(existing.content)) {
+  if (!stripMarkdown(existing.content) && (!existing.contentBn || !stripMarkdown(existing.contentBn))) {
     throw ApiError.badRequest("Add some content before sending this post for review")
   }
 
@@ -817,7 +942,6 @@ export async function submitPost(id: string, actor: PostActor): Promise<MyPostDe
     data: {
       status: PostStatus.PENDING,
       submittedAt: new Date(),
-      // The rejection is resolved by the resubmission, not erased for good.
       rejectionReason: null,
     },
   })
@@ -825,7 +949,6 @@ export async function submitPost(id: string, actor: PostActor): Promise<MyPostDe
   return getMyPost(id, actor)
 }
 
-/** PENDING -> DRAFT, pulling the post back out of the review queue. */
 export async function withdrawPost(id: string, actor: PostActor): Promise<MyPostDetail> {
   const existing = await findPostRow(id)
 
@@ -857,26 +980,30 @@ export async function createPostAsAdmin(
   await assertSlugAvailable(input.slug)
 
   const now = new Date()
+  const combinedContent = `${input.content}\n\n${input.contentBn ?? ""}`
 
   try {
     const created = await prisma.post.create({
       data: {
         title: input.title,
+        titleBn: input.titleBn,
         slug: input.slug,
         excerpt: deriveExcerpt(input.content, input.excerpt, MAX_POST_EXCERPT_LENGTH),
+        excerptBn: input.contentBn
+          ? deriveExcerpt(input.contentBn, input.excerptBn, MAX_POST_EXCERPT_LENGTH)
+          : input.excerptBn,
         content: input.content,
+        contentBn: input.contentBn,
         coverImage: input.coverImage,
         ogImage: input.ogImage,
-        category: input.category,
+        categoryId: input.categoryId,
         tags: input.tags,
         isFeatured: input.isFeatured,
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
-        readingMinutes: estimateReadingMinutes(input.content),
+        readingMinutes: estimateReadingMinutes(combinedContent),
         authorId: actor.userId,
         publishedAt: publishedAtFor(status, null),
-        // An admin writing on the society's behalf skips the queue, so the
-        // review stamps are filled in to match.
         submittedAt: status === PostStatus.PENDING ? now : null,
         reviewedAt: status === PostStatus.PUBLISHED ? now : null,
         reviewedById: status === PostStatus.PUBLISHED ? actor.userId : null,
@@ -921,7 +1048,6 @@ export async function updatePostAsAdmin(
         : {
             status,
             publishedAt: publishedAtFor(status, existing.publishedAt),
-            // Publishing resolves an earlier rejection; other moves keep it.
             ...(status === PostStatus.PUBLISHED
               ? { rejectionReason: null, reviewedAt: new Date(), reviewedById: actor.userId }
               : {}),
@@ -932,15 +1058,11 @@ export async function updatePostAsAdmin(
   return getPostDetailForAdmin(id)
 }
 
-/** The moderation decision: PENDING -> PUBLISHED, or PENDING -> REJECTED. */
 export async function reviewPost(
   id: string,
   input: PostReviewInput,
   actor: PostActor
 ): Promise<PostDetail> {
-  // The route handlers already require an admin session, but the service is the
-  // real boundary: without this, an author could approve their own submission
-  // through any caller that reaches it.
   if (!actor.isAdmin) {
     throw ApiError.forbidden("Only an admin can review a post")
   }

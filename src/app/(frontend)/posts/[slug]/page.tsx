@@ -1,10 +1,10 @@
-import { CalendarDays, Clock3, Home, Tag as TagIcon } from "lucide-react"
+import { CalendarDays, Clock3, Home } from "lucide-react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { MarkdownContent } from "@/components/posts/markdown-content"
+import { BilingualPostContent } from "@/components/posts/bilingual-post-content"
 import { PostCard } from "@/components/posts/post-card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { deriveExcerpt, headingAnchors, stripMarkdown } from "@/lib/markdown"
-import { POST_CATEGORY_LABELS } from "@/lib/post-labels"
 import { MAX_POST_SEO_DESCRIPTION_LENGTH } from "@/lib/post-constants"
 import {
   getPublishedPostBySlug,
@@ -34,15 +33,16 @@ export async function generateStaticParams() {
 
 function buildDescription(post: {
   excerpt: string | null
+  excerptBn: string | null
   content: string
+  contentBn: string | null
   seoDescription: string | null
-}): string {
-  return (
-    post.seoDescription?.trim() ||
-    post.excerpt?.trim() ||
-    deriveExcerpt(post.content, null, MAX_POST_SEO_DESCRIPTION_LENGTH) ||
-    ""
-  )
+}, isBn: boolean): string {
+  if (post.seoDescription?.trim()) return post.seoDescription.trim()
+  if (isBn && post.excerptBn?.trim()) return post.excerptBn.trim()
+  if (!isBn && post.excerpt?.trim()) return post.excerpt.trim()
+  const contentToDerive = isBn && post.contentBn ? post.contentBn : post.content
+  return deriveExcerpt(contentToDerive, null, MAX_POST_SEO_DESCRIPTION_LENGTH) || ""
 }
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   try {
     const post = await getPublishedPostBySlug(slug)
     const title = post.seoTitle?.trim() || post.title
-    const description = buildDescription(post)
+    const description = buildDescription(post, false)
     const url = postPath(post.slug)
     const image = post.ogImage ?? post.coverImage
 
@@ -88,6 +88,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   const { slug } = await params
   const [lang] = await Promise.all([getLang()])
   const t = makeT(lang)
+  const isBn = lang === "bn"
 
   let post: Awaited<ReturnType<typeof getPublishedPostBySlug>>
 
@@ -97,12 +98,19 @@ export default async function PostDetailPage({ params }: PostPageProps) {
     notFound()
   }
 
-  const description = buildDescription(post)
-  const headings = headingAnchors(post.content).filter(
+  const displayTitle = isBn && post.titleBn ? post.titleBn : post.title
+  const description = buildDescription(post, isBn)
+  const categoryName = post.category
+    ? isBn && post.category.nameBn
+      ? post.category.nameBn
+      : post.category.name
+    : null
+
+  const headings = headingAnchors(isBn && post.contentBn ? post.contentBn : post.content).filter(
     (heading) => heading.depth >= 2 && heading.depth <= 3
   )
   const publishedAt = post.publishedAt ?? post.createdAt
-  const dateFormatter = new Intl.DateTimeFormat(lang === "bn" ? "bn-BD" : "en-US", {
+  const dateFormatter = new Intl.DateTimeFormat(isBn ? "bn-BD" : "en-US", {
     dateStyle: "long",
   })
 
@@ -110,19 +118,19 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   const related = await listPublishedPosts({
     page: 1,
     pageSize: 4,
-    category: post.category,
+    category: post.category?.slug ?? post.categoryId ?? undefined,
   })
   const relatedPosts = related.posts.filter((item) => item.id !== post.id).slice(0, 3)
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.title,
+    headline: displayTitle,
     description,
     image: post.ogImage ?? post.coverImage ?? undefined,
     datePublished: publishedAt,
     dateModified: post.updatedAt,
-    inLanguage: lang === "bn" ? "bn-BD" : "en-US",
+    inLanguage: isBn ? "bn-BD" : "en-US",
     wordCount: stripMarkdown(post.content).split(/\s+/).filter(Boolean).length,
     timeRequired: `PT${post.readingMinutes}M`,
     author: {
@@ -139,14 +147,13 @@ export default async function PostDetailPage({ params }: PostPageProps) {
       "@id": new URL(postPath(post.slug), SITE_URL).toString(),
     },
     keywords: post.tags.length > 0 ? post.tags.join(", ") : undefined,
-    articleSection: post.category ? t(POST_CATEGORY_LABELS[post.category]) : undefined,
+    articleSection: categoryName ?? undefined,
   }
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-8">
       <script
         type="application/ld+json"
-        // Structured data has to be a literal object, not a rendered string.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
@@ -163,16 +170,16 @@ export default async function PostDetailPage({ params }: PostPageProps) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
         <article className="min-w-0">
           <header className="space-y-3">
-            {post.category ? (
-              <Link href={`/posts?category=${post.category}`}>
+            {post.category && categoryName ? (
+              <Link href={`/posts?category=${post.category.slug}`}>
                 <Badge variant="secondary" className="text-[0.625rem]">
-                  {t(POST_CATEGORY_LABELS[post.category])}
+                  {categoryName}
                 </Badge>
               </Link>
             ) : null}
 
             <h1 className="font-heading text-3xl leading-tight font-semibold text-balance">
-              {post.title}
+              {displayTitle}
             </h1>
 
             {description ? (
@@ -206,7 +213,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
             <div className="bg-muted relative mt-6 aspect-video overflow-hidden rounded-lg border">
               <Image
                 src={post.coverImage}
-                alt={post.title}
+                alt={displayTitle}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 720px"
@@ -215,11 +222,14 @@ export default async function PostDetailPage({ params }: PostPageProps) {
             </div>
           ) : null}
 
-          <MarkdownContent className="mt-8">{post.content}</MarkdownContent>
+          <BilingualPostContent
+            content={post.content}
+            contentBn={post.contentBn}
+            initialLang={lang}
+          />
 
           {post.tags.length > 0 ? (
             <div className="mt-8 flex flex-wrap items-center gap-1.5 border-t pt-6">
-              <TagIcon className="text-muted-foreground size-3.5" />
               {post.tags.map((tag) => (
                 <Link key={tag} href={`/posts?tag=${encodeURIComponent(tag)}`}>
                   <Badge variant="secondary" className="text-[0.625rem] font-normal">

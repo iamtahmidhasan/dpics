@@ -5,7 +5,7 @@
 import "dotenv/config"
 
 import prisma from "@/lib/prisma"
-import { Role, PostStatus, PostCategory } from "@/generated/prisma/enums"
+import { Role, PostStatus } from "@/generated/prisma/enums"
 import { toPostSlug } from "@/lib/post-slug"
 import {
   createPost,
@@ -70,8 +70,10 @@ async function main() {
   const adminActor = { userId: admin.id, isAdmin: true }
   const input = parsePostInput({
     title: `Smoke post ${stamp}`,
+    titleBn: `স্মোক পোস্ট ${stamp}`,
     content: "## Heading\n\nSome **body** text with `code`.\n\n- one\n- two\n",
-    category: PostCategory.TECHNICAL,
+    contentBn: "## শিরোনাম\n\nকিছু **বাংলা** টেক্সট।",
+    category: "cat_post_technical",
     tags: ["smoke", "Test Tag"],
   })
   input.slug = toPostSlug(`smoke-post-${stamp}`)

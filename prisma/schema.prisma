@@ -309,6 +309,35 @@ model Setting {
 }
 
 // ============================================================
+// CATEGORIES & TYPES (Reusable across Posts, Projects, etc.)
+// ============================================================
+
+enum CategoryType {
+  POST
+  ACHIEVEMENT
+  PROJECT
+  EVENT
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  type        CategoryType @default(POST)
+  name        String
+  nameBn      String?
+  slug        String
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  posts       Post[]
+
+  @@unique([type, slug])
+  @@index([type])
+  @@map("category")
+}
+
+// ============================================================
 // POSTS
 // ============================================================
 
@@ -319,19 +348,23 @@ model Setting {
 /// there, only an admin can turn PENDING into PUBLISHED or REJECTED, and an
 /// author can no longer edit or delete a post once it has left that queue.
 model Post {
-  id    String @id @default(cuid())
-  title String
+  id        String  @id @default(cuid())
+  title     String
+  titleBn   String?
 
-  slug  String  @unique
-  excerpt String?
+  slug      String  @unique
+  excerpt   String?
+  excerptBn String?
 
-  /// Markdown source, rendered by react-markdown through rehype-sanitize.
-  content String
+  /// Markdown source in English and Bangla, rendered by react-markdown through rehype-sanitize.
+  content   String
+  contentBn String?
 
   coverImage String?
   ogImage    String?
 
-  category   PostCategory?
+  categoryId String?
+  category   Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags       String[]      @default([])
   isFeatured Boolean      @default(false)
 
@@ -357,7 +390,7 @@ model Post {
   updatedAt DateTime @updatedAt
 
   @@index([status, publishedAt])
-  @@index([category])
+  @@index([categoryId])
   @@index([authorId])
 }
 
@@ -367,15 +400,4 @@ enum PostStatus {
   PUBLISHED
   REJECTED
   ARCHIVED
-}
-
-enum PostCategory {
-  ANNOUNCEMENT
-  TUTORIAL
-  WORKSHOP
-  EVENT_RECAP
-  TECHNICAL
-  RESEARCH
-  ACHIEVEMENT
-  GENERAL
 }

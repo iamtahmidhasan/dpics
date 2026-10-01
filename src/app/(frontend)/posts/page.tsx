@@ -10,7 +10,6 @@ import { buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
-import { POST_CATEGORY_LABELS } from "@/lib/post-labels"
 import { postFiltersFromParams } from "@/lib/post-params"
 import { listPostFacets, listPublishedPosts } from "@/lib/services/post.service"
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site"
@@ -124,16 +123,19 @@ export default async function PostsPage({ searchParams }: PageProps<"/posts">) {
             <FilterLink href={buildHref({ category: null })} active={!filters.category}>
               {t("All", "সব")}
             </FilterLink>
-            {facets.categories.map(({ category, count }) => (
-              <FilterLink
-                key={category}
-                href={buildHref({ category })}
-                active={filters.category === category}
-              >
-                {t(POST_CATEGORY_LABELS[category])}
-                <span className="ml-1 opacity-60">{count}</span>
-              </FilterLink>
-            ))}
+            {facets.categories.map((cat) => {
+              const catLabel = lang === "bn" && cat.nameBn ? cat.nameBn : cat.name
+              return (
+                <FilterLink
+                  key={cat.id}
+                  href={buildHref({ category: cat.slug })}
+                  active={filters.category === cat.slug || filters.category === cat.id}
+                >
+                  {catLabel}
+                  <span className="ml-1 opacity-60">{cat.count}</span>
+                </FilterLink>
+              )
+            })}
           </div>
         ) : null}
 

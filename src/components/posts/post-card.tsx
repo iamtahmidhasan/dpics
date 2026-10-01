@@ -4,17 +4,12 @@ import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { makeT, type Lang } from "@/lib/i18n"
-import { postCategoryLabel, postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
+import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import type { PostSummary } from "@/lib/services/post.service"
 import { cn } from "cn"
 
 export type PostCardProps = {
   post: PostSummary
-  /**
-   * Passed in rather than read from `LanguageProvider`, so the card stays a
-   * server component: the listing pages then ship the cards as plain HTML,
-   * which is what a crawler and a no-JS reader need.
-   */
   lang: Lang
   href?: string
   showStatus?: boolean
@@ -31,6 +26,14 @@ export function PostCard({ post, lang, href, showStatus = false, className }: Po
   }).format(new Date(timestamp))
   const target = href ?? `/posts/${post.slug}`
 
+  const displayTitle = lang === "bn" && post.titleBn ? post.titleBn : post.title
+  const displayExcerpt = lang === "bn" && post.excerptBn ? post.excerptBn : post.excerpt
+  const categoryName = post.category
+    ? lang === "bn" && post.category.nameBn
+      ? post.category.nameBn
+      : post.category.name
+    : null
+
   return (
     <article
       className={cn(
@@ -42,7 +45,7 @@ export function PostCard({ post, lang, href, showStatus = false, className }: Po
         {post.coverImage ? (
           <Image
             src={post.coverImage}
-            alt={post.title}
+            alt={displayTitle}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
@@ -68,21 +71,21 @@ export function PostCard({ post, lang, href, showStatus = false, className }: Po
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-4">
-        {post.category ? (
+        {categoryName ? (
           <span className="text-primary text-[0.6875rem] font-medium tracking-wide uppercase">
-            {postCategoryLabel(t)(post.category)}
+            {categoryName}
           </span>
         ) : null}
 
         <h3 className="line-clamp-2 text-sm leading-snug font-semibold">
           <Link href={target} className="after:absolute after:inset-0 hover:underline">
-            {post.title}
+            {displayTitle}
           </Link>
         </h3>
 
-        {post.excerpt ? (
+        {displayExcerpt ? (
           <p className="text-muted-foreground line-clamp-3 text-xs leading-relaxed">
-            {post.excerpt}
+            {displayExcerpt}
           </p>
         ) : null}
 
