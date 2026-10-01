@@ -46,3 +46,18 @@ export function isSelfAssignableRole(value: unknown): value is SelfAssignableRol
 export function isOnboarded(user: { roles?: unknown } | null | undefined): boolean {
   return getUserRoles(user).some((role) => role === Role.MEMBER || role === Role.INSTRUCTOR)
 }
+
+/**
+ * Roles allowed to write posts. `ADMIN` is included because admins moderate
+ * posts from the admin panel and can publish without going through review.
+ */
+export const POST_WRITER_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN] as const
+
+export type PostWriterRole = (typeof POST_WRITER_ROLES)[number]
+
+/** True when the account may open `/profile/write` and call the author APIs. */
+export function canWritePosts(user: { roles?: unknown } | null | undefined): boolean {
+  return getUserRoles(user).some((role) =>
+    (POST_WRITER_ROLES as readonly Role[]).includes(role)
+  )
+}

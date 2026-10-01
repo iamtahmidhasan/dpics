@@ -1,32 +1,50 @@
 "use client"
 
-import { BadgeCheck, UserCog, Wrench } from "lucide-react"
+import { BadgeCheck, FileText, PenSquare, UserCog, Wrench } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useLanguage } from "@/components/language-provider"
+import { POST_WRITER_ROLES } from "@/lib/roles"
 import { cn } from "cn"
 
 import { Role, type Role as RoleType } from "@/generated/prisma/enums"
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {
+  href: string
+  label: { en: string; bn: string }
+  icon: typeof UserCog
+  roles: RoleType[] | null
+}[] = [
   {
-    href: "/profile" as const,
+    href: "/profile",
     label: { en: "General", bn: "সাধারণ" },
     icon: UserCog,
-    role: null,
+    roles: null,
   },
   {
-    href: "/profile/member" as const,
+    href: "/profile/member",
     label: { en: "Member details", bn: "সদস্যের বিবরণ" },
     icon: BadgeCheck,
-    role: Role.MEMBER,
+    roles: [Role.MEMBER],
   },
   {
-    href: "/profile/instructor" as const,
+    href: "/profile/instructor",
     label: { en: "Instructor details", bn: "শিক্ষকের বিবরণ" },
     icon: Wrench,
-    role: Role.INSTRUCTOR,
+    roles: [Role.INSTRUCTOR],
+  },
+  {
+    href: "/profile/posts",
+    label: { en: "My posts", bn: "আমার পোস্ট" },
+    icon: FileText,
+    roles: [...POST_WRITER_ROLES],
+  },
+  {
+    href: "/profile/write",
+    label: { en: "Write post", bn: "পোস্ট লিখুন" },
+    icon: PenSquare,
+    roles: [...POST_WRITER_ROLES],
   },
 ]
 
@@ -34,7 +52,9 @@ export function ProfileSidebar({ roles }: { roles: RoleType[] }) {
   const pathname = usePathname()
   const { t } = useLanguage()
 
-  const items = NAV_ITEMS.filter((item) => item.role === null || roles.includes(item.role))
+  const items = NAV_ITEMS.filter(
+    (item) => item.roles === null || item.roles.some((role) => roles.includes(role))
+  )
 
   return (
     <nav aria-label={t("Profile navigation", "প্রোফাইল নেভিগেশন")} className="md:w-52 md:shrink-0">

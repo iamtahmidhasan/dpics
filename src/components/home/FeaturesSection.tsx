@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 import {
   Code2,
   Trophy,
@@ -95,7 +95,7 @@ const containerVariants = {
       staggerChildren: 0.07,
     },
   },
-}
+} satisfies Variants
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -104,7 +104,7 @@ const cardVariants = {
     y: 0,
     transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   },
-}
+} satisfies Variants
 
 export function FeaturesSection() {
   const ref = useRef(null)

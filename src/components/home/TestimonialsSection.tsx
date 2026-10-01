@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 import { Quote } from 'lucide-react'
 import { useRef } from 'react'
 
@@ -42,7 +42,7 @@ const TESTIMONIALS = [
 const containerVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.12 } },
-}
+} satisfies Variants
 
 const itemVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -51,7 +51,7 @@ const itemVariants = {
     y: 0,
     transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
   },
-}
+} satisfies Variants
 
 export function TestimonialsSection() {
   const ref = useRef(null)

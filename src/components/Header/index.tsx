@@ -231,6 +231,11 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: { en: 'Blog', bn: 'ব্লগ' },
+    href: '/posts',
+    columns: [],
+  },
+  {
     label: { en: 'Contact', bn: 'যোগাযোগ' },
     href: '/contact',
     columns: [],

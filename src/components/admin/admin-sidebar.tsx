@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, Settings, Shield, Users } from "lucide-react"
+import { Award, FileText, Settings, Shield, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -22,6 +22,11 @@ const NAV_ITEMS = [
     href: "/admin/committees" as const,
     label: { en: "Committees", bn: "কমিটিসমূহ" },
     icon: Award,
+  },
+  {
+    href: "/admin/posts" as const,
+    label: { en: "Posts", bn: "পোস্ট" },
+    icon: FileText,
   },
   {
     href: "/admin/settings" as const,

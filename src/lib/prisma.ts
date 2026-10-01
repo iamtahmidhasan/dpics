@@ -16,24 +16,54 @@ function createPrismaClient(): PrismaClient {
 }
 
 // In development, hot-reloading can keep an older PrismaClient instance in memory
-// from before a migration or prisma generate ran.
-// Ensure the cached instance has newly added models and fields (e.g. `setting.isAutoStudentIdEnabled`).
+// from before a migration or prisma generate ran. A stale client resolves a
+// model added afterwards to `undefined`, so the first query throws
+// "Cannot read properties of undefined (reading 'findMany')".
+//
+// Add a model here whenever the schema gains one; extend `REQUIRED_FIELDS` when
+// an existing model gains a column the app relies on.
+const REQUIRED_MODELS = [
+  "user",
+  "member",
+  "instructor",
+  "committee",
+  "committeeRole",
+  "userCommitteeRole",
+  "session",
+  "account",
+  "verification",
+  "setting",
+  "post",
+] as const;
+
+const REQUIRED_FIELDS: Record<string, string> = {
+  Setting: "isAutoStudentIdEnabled",
+  Post: "readingMinutes",
+};
+
+type RuntimeDataModel = {
+  _runtimeDataModel?: {
+    models?: Record<string, { fields?: Array<{ name: string }> }>;
+  };
+};
+
 const isClientValid = (client?: PrismaClient): client is PrismaClient => {
-  if (!client || !("setting" in client)) return false;
-  const fields = (
-    client as unknown as {
-      _runtimeDataModel?: {
-        models?: {
-          Setting?: {
-            fields?: Array<{ name: string }>;
-          };
-        };
-      };
-    }
-  )._runtimeDataModel?.models?.Setting?.fields;
-  if (fields && !fields.some((f) => f.name === "isAutoStudentIdEnabled")) {
-    return false;
+  if (!client) return false;
+
+  for (const model of REQUIRED_MODELS) {
+    if (!(model in client)) return false;
   }
+
+  const models = (client as unknown as RuntimeDataModel)._runtimeDataModel?.models;
+
+  if (!models) return false;
+
+  for (const [model, field] of Object.entries(REQUIRED_FIELDS)) {
+    const fields = models[model]?.fields;
+
+    if (fields && !fields.some((entry) => entry.name === field)) return false;
+  }
+
   return true;
 };
 

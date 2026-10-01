@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 import { Calendar, MapPin, Users, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRef } from 'react'
@@ -63,7 +63,7 @@ const EVENTS = [
 const containerVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1 } },
-}
+} satisfies Variants
 
 const itemVariants = {
   hidden: { opacity: 0, x: -20 },
@@ -72,7 +72,7 @@ const itemVariants = {
     x: 0,
     transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   },
-}
+} satisfies Variants
 
 export function EventsSection() {
   const ref = useRef(null)

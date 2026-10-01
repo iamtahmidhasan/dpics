@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -13,7 +13,7 @@ const fadeUp = {
     y: 0,
     transition: { duration: 0.5, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] },
   }),
-}
+} satisfies Variants
 
 const STATS = [
   { value: '200+', label: 'Active Members' },
