@@ -1,69 +1,54 @@
 "use client"
 
-import { Globe } from "lucide-react"
-import { useState } from "react"
-
 import { MarkdownContent } from "@/components/posts/markdown-content"
 import { useLanguage } from "@/components/language-provider"
-import { cn } from "cn"
+
+export function BilingualPostTitle({
+  title,
+  titleBn,
+}: {
+  title: string
+  titleBn: string | null
+}) {
+  const { lang } = useLanguage()
+  const displayTitle = lang === "bn" && titleBn ? titleBn : title
+
+  return (
+    <h1 className="font-heading text-3xl leading-tight font-semibold text-balance">
+      {displayTitle}
+    </h1>
+  )
+}
+
+export function BilingualPostDescription({
+  description,
+  descriptionBn,
+}: {
+  description: string | null
+  descriptionBn: string | null
+}) {
+  const { lang } = useLanguage()
+  const displayDescription = lang === "bn" && descriptionBn ? descriptionBn : description
+
+  if (!displayDescription) return null
+
+  return (
+    <p className="text-muted-foreground text-base/relaxed">{displayDescription}</p>
+  )
+}
 
 export function BilingualPostContent({
   content,
   contentBn,
-  initialLang,
+  initialLang: _initialLang,
 }: {
   content: string
   contentBn: string | null
-  initialLang: string
+  initialLang?: string
 }) {
-  const { t } = useLanguage()
-  const hasBoth = Boolean(content && contentBn)
+  const { lang } = useLanguage()
+  const isBn = lang === "bn"
+  const currentContent = isBn && contentBn ? contentBn : (content || contentBn || "")
 
-  const [activeLang, setActiveLang] = useState<"en" | "bn">(
-    initialLang === "bn" && contentBn ? "bn" : "en"
-  )
-
-  const currentContent = activeLang === "bn" && contentBn ? contentBn : content
-
-  return (
-    <div>
-      {hasBoth ? (
-        <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Globe className="size-3.5" />
-            <span>{t("Read this article in:", "এই লেখাটি পড়ুন:")}</span>
-          </div>
-
-          <div className="flex items-center gap-1 rounded-md bg-muted p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setActiveLang("en")}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                activeLang === "en"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveLang("bn")}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                activeLang === "bn"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              বাংলা (Bangla)
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <MarkdownContent className="mt-8">{currentContent}</MarkdownContent>
-    </div>
-  )
+  return <MarkdownContent className="mt-8">{currentContent}</MarkdownContent>
 }

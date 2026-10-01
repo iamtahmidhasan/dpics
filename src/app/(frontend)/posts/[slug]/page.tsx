@@ -4,7 +4,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { BilingualPostContent } from "@/components/posts/bilingual-post-content"
+import {
+  BilingualPostContent,
+  BilingualPostDescription,
+  BilingualPostTitle,
+} from "@/components/posts/bilingual-post-content"
 import { PostCard } from "@/components/posts/post-card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -100,6 +104,8 @@ export default async function PostDetailPage({ params }: PostPageProps) {
 
   const displayTitle = isBn && post.titleBn ? post.titleBn : post.title
   const description = buildDescription(post, isBn)
+  const descriptionEn = buildDescription(post, false)
+  const descriptionBn = buildDescription(post, true)
   const categoryName = post.category
     ? isBn && post.category.nameBn
       ? post.category.nameBn
@@ -178,13 +184,12 @@ export default async function PostDetailPage({ params }: PostPageProps) {
               </Link>
             ) : null}
 
-            <h1 className="font-heading text-3xl leading-tight font-semibold text-balance">
-              {displayTitle}
-            </h1>
+            <BilingualPostTitle title={post.title} titleBn={post.titleBn} />
 
-            {description ? (
-              <p className="text-muted-foreground text-base/relaxed">{description}</p>
-            ) : null}
+            <BilingualPostDescription
+              description={descriptionEn}
+              descriptionBn={descriptionBn}
+            />
 
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
               <div className="flex items-center gap-1.5">
@@ -225,7 +230,6 @@ export default async function PostDetailPage({ params }: PostPageProps) {
           <BilingualPostContent
             content={post.content}
             contentBn={post.contentBn}
-            initialLang={lang}
           />
 
           {post.tags.length > 0 ? (
