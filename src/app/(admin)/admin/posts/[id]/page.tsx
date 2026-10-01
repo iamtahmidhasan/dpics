@@ -2,13 +2,12 @@ import { ExternalLink } from "lucide-react"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
+import { AdminPostStatusSelect } from "@/components/admin/admin-post-status-select"
 import { PostComposer } from "@/components/posts/post-composer"
 import { PostReviewActions } from "@/components/posts/post-review-actions"
-import { Badge } from "@/components/ui/badge"
 import { PostStatus } from "@/generated/prisma/enums"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
-import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import { requireAdmin } from "@/lib/session"
 import { getPostDetailForAdmin } from "@/lib/services/post.service"
 
@@ -33,7 +32,7 @@ export default async function AdminPostEditPage({ params }: PageProps<"/admin/po
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="font-heading text-lg font-semibold">{post.title}</h1>
           <p className="text-muted-foreground text-xs/relaxed">
@@ -44,10 +43,8 @@ export default async function AdminPostEditPage({ params }: PageProps<"/admin/po
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <Badge variant={postStatusBadgeVariant(post.status)}>
-            {postStatusLabel(t)(post.status)}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminPostStatusSelect postId={post.id} initialStatus={post.status} />
 
           {post.status === PostStatus.PUBLISHED ? (
             <a

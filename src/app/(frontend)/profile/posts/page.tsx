@@ -11,7 +11,7 @@ import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { postFiltersFromParams } from "@/lib/post-params"
 import { requirePostWriter } from "@/lib/session"
-import { getMyPosts } from "@/lib/services/post.service"
+import { getMyPosts, getPostCounts } from "@/lib/services/post.service"
 import { normalizeImageList, resolveUserImage } from "@/lib/user-image"
 import { cn } from "cn"
 
@@ -19,12 +19,24 @@ export const metadata: Metadata = {
   title: "My posts",
 }
 
+const STATUS_TABS: { value: string; label: { en: string; bn: string } }[] = [
+  { value: "ALL", label: { en: "All", bn: "সব" } },
+  { value: PostStatus.PUBLISHED, label: { en: "Published", bn: "প্রকাশিত" } },
+  { value: PostStatus.PENDING, label: { en: "In review", bn: "পর্যালোচনায়" } },
+  { value: PostStatus.DRAFT, label: { en: "Drafts", bn: "খসড়া" } },
+  { value: PostStatus.REJECTED, label: { en: "Rejected", bn: "ফেরত" } },
+  { value: PostStatus.ARCHIVED, label: { en: "Archived", bn: "আর্কাইভ" } },
+]
+
 export default async function MyPostsPage({ searchParams }: PageProps<"/profile/posts">) {
   const params = await searchParams
   const [session, lang] = await Promise.all([requirePostWriter(), getLang()])
   const t = makeT(lang)
   const filters = postFiltersFromParams(params)
-  const page = await getMyPosts(session.user.id, filters)
+  const [page, counts] = await Promise.all([
+    getMyPosts(session.user.id, filters),
+    getPostCounts(session.user.id),
+  ])
 
   // A saved draft has no author relation, so the card needs the current user.
   const rows = page.posts.map((post) => ({
@@ -40,10 +52,11 @@ export default async function MyPostsPage({ searchParams }: PageProps<"/profile/
     },
   }))
 
-  const buildHref = (nextPage: number) => {
+  const buildHref = (nextPage: number, overrides?: { status?: string | null }) => {
     const query = new URLSearchParams()
+    const activeStatus = overrides && overrides.status !== undefined ? overrides.status : filters.status
 
-    if (filters.status) query.set("status", filters.status)
+    if (activeStatus && activeStatus !== "ALL") query.set("status", activeStatus)
     if (filters.category) query.set("category", filters.category)
     if (filters.q) query.set("q", filters.q)
     if (nextPage > 1) query.set("page", String(nextPage))
@@ -51,6 +64,11 @@ export default async function MyPostsPage({ searchParams }: PageProps<"/profile/
     const search = query.toString()
 
     return search ? `/profile/posts?${search}` : "/profile/posts"
+  }
+
+  const countFor = (val: string) => {
+    if (val === "ALL") return counts.total
+    return counts[val as PostStatus] ?? 0
   }
 
   return (
@@ -70,6 +88,31 @@ export default async function MyPostsPage({ searchParams }: PageProps<"/profile/
           <FilePlus2 className="size-3.5" />
           {t("Write post", "পোস্ট লিখুন")}
         </Link>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 border-b pb-2">
+        {STATUS_TABS.map((tab) => {
+          const isActive = (!filters.status && tab.value === "ALL") || filters.status === tab.value
+          const href = tab.value === "ALL" ? buildHref(1, { status: null }) : buildHref(1, { status: tab.value })
+
+          return (
+            <Link
+              key={tab.value}
+              href={href}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                isActive
+                  ? "border-primary/40 bg-primary/10 text-primary font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <span>{t(tab.label)}</span>
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] text-muted-foreground font-normal">
+                {countFor(tab.value)}
+              </span>
+            </Link>
+          )
+        })}
       </div>
 
       {rows.length > 0 ? (

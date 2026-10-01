@@ -19,6 +19,7 @@ import { useLanguage } from "@/components/language-provider"
 import { MarkdownEditor } from "@/components/posts/markdown-editor"
 import { SeoPreview } from "@/components/posts/seo-preview"
 import { TagInput } from "@/components/posts/tag-input"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,6 +41,7 @@ import {
   MAX_POST_TITLE_LENGTH,
 } from "@/lib/post-constants"
 import { toPostSlug } from "@/lib/post-slug"
+import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import { cn } from "cn"
 
 export type PostFormValues = {
@@ -132,6 +134,7 @@ export function PostComposer({
   const [categories, setCategories] = useState<CategoryOption[]>(
     initialCategories || []
   )
+  const [statusValue, setStatusValue] = useState<PostStatus>(status)
   const [contentTab, setContentTab] = useState<"en" | "bn">("en")
   const [slugTouched, setSlugTouched] = useState(Boolean(initialValues?.slug))
   const [pending, setPending] = useState<null | "save" | "submit" | "withdraw" | "delete">(null)
@@ -220,9 +223,9 @@ export function PostComposer({
       tags: values.tags,
       seoTitle: values.seoTitle.trim() || null,
       seoDescription: values.seoDescription.trim() || null,
-      ...(scope === "admin" ? { isFeatured: values.isFeatured } : {}),
+      ...(scope === "admin" ? { isFeatured: values.isFeatured, status: statusValue } : {}),
     }),
-    [scope, slugTouched, values]
+    [scope, slugTouched, statusValue, values]
   )
 
   const validate = useCallback((): string | null => {
@@ -799,6 +802,37 @@ export function PostComposer({
               </div>
             )}
           </div>
+
+          {scope === "admin" ? (
+            <div className="space-y-1.5 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="post-admin-status" className="text-xs font-medium">
+                  {t("Workflow Status", "কাজের অবস্থা")}
+                </Label>
+                <Badge variant={postStatusBadgeVariant(statusValue)} className="text-[0.625rem] px-1.5 py-0">
+                  {postStatusLabel(t)(statusValue)}
+                </Badge>
+              </div>
+              <Select
+                value={statusValue}
+                disabled={readOnly}
+                onValueChange={(val) => {
+                  if (val) setStatusValue(val as PostStatus)
+                }}
+              >
+                <SelectTrigger id="post-admin-status" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PostStatus.PUBLISHED}>{t("Published", "প্রকাশিত")}</SelectItem>
+                  <SelectItem value={PostStatus.PENDING}>{t("In review", "পর্যালোচনায়")}</SelectItem>
+                  <SelectItem value={PostStatus.DRAFT}>{t("Draft", "খসড়া")}</SelectItem>
+                  <SelectItem value={PostStatus.REJECTED}>{t("Rejected", "ফেরত")}</SelectItem>
+                  <SelectItem value={PostStatus.ARCHIVED}>{t("Archived", "আর্কাইভ")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
 
           {scope === "admin" ? (
             <div className="flex items-center justify-between rounded-md border px-3 py-2">
