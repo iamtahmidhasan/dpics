@@ -89,7 +89,7 @@ export type MyPostDetail = MyPostSummary & {
   ogImage: string | null
   seoTitle: string | null
   seoDescription: string | null
-  rejectionReason: string | null
+  massageForAuthor: string | null
   reviewedAt: string | null
 }
 
@@ -138,6 +138,7 @@ export type PostReviewInput = {
 
 export type PostAdminUpdateInput = Partial<PostInput> & {
   status?: PostStatus
+  massageForAuthor?: string | null
 }
 
 export type PostInput = {
@@ -192,7 +193,7 @@ type PostRow = {
   tags: string[]
   isFeatured: boolean
   status: PostStatus
-  rejectionReason: string | null
+  massageForAuthor: string | null
   submittedAt: Date | null
   reviewedAt: Date | null
   reviewedById: string | null
@@ -351,7 +352,7 @@ function mapMyDetail(row: PostRow): MyPostDetail {
     ogImage: row.ogImage,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
-    rejectionReason: row.rejectionReason,
+    massageForAuthor: row.massageForAuthor,
     reviewedAt: toIso(row.reviewedAt),
   }
 }
@@ -476,6 +477,14 @@ export function parsePostAdminInput(body: unknown): PostAdminUpdateInput {
     update.isFeatured = toBoolean(fields.isFeatured, "Is featured")
   }
 
+  if (fields.massageForAuthor !== undefined) {
+    update.massageForAuthor = toOptionalText(
+      fields.massageForAuthor,
+      "Message for author",
+      MAX_REJECTION_REASON_LENGTH
+    )
+  }
+
   return update
 }
 
@@ -497,9 +506,9 @@ export function parseReviewInput(body: unknown): PostReviewInput {
 function assertCanModifyOwnPost(status: PostStatus, actor: PostActor): void {
   if (actor.isAdmin) return
 
-  if (status === PostStatus.PUBLISHED || status === PostStatus.ARCHIVED) {
+  if (status === PostStatus.ARCHIVED) {
     throw ApiError.badRequest(
-      "This post has already been approved, so it can no longer be changed or deleted. Ask an admin to archive it first."
+      "This post has been archived, so it can no longer be modified. Ask an admin to restore it first."
     )
   }
 }
@@ -837,6 +846,7 @@ export async function getPostCounts(
     PUBLISHED: 0,
     REJECTED: 0,
     ARCHIVED: 0,
+    UPDATE: 0,
   }
 
   for (const row of grouped) {
@@ -909,9 +919,15 @@ export async function updatePost(
     await assertSlugAvailable(input.slug, existing.id)
   }
 
+  // If author modifies an already PUBLISHED post, transition status to UPDATE so admin can review changes
+  const statusUpdate =
+    !actor.isAdmin && existing.status === PostStatus.PUBLISHED
+      ? { status: PostStatus.UPDATE, submittedAt: new Date() }
+      : {}
+
   await prisma.post.update({
     where: { id },
-    data: { ...input, ...derivedFields(input) },
+    data: { ...input, ...derivedFields(input), ...statusUpdate },
   })
 
   return getMyPost(id, actor)
@@ -923,6 +939,12 @@ export async function deletePost(id: string, actor: PostActor): Promise<void> {
   assertOwnership(existing.authorId, actor)
   assertCanModifyOwnPost(existing.status, actor)
 
+  if (!actor.isAdmin && (existing.status === PostStatus.PUBLISHED || existing.status === PostStatus.ARCHIVED)) {
+    throw ApiError.badRequest(
+      "Published posts cannot be deleted directly by authors. Ask an admin to archive or delete it."
+    )
+  }
+
   await prisma.post.delete({ where: { id } })
 }
 
@@ -932,20 +954,29 @@ export async function submitPost(id: string, actor: PostActor): Promise<MyPostDe
   assertOwnership(existing.authorId, actor)
   assertCanModifyOwnPost(existing.status, actor)
 
-  if (existing.status !== PostStatus.DRAFT && existing.status !== PostStatus.REJECTED) {
-    throw ApiError.badRequest("Only a draft or a rejected post can be sent for review")
+  if (
+    existing.status !== PostStatus.DRAFT &&
+    existing.status !== PostStatus.REJECTED &&
+    existing.status !== PostStatus.PUBLISHED &&
+    existing.status !== PostStatus.UPDATE
+  ) {
+    throw ApiError.badRequest("Only a draft, rejected, or published post can be sent for review")
   }
 
   if (!stripMarkdown(existing.content) && (!existing.contentBn || !stripMarkdown(existing.contentBn))) {
     throw ApiError.badRequest("Add some content before sending this post for review")
   }
 
+  const nextStatus =
+    existing.status === PostStatus.PUBLISHED || existing.status === PostStatus.UPDATE
+      ? PostStatus.UPDATE
+      : PostStatus.PENDING
+
   await prisma.post.update({
     where: { id },
     data: {
-      status: PostStatus.PENDING,
+      status: nextStatus,
       submittedAt: new Date(),
-      rejectionReason: null,
     },
   })
 
@@ -958,7 +989,7 @@ export async function withdrawPost(id: string, actor: PostActor): Promise<MyPost
   assertOwnership(existing.authorId, actor)
   assertCanModifyOwnPost(existing.status, actor)
 
-  if (existing.status !== PostStatus.PENDING) {
+  if (existing.status !== PostStatus.PENDING && existing.status !== PostStatus.UPDATE) {
     throw ApiError.badRequest("Only a post that is waiting for review can be withdrawn")
   }
 
@@ -1039,20 +1070,21 @@ export async function updatePostAsAdmin(
     await assertSlugAvailable(input.slug, existing.id)
   }
 
-  const { status, ...content } = input
+  const { status, massageForAuthor, ...content } = input
 
   await prisma.post.update({
     where: { id },
     data: {
       ...content,
       ...derivedFields(input),
+      ...(massageForAuthor !== undefined ? { massageForAuthor } : {}),
       ...(status === undefined
         ? {}
         : {
             status,
             publishedAt: publishedAtFor(status, existing.publishedAt),
             ...(status === PostStatus.PUBLISHED
-              ? { rejectionReason: null, reviewedAt: new Date(), reviewedById: actor.userId }
+              ? { reviewedAt: new Date(), reviewedById: actor.userId }
               : {}),
           }),
     },
@@ -1072,8 +1104,8 @@ export async function reviewPost(
 
   const existing = await findPostRow(id)
 
-  if (existing.status !== PostStatus.PENDING) {
-    throw ApiError.badRequest("Only a post that is waiting for review can be reviewed")
+  if (existing.status !== PostStatus.PENDING && existing.status !== PostStatus.UPDATE) {
+    throw ApiError.badRequest("Only a post that is waiting for review or update approval can be reviewed")
   }
 
   const now = new Date()
@@ -1086,7 +1118,6 @@ export async function reviewPost(
         publishedAt: existing.publishedAt ?? now,
         reviewedAt: now,
         reviewedById: actor.userId,
-        rejectionReason: null,
       },
     })
 
@@ -1103,10 +1134,10 @@ export async function reviewPost(
     where: { id },
     data: {
       status: PostStatus.REJECTED,
-      rejectionReason: reason,
+      massageForAuthor: reason,
       reviewedAt: now,
       reviewedById: actor.userId,
-      publishedAt: null,
+      publishedAt: existing.publishedAt,
     },
   })
 

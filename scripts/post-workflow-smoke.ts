@@ -120,7 +120,7 @@ async function main() {
     adminActor
   )
   check("moves to REJECTED", rejected.status === PostStatus.REJECTED)
-  check("reason stored", rejected.rejectionReason === "Please add a code example.")
+  check("reason stored", rejected.massageForAuthor === "Please add a code example.")
 
   console.log("\n6. author may still edit a REJECTED post")
   const revised = await updatePost(draft.id, { title: `Smoke post ${stamp} revised` }, authorActor)
@@ -133,7 +133,7 @@ async function main() {
   const published = await reviewPost(draft.id, { decision: "APPROVE" }, adminActor)
   check("moves to PUBLISHED", published.status === PostStatus.PUBLISHED)
   check("publishedAt stamped", Boolean(published.publishedAt))
-  check("rejection reason cleared", published.rejectionReason === null)
+  check("rejection reason cleared", published.massageForAuthor === null)
 
   console.log("\n8. published post is public")
   const live = await getPublishedPostBySlug(published.slug)

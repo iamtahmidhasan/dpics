@@ -71,6 +71,7 @@ export function AdminPostStatusSelect({
   const allStatuses: PostStatus[] = [
     PostStatus.PUBLISHED,
     PostStatus.PENDING,
+    PostStatus.UPDATE,
     PostStatus.DRAFT,
     PostStatus.REJECTED,
     PostStatus.ARCHIVED,

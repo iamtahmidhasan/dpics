@@ -11,6 +11,7 @@ const POST_STATUS_LABELS: Record<PostStatus, LocalizedText> = {
   [PostStatus.DRAFT]: { en: "Draft", bn: "খসড়া" },
   [PostStatus.PENDING]: { en: "Pending review", bn: "পর্যালোচনার অপেক্ষায়" },
   [PostStatus.PUBLISHED]: { en: "Published", bn: "প্রকাশিত" },
+  [PostStatus.UPDATE]: { en: "Update in review", bn: "আপডেট পর্যালোচনায়" },
   [PostStatus.REJECTED]: { en: "Changes requested", bn: "পরিবর্তন প্রয়োজন" },
   [PostStatus.ARCHIVED]: { en: "Archived", bn: "আর্কাইভ" },
 }
@@ -47,6 +48,7 @@ export function postStatusBadgeVariant(value: PostStatus): BadgeVariants {
     case PostStatus.PUBLISHED:
       return "success"
     case PostStatus.PENDING:
+    case PostStatus.UPDATE:
       return "warning"
     case PostStatus.REJECTED:
       return "destructive"

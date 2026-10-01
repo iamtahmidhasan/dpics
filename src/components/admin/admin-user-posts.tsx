@@ -72,6 +72,7 @@ const STATUS_TABS: { value: string; label: { en: string; bn: string } }[] = [
   { value: ALL, label: { en: "All", bn: "সব" } },
   { value: PostStatus.PUBLISHED, label: { en: "Published", bn: "প্রকাশিত" } },
   { value: PostStatus.PENDING, label: { en: "In review", bn: "পর্যালোচনায়" } },
+  { value: PostStatus.UPDATE, label: { en: "Updates", bn: "আপডেট" } },
   { value: PostStatus.DRAFT, label: { en: "Drafts", bn: "খসড়া" } },
   { value: PostStatus.REJECTED, label: { en: "Rejected", bn: "ফেরত" } },
   { value: PostStatus.ARCHIVED, label: { en: "Archived", bn: "আর্কাইভ" } },

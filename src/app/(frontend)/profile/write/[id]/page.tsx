@@ -1,3 +1,4 @@
+import { MessageSquare } from "lucide-react"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
@@ -27,33 +28,49 @@ export default async function EditPostPage({ params }: PageProps<"/profile/write
     notFound()
   }
 
-  // Admins may always edit; everybody else is locked out of approved posts.
-  const locked = !actor.isAdmin && (post.status === PostStatus.PUBLISHED || post.status === PostStatus.ARCHIVED)
+  // Admins may always edit; authors are only locked out of archived posts.
+  const locked = !actor.isAdmin && post.status === PostStatus.ARCHIVED
+
+  const heading = locked
+    ? t("Post archived", "পোস্ট আর্কাইভ করা")
+    : post.status === PostStatus.PUBLISHED
+      ? t("Update post", "পোস্ট হালনাগাদ করুন")
+      : post.status === PostStatus.UPDATE
+        ? t("Update in review", "আপডেট পর্যালোচনায়")
+        : t("Edit post", "পোস্ট সম্পাদনা")
+
+  const subtitle = locked
+    ? t(
+        "This post is archived and can no longer be edited.",
+        "এই পোস্টটি আর্কাইভ করা হয়েছে এবং আর সম্পাদনা করা যাবে না।"
+      )
+    : post.status === PostStatus.PUBLISHED
+      ? t(
+          "Edit your published post. Submitting changes will send the update for admin approval.",
+          "আপনার প্রকাশিত পোস্ট সম্পাদনা করুন। পরিবর্তন জমা দিলে আপডেটটি অ্যাডমিন পর্যালোচনার জন্য পাঠানো হবে।"
+        )
+      : post.status === PostStatus.UPDATE
+        ? t(
+            "Your update is currently waiting for admin review.",
+            "আপনার আপডেটটি বর্তমানে অ্যাডমিন পর্যালোচনার অপেক্ষায় রয়েছে।"
+          )
+        : t(
+            "Update the post, then send it for review.",
+            "পোস্টটি হালনাগাদ করে পর্যালোচনায় পাঠান।"
+          )
 
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="font-heading text-lg font-semibold">
-          {locked ? t("Post locked", "পোস্ট লক করা") : t("Edit post", "পোস্ট সম্পাদনা")}
-        </h1>
-        <p className="text-xs/relaxed text-muted-foreground">
-          {locked
-            ? t(
-                "This post is already approved, so it is read-only.",
-                "এই পোস্টটি ইতিমধ্যে অনুমোদিত, তাই এটি কেবল পড়ার জন্য।"
-              )
-            : t(
-                "Update the post, then send it for review again.",
-                "পোস্টটি হালনাগাদ করে আবার পর্যালোচনায় পাঠান।"
-              )}
-        </p>
+        <h1 className="font-heading text-lg font-semibold">{heading}</h1>
+        <p className="text-xs/relaxed text-muted-foreground">{subtitle}</p>
       </div>
 
       <PostComposer
         scope="author"
         postId={post.id}
         status={post.status}
-        rejectionReason={post.rejectionReason}
+        massageForAuthor={post.massageForAuthor}
         locked={locked}
         backHref="/profile/posts"
         initialValues={{

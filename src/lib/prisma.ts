@@ -39,7 +39,7 @@ const REQUIRED_MODELS = [
 
 const REQUIRED_FIELDS: Record<string, string> = {
   Setting: "isAutoStudentIdEnabled",
-  Post: "categoryId",
+  Post: "massageForAuthor",
 };
 
 type RuntimeDataModel = {

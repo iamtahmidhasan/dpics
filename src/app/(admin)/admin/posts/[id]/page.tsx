@@ -1,13 +1,15 @@
-import { ExternalLink } from "lucide-react"
+import { AlertCircle, ExternalLink, MessageSquare } from "lucide-react"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { AdminPostStatusSelect } from "@/components/admin/admin-post-status-select"
 import { PostComposer } from "@/components/posts/post-composer"
 import { PostReviewActions } from "@/components/posts/post-review-actions"
+import { Badge } from "@/components/ui/badge"
 import { PostStatus } from "@/generated/prisma/enums"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
+import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import { requireAdmin } from "@/lib/session"
 import { getPostDetailForAdmin } from "@/lib/services/post.service"
 
@@ -44,7 +46,13 @@ export default async function AdminPostEditPage({ params }: PageProps<"/admin/po
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <AdminPostStatusSelect postId={post.id} initialStatus={post.status} />
+          {post.status === PostStatus.PENDING || post.status === PostStatus.UPDATE ? (
+            <Badge variant={postStatusBadgeVariant(post.status)} className="text-xs px-2 py-0.5">
+              {postStatusLabel(t)(post.status)}
+            </Badge>
+          ) : (
+            <AdminPostStatusSelect postId={post.id} initialStatus={post.status} />
+          )}
 
           {post.status === PostStatus.PUBLISHED ? (
             <a
@@ -60,18 +68,17 @@ export default async function AdminPostEditPage({ params }: PageProps<"/admin/po
         </div>
       </div>
 
-      <PostReviewActions postId={post.id} status={post.status} />
-
-      {post.rejectionReason && post.status === PostStatus.REJECTED ? (
-        <p className="text-muted-foreground text-xs">
-          {t("Last rejection reason", "সর্বশেষ ফেরত দেওয়ার কারণ")}: {post.rejectionReason}
-        </p>
-      ) : null}
+      <PostReviewActions
+        postId={post.id}
+        status={post.status}
+        initialMessage={post.massageForAuthor}
+      />
 
       <PostComposer
         scope="admin"
         postId={post.id}
         status={post.status}
+        massageForAuthor={post.massageForAuthor}
         backHref="/admin/posts"
         initialValues={{
           title: post.title,

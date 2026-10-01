@@ -369,9 +369,9 @@ model Post {
   isFeatured Boolean      @default(false)
 
   // ---- workflow (server managed) ----
-  status          PostStatus @default(DRAFT)
-  rejectionReason String?
-  submittedAt     DateTime?
+  status           PostStatus @default(DRAFT)
+  massageForAuthor String?
+  submittedAt      DateTime?
   reviewedAt      DateTime?
   reviewedById    String?
   publishedAt     DateTime?
@@ -400,4 +400,5 @@ enum PostStatus {
   PUBLISHED
   REJECTED
   ARCHIVED
+  UPDATE
 }

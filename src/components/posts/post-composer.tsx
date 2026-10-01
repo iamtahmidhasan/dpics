@@ -9,6 +9,7 @@ import {
   ImageOff,
   Loader2,
   Lock,
+  MessageSquare,
   Send,
   Trash2,
 } from "lucide-react"
@@ -79,7 +80,7 @@ export type PostComposerProps = {
   initialCategories?: CategoryOption[]
   postId?: string
   status?: PostStatus
-  rejectionReason?: string | null
+  massageForAuthor?: string | null
   /** Author editing an already approved post: show the lock notice, no writes. */
   locked?: boolean
   backHref: string
@@ -110,7 +111,7 @@ export function PostComposer({
   initialCategories,
   postId,
   status = PostStatus.DRAFT,
-  rejectionReason,
+  massageForAuthor,
   locked = false,
   backHref,
 }: PostComposerProps) {
@@ -318,14 +319,28 @@ export function PostComposer({
           }
 
           await request("PATCH", buildPayload())
-          await fetch(`/api/my/posts/${postId}/submit`, { method: "POST" })
-          setNotice({ tone: "success", message: t("Sent for review.", "পর্যালোচনার জন্য পাঠানো হয়েছে।") })
+          const submitRes = await fetch(`/api/my/posts/${postId}/submit`, { method: "POST" })
+          if (!submitRes.ok) {
+            const err = await submitRes.json().catch(() => null)
+            throw new Error(err?.error?.message ?? "Failed to submit post")
+          }
+          setNotice({
+            tone: "success",
+            message:
+              status === PostStatus.PUBLISHED || status === PostStatus.UPDATE
+                ? t("Update sent for review.", "আপডেট পর্যালোচনার জন্য পাঠানো হয়েছে।")
+                : t("Sent for review.", "পর্যালোচনার জন্য পাঠানো হয়েছে।"),
+          })
           router.refresh()
         }
 
         if (kind === "withdraw") {
           if (!postId) return
-          await fetch(`/api/my/posts/${postId}/withdraw`, { method: "POST" })
+          const withdrawRes = await fetch(`/api/my/posts/${postId}/withdraw`, { method: "POST" })
+          if (!withdrawRes.ok) {
+            const err = await withdrawRes.json().catch(() => null)
+            throw new Error(err?.error?.message ?? "Failed to withdraw post")
+          }
           setNotice({ tone: "success", message: t("Withdrawn to draft.", "খসড়ায় ফেরত আনা হয়েছে।") })
           router.refresh()
         }
@@ -347,11 +362,17 @@ export function PostComposer({
         setPending(null)
       }
     },
-    [backHref, buildPayload, postId, request, router, t, validate]
+    [backHref, buildPayload, postId, request, router, status, t, validate]
   )
 
-  const canSubmit = scope === "author" && (status === PostStatus.DRAFT || status === PostStatus.REJECTED)
-  const canWithdraw = scope === "author" && status === PostStatus.PENDING
+  const isUpdate = status === PostStatus.PUBLISHED || status === PostStatus.UPDATE
+  const canSubmit =
+    scope === "author" &&
+    (status === PostStatus.DRAFT ||
+      status === PostStatus.REJECTED ||
+      status === PostStatus.PUBLISHED ||
+      status === PostStatus.UPDATE)
+  const canWithdraw = scope === "author" && (status === PostStatus.PENDING || status === PostStatus.UPDATE)
 
   return (
     <div className="space-y-4">
@@ -422,7 +443,11 @@ export function PostComposer({
               ) : (
                 <Check className="size-3.5" />
               )}
-              {scope === "admin" ? t("Save post", "পোস্ট সংরক্ষণ করুন") : t("Save draft", "খসড়া সংরক্ষণ করুন")}
+              {scope === "admin"
+                ? t("Save post", "পোস্ট সংরক্ষণ করুন")
+                : isUpdate
+                  ? t("Save update", "আপডেট সংরক্ষণ করুন")
+                  : t("Save draft", "খসড়া সংরক্ষণ করুন")}
             </Button>
           ) : null}
 
@@ -439,7 +464,9 @@ export function PostComposer({
               ) : (
                 <Send className="size-3.5" />
               )}
-              {t("Submit for review", "পর্যালোচনার জন্য জমা দিন")}
+              {isUpdate
+                ? t("Submit update for review", "আপডেট পর্যালোচনার জন্য জমা দিন")
+                : t("Submit for review", "পর্যালোচনার জন্য জমা দিন")}
             </Button>
           ) : null}
         </div>
@@ -450,22 +477,36 @@ export function PostComposer({
           <Lock className="size-3.5 shrink-0" />
           <span>
             {t(
-              "This post is already published. Only an admin can edit or archive it.",
-              "এই পোস্টটি ইতিমধ্যে প্রকাশিত হয়েছে। শুধুমাত্র অ্যাডমিন এটি সম্পাদনা বা আর্কাইভ করতে পারেন।"
+              "This post has been archived. Only an admin can edit or restore it.",
+              "এই পোস্টটি আর্কাইভ করা হয়েছে। শুধুমাত্র অ্যাডমিন এটি সম্পাদনা বা পুনরুদ্ধার করতে পারেন।"
             )}
           </span>
         </div>
       ) : null}
 
-      {status === PostStatus.REJECTED && rejectionReason ? (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs">
-          <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-          <p className="text-xs/relaxed">
-            <span className="font-medium">
-              {t("Sent back by a reviewer:", "একজন পর্যালোচক ফেরত পাঠিয়েছেন:")}
-            </span>{" "}
-            {rejectionReason}
-          </p>
+      {status === PostStatus.UPDATE ? (
+        <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <AlertCircle className="size-3.5 shrink-0" />
+          <span>
+            {t(
+              "An update for this post is currently in review by administrators.",
+              "এই পোস্টের একটি পরিবর্তন বর্তমানে অ্যাডমিন পর্যালোচনার অপেক্ষায় রয়েছে।"
+            )}
+          </span>
+        </div>
+      ) : null}
+
+      {massageForAuthor ? (
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+          <MessageSquare className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="space-y-0.5">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">
+              {t("Message from admin:", "অ্যাডমিনের বার্তা:")}
+            </p>
+            <p className="text-xs/relaxed font-medium">
+              {massageForAuthor}
+            </p>
+          </div>
         </div>
       ) : null}
 
