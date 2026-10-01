@@ -130,9 +130,22 @@ const components: Components = {
   td: ({ className, ...props }) => (
     <td className={`border px-3 py-2 align-top ${className ?? ""}`} {...domProps(props)} />
   ),
-  img: ({ className, alt, ...props }) => (
+  img: ({ className, alt, src, ...props }) => (
     // eslint-disable-next-line @next/next/no-img-element -- author supplied urls are arbitrary, so they cannot go through the image optimizer
-    <img className={`my-4 h-auto max-w-full rounded-md border ${className ?? ""}`} alt={alt ?? ""} loading="lazy" decoding="async" {...domProps(props)} />
+    <img
+      className={`my-4 h-auto max-w-full rounded-md border ${className ?? ""}`}
+      alt={alt ?? ""}
+      src={src}
+      loading="lazy"
+      decoding="async"
+      onError={(e) => {
+        const target = e.currentTarget
+        if (target.dataset.failed) return
+        target.dataset.failed = "true"
+        target.src = "/placeholder.svg"
+      }}
+      {...domProps(props)}
+    />
   ),
   input: ({ className, ...props }) => (
     <input

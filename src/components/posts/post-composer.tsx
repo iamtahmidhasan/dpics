@@ -4,7 +4,9 @@ import {
   AlertCircle,
   ArrowLeft,
   Check,
+  ExternalLink,
   Globe,
+  ImageOff,
   Loader2,
   Lock,
   Send,
@@ -482,6 +484,56 @@ export function PostComposer({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
         {/* Main Column */}
         <div className="min-w-0 space-y-4">
+          {/* Cover Image Hero Preview */}
+          {values.coverImage ? (
+            <div className="group relative aspect-[21/9] w-full overflow-hidden rounded-lg border bg-muted shadow-xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={values.coverImage}
+                alt={values.title || "Cover preview"}
+                className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                onError={(e) => {
+                  const target = e.currentTarget
+                  target.style.display = "none"
+                  const parent = target.parentElement
+                  const errEl = parent?.querySelector(".cover-error-state")
+                  if (errEl) errEl.classList.remove("hidden")
+                }}
+              />
+              <div className="cover-error-state hidden absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-muted/95 p-4 text-center text-xs text-destructive">
+                <ImageOff className="size-6" />
+                <span className="font-medium">
+                  {t("Unable to load image from this URL.", "এই লিংক থেকে ছবি লোড করা যায়নি।")}
+                </span>
+                <span className="text-[0.6875rem] text-muted-foreground">
+                  {values.coverImage}
+                </span>
+              </div>
+              <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-90 transition-opacity group-hover:opacity-100">
+                <a
+                  href={values.coverImage}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="rounded-md bg-background/85 px-2 py-1 text-xs font-medium backdrop-blur-xs hover:bg-background inline-flex items-center gap-1 shadow-xs"
+                >
+                  <ExternalLink className="size-3" />
+                  {t("View original", "মূল ছবি")}
+                </a>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => patch("coverImage", "")}
+                    className="rounded-md bg-destructive/90 px-2 py-1 text-xs font-medium text-destructive-foreground backdrop-blur-xs hover:bg-destructive inline-flex items-center gap-1 shadow-xs"
+                    title={t("Remove cover image", "কভার ছবি সরান")}
+                  >
+                    <Trash2 className="size-3" />
+                    {t("Remove", "মুছুন")}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : null}
+
           {/* Bilingual Titles */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -686,16 +738,66 @@ export function PostComposer({
             />
           </div>
 
+          {/* Cover image URL and Preview in Sidebar */}
           <div className="space-y-1.5">
-            <Label htmlFor="post-cover">{t("Cover image URL", "কভার ছবির লিংক")}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="post-cover">{t("Cover image URL", "কভার ছবির লিংক")}</Label>
+              {values.coverImage && !readOnly ? (
+                <button
+                  type="button"
+                  onClick={() => patch("coverImage", "")}
+                  className="text-[0.6875rem] text-destructive hover:underline"
+                >
+                  {t("Remove", "মুছুন")}
+                </button>
+              ) : null}
+            </div>
             <Input
               id="post-cover"
               type="url"
               value={values.coverImage}
               disabled={readOnly}
               onChange={(event) => patch("coverImage", event.target.value)}
-              placeholder="https://…"
+              placeholder="https://… or /hero-tech.jpg"
             />
+
+            {/* Sidebar live preview or quick presets */}
+            {values.coverImage ? (
+              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-md border bg-muted shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={values.coverImage}
+                  alt="Cover preview"
+                  className="size-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget
+                    target.src = "/placeholder.svg"
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed p-2 text-[0.6875rem] text-muted-foreground">
+                <span className="font-medium text-foreground">{t("Quick Presets:", "প্রিসেট ছবি:")}</span>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => patch("coverImage", "/hero-tech.jpg")}
+                    className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.625rem] text-foreground hover:bg-muted/80"
+                  >
+                    /hero-tech.jpg
+                  </button>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => patch("coverImage", "/hackathon.jpg")}
+                    className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.625rem] text-foreground hover:bg-muted/80"
+                  >
+                    /hackathon.jpg
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {scope === "admin" ? (

@@ -58,12 +58,16 @@ export default async function EditPostPage({ params }: PageProps<"/profile/write
         backHref="/profile/posts"
         initialValues={{
           title: post.title,
+          titleBn: post.titleBn ?? "",
           slug: post.slug,
           excerpt: post.excerpt ?? "",
+          excerptBn: post.excerptBn ?? "",
           content: post.content,
+          contentBn: post.contentBn ?? "",
           coverImage: post.coverImage ?? "",
           ogImage: post.ogImage ?? "",
           category: post.category,
+          categoryId: post.categoryId ?? post.category?.id ?? null,
           tags: post.tags,
           seoTitle: post.seoTitle ?? "",
           seoDescription: post.seoDescription ?? "",

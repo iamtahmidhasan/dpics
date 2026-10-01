@@ -364,7 +364,7 @@ export function Header() {
               alt={SITE.title}
               width={32}
               height={32}
-              className="h-8 w-auto rounded-lg"
+              className="size-8 rounded-lg"
             />
             <span className="flex flex-col leading-tight">
               <span className="text-sm">{SITE.title}</span>

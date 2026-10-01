@@ -128,6 +128,7 @@ export type PostListFilters = {
   tag?: string | null
   q?: string | null
   status?: PostStatus | null
+  authorId?: string | null
 }
 
 export type PostReviewInput = {
@@ -594,6 +595,7 @@ export async function listPublishedPosts(
 
   const where: Prisma.PostWhereInput = {
     status: PostStatus.PUBLISHED,
+    ...(filters.authorId ? { authorId: filters.authorId } : {}),
     ...categoryWhere,
     ...(filters.tag ? { tags: { has: filters.tag.toLowerCase() } } : {}),
     ...(term
@@ -711,6 +713,7 @@ export async function listPostsForAdmin(
     : {}
 
   const where: Prisma.PostWhereInput = {
+    ...(filters.authorId ? { authorId: filters.authorId } : {}),
     ...(filters.status ? { status: filters.status } : {}),
     ...categoryWhere,
     ...(filters.tag ? { tags: { has: filters.tag.toLowerCase() } } : {}),

@@ -99,7 +99,7 @@ export function Footer() {
                 alt={BRAND.title}
                 width={32}
                 height={32}
-                className="size-8 w-auto"
+                className="size-8 rounded-lg"
               />
               <span className="flex flex-col leading-tight">
                 <span className="text-base">{BRAND.title}</span>

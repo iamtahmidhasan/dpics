@@ -34,13 +34,16 @@ export function toPostCategoryFilter(
   value: string | string[] | undefined | null
 ): string | null {
   const val = firstValue(value).trim()
-  return val.length > 0 && val !== "all" && val !== "none" ? val : null
+  const lower = val.toLowerCase()
+  return lower.length > 0 && lower !== "all" && lower !== "none" ? val : null
 }
 
 export function toPostStatusFilter(
   value: string | string[] | undefined | null
 ): PostStatus | null {
-  return asEnum(firstValue(value), POST_STATUS_VALUES)
+  const val = firstValue(value).trim()
+  if (val.toLowerCase() === "all" || val.toLowerCase() === "none") return null
+  return asEnum(val, POST_STATUS_VALUES)
 }
 
 /** From `URLSearchParams`, for route handlers. */
@@ -52,6 +55,7 @@ export function postFiltersFromSearch(searchParams: URLSearchParams): PostListFi
     tag: searchParams.get("tag") || null,
     q: searchParams.get("q") || null,
     status: toPostStatusFilter(searchParams.get("status")),
+    authorId: searchParams.get("authorId") || null,
   }
 }
 
@@ -66,6 +70,7 @@ export function postFiltersFromParams(
     tag: firstValue(searchParams.tag) || null,
     q: firstValue(searchParams.q) || null,
     status: toPostStatusFilter(searchParams.status),
+    authorId: firstValue(searchParams.authorId) || null,
   }
 }
 

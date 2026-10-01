@@ -27,17 +27,20 @@ import {
   AdminMemberForm,
 } from "./admin-user-forms"
 import { AdminUserOverview } from "./admin-user-overview"
+import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 
-const SECTIONS = ["overview", "account", "member", "instructor", "committee"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee", "posts"] as const
 
 type Section = (typeof SECTIONS)[number]
 
 export function AdminUserDetailView({
   initialUser,
+  initialPosts,
   isSelf,
 }: {
   initialUser: AdminUserDetail
+  initialPosts?: UserPostsPayload
   isSelf: boolean
 }) {
   const { t } = useLanguage()
@@ -58,6 +61,7 @@ export function AdminUserDetailView({
     member: { en: "Membership", bn: "সদস্যপদ" },
     instructor: { en: "Instructor", bn: "শিক্ষক" },
     committee: { en: "Committee", bn: "কমিটি" },
+    posts: { en: "Posts", bn: "পোস্ট" },
   }
 
   async function save(payload: Record<string, unknown>) {
@@ -248,6 +252,14 @@ export function AdminUserDetailView({
           key={`committee-${user.updatedAt}`}
           user={user}
           onUserUpdated={setUser}
+        />
+      ) : null}
+
+      {section === "posts" ? (
+        <AdminUserPosts
+          userId={user.id}
+          userName={user.name || user.email}
+          initialPosts={initialPosts ?? { posts: [], total: 0, page: 1, pageSize: 20, totalPages: 1 }}
         />
       ) : null}
 

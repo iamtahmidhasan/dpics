@@ -44,8 +44,8 @@ export function useAdminPosts(
     const params = new URLSearchParams({ page: String(page) })
 
     if (search) params.set("q", search)
-    if (status) params.set("status", status)
-    if (category) params.set("category", category)
+    if (status && status !== "ALL") params.set("status", status)
+    if (category && category !== "ALL") params.set("category", category)
 
     fetch(`/api/admin/posts?${params.toString()}`, {
       signal: controller.signal,

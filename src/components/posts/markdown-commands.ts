@@ -159,11 +159,20 @@ export function insertImage(view: EditorView): void {
   const { state } = view
   const { from, to } = state.selection.main
   const selected = state.sliceDoc(from, to)
-  const insert = `![${selected || "alt text"}](/)`
+
+  let url = "https://"
+  if (typeof window !== "undefined") {
+    const input = window.prompt("Image URL (e.g. https://images.unsplash.com/... or /hero-tech.jpg):", "https://")
+    if (input === null) return
+    if (input.trim()) url = input.trim()
+  }
+
+  const alt = selected || "Image description"
+  const insert = `![${alt}](${url})`
 
   view.dispatch({
     changes: { from, to, insert },
-    selection: { anchor: from + insert.length - 2, head: from + insert.length - 1 },
+    selection: { anchor: from + insert.length },
     scrollIntoView: true,
   })
 
