@@ -1,6 +1,6 @@
 allowBuilds:
   '@prisma/engines': false
-  '@tsparticles/engine': set this to true or false
+  '@tsparticles/engine': true
   esbuild: false
   prisma: false
   sharp: false

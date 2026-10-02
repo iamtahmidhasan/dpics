@@ -1,5 +1,4 @@
-import { config } from "dotenv"
-config()
+import "dotenv/config"
 
 import prisma from "../src/lib/prisma"
 import { estimateReadingMinutes } from "../src/lib/markdown"
