@@ -176,7 +176,16 @@ export function Footer() {
           <p>
             &copy; {new Date().getFullYear()} {BRAND.title}. {t(RIGHTS)}
           </p>
-          <p>{t(BOTTOM_LINE)}</p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-foreground underline-offset-4 hover:underline"
+            >
+              {t("Privacy Policy", "গোপনীয়তা নীতি")}
+            </Link>
+            <span className="text-border">&bull;</span>
+            <p>{t(BOTTOM_LINE)}</p>
+          </div>
         </div>
       </div>
     </footer>
