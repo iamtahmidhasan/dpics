@@ -26,21 +26,26 @@ import {
   AdminInstructorForm,
   AdminMemberForm,
 } from "./admin-user-forms"
+import { AdminUserCourses } from "./admin-user-courses"
 import { AdminUserOverview } from "./admin-user-overview"
 import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 
-const SECTIONS = ["overview", "account", "member", "instructor", "committee", "posts"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee", "posts", "courses"] as const
 
 type Section = (typeof SECTIONS)[number]
 
 export function AdminUserDetailView({
   initialUser,
   initialPosts,
+  initialEnrollments = [],
+  availableCourses = [],
   isSelf,
 }: {
   initialUser: AdminUserDetail
   initialPosts?: UserPostsPayload
+  initialEnrollments?: any[]
+  availableCourses?: any[]
   isSelf: boolean
 }) {
   const { t } = useLanguage()
@@ -62,6 +67,7 @@ export function AdminUserDetailView({
     instructor: { en: "Instructor", bn: "শিক্ষক" },
     committee: { en: "Committee", bn: "কমিটি" },
     posts: { en: "Posts", bn: "পোস্ট" },
+    courses: { en: "Enrolled Courses", bn: "কোর্সসমূহ" },
   }
 
   async function save(payload: Record<string, unknown>) {
@@ -260,6 +266,15 @@ export function AdminUserDetailView({
           userId={user.id}
           userName={user.name || user.email}
           initialPosts={initialPosts ?? { posts: [], total: 0, page: 1, pageSize: 20, totalPages: 1 }}
+        />
+      ) : null}
+
+      {section === "courses" ? (
+        <AdminUserCourses
+          userId={user.id}
+          userName={user.name || user.email}
+          initialEnrollments={initialEnrollments}
+          availableCourses={availableCourses}
         />
       ) : null}
 

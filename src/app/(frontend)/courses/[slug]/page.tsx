@@ -1,0 +1,726 @@
+import {
+  Award,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Code2,
+  Compass,
+  FileCode,
+  FileText,
+  GraduationCap,
+  HelpCircle,
+  Home,
+  Layers,
+  Lock,
+  MessageSquare,
+  Play,
+  PlayCircle,
+  Radio,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react"
+import type { Metadata } from "next"
+import Image from "next/image"
+import Link from "next/link"
+import { notFound } from "next/navigation"
+
+import { CourseCard } from "@/components/courses/course-card"
+import { CourseCurriculum } from "@/components/courses/course-curriculum"
+import { CourseEnrollCta } from "@/components/courses/course-enroll-cta"
+import { CoursePreviewTrigger } from "@/components/courses/course-preview-trigger"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { formatDate } from "@/lib/format"
+import { makeT } from "@/lib/i18n"
+import { getLang } from "@/lib/i18n-server"
+import prisma from "@/lib/prisma"
+import { isAdmin as checkAdmin } from "@/lib/roles"
+import { CourseService } from "@/lib/services/course.service"
+import { getSettings } from "@/lib/services/settings.service"
+import { getSession } from "@/lib/session"
+import { SITE_NAME } from "@/lib/site"
+import { cn } from "cn"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const course = await CourseService.getCourseBySlug(slug)
+
+  if (!course) {
+    return { title: "Course Not Found | DPICS Academy" }
+  }
+
+  return {
+    title: `${course.title} | DPICS Academy`,
+    description: course.excerpt || `Learn ${course.title} with DPI Computing Society`,
+    openGraph: {
+      title: `${course.title} | DPICS Academy`,
+      description: course.excerpt || `Learn ${course.title} with DPI Computing Society`,
+      images: course.thumbnail ? [course.thumbnail] : undefined,
+    },
+  }
+}
+
+export default async function CourseDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const [lang, session, settings] = await Promise.all([
+    getLang(),
+    getSession(),
+    getSettings(),
+  ])
+  const t = makeT(lang)
+  const currentUserId = session?.user?.id
+  const isAdmin = session?.user ? checkAdmin(session.user) : false
+
+  const course = await CourseService.getCourseBySlug(slug, currentUserId, isAdmin)
+
+  if (!course) {
+    notFound()
+  }
+
+  // Aggregate unique instructors across all lessons
+  const instructorsMap = new Map<string, any>()
+  for (const sec of course.sections) {
+    for (const les of sec.lessons) {
+      for (const inst of les.instructors) {
+        if (!instructorsMap.has(inst.instructorId)) {
+          instructorsMap.set(inst.instructorId, inst)
+        }
+      }
+    }
+  }
+  const courseInstructors = Array.from(instructorsMap.values())
+  const leadInstructor = courseInstructors[0]?.instructor?.user
+
+  // Calculate total duration from lessons
+  let totalSeconds = 0
+  for (const sec of course.sections) {
+    for (const les of sec.lessons) {
+      if (les.videoDuration) {
+        const parts = les.videoDuration.split(":").map(Number)
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          totalSeconds += parts[0] * 60 + parts[1]
+        } else if (
+          parts.length === 3 &&
+          !isNaN(parts[0]) &&
+          !isNaN(parts[1]) &&
+          !isNaN(parts[2])
+        ) {
+          totalSeconds += parts[0] * 3600 + parts[1] * 60 + parts[2]
+        }
+      }
+    }
+  }
+  const totalMinutes = Math.floor(totalSeconds / 60)
+  const totalHours = (totalMinutes / 60).toFixed(1)
+  const totalDurationFormatted =
+    totalMinutes > 60
+      ? `${totalHours} hrs`
+      : totalMinutes > 0
+        ? `${totalMinutes} mins`
+        : "Self-Paced"
+
+  // Find the first free preview lesson for quick sidebar launch
+  const firstPreviewLesson = course.sections
+    .flatMap((s: any) => s.lessons)
+    .find((l: any) => l.isPreview)
+
+  // Query 3 related courses
+  const relatedCourses = await prisma.course.findMany({
+    where: {
+      isPublished: true,
+      id: { not: course.id },
+      OR: [{ level: course.level }, { isFree: course.isFree }],
+    },
+    take: 3,
+    orderBy: { createdAt: "desc" },
+    include: {
+      sections: {
+        include: {
+          lessons: {
+            select: { id: true, videoDuration: true },
+          },
+        },
+      },
+      _count: {
+        select: { enrollments: true },
+      },
+    },
+  })
+
+  // Format discount info
+  const hasDiscount = Boolean(
+    !course.isFree &&
+      course.discountPrice &&
+      course.price > (course.discountPrice || 0)
+  )
+  const discountPercent =
+    hasDiscount && course.discountPrice
+      ? Math.round(((course.price - course.discountPrice) / course.price) * 100)
+      : 0
+
+  // Derived learning outcomes based on course topic and tags
+  const learningOutcomes = [
+    t(
+      "Master practical engineering concepts with structured step-by-step guidance",
+      "হাতে-কলমে আধুনিক সফটওয়্যার ইঞ্জিনিয়ারিং কনসেপ্ট সম্পূর্ণ আয়ত্ত করুন"
+    ),
+    t(
+      "Build real-world production projects to showcase on your portfolio and GitHub",
+      "বাস্তবমুখী প্রজেক্ট তৈরি করে আপনার গিটহাব ও সিভিকে সমৃদ্ধ করুন"
+    ),
+    t(
+      "Solve practical problem-solving challenges, coding assignments, and quizzes",
+      "সমস্যা সমাধান দক্ষতা বৃদ্ধিতে কুইজ ও ব্যবহারিক কোডিং অ্যাসাইনমেন্ট সমাধান করুন"
+    ),
+    t(
+      "Learn industry-standard clean coding practices and modern design architectures",
+      "ইন্ডাস্ট্রি স্ট্যান্ডার্ড ক্লিন কোড ও আর্কিটেকচারাল প্যাটার্ন শিখুন"
+    ),
+    t(
+      "Direct code review, peer discussions, and senior mentor Q&A support",
+      "মেন্টরদের কাছ থেকে সরাসরি কোড রিভিউ এবং সমস্যা সমাধানের সহায়তা"
+    ),
+    t(
+      "Earn a verifiable Certificate of Completion to boost your career prospects",
+      "কোর্স সম্পন্ন করে ক্যারিয়ার সমৃদ্ধ করার জন্য ভেরিফায়েড সার্টিফিকেট অর্জন করুন"
+    ),
+  ]
+
+  // Default course requirements
+  const prerequisites = [
+    t(
+      "A laptop or desktop computer with internet access",
+      "ইন্টারনেট সুবিধাসহ একটি ল্যাপটপ বা ডেস্কটপ কম্পিউটার"
+    ),
+    t(
+      "Basic computer literacy and enthusiasm to write code",
+      "কম্পিউটার ব্যবহারের সাধারণ জ্ঞান ও শেখার প্রবল আগ্রহ"
+    ),
+    t(
+      "Code editor installed (VS Code recommended)",
+      "একটি কোড এডিটর (যেমন Visual Studio Code) ইনস্টল করা"
+    ),
+  ]
+
+  return (
+    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8 space-y-10">
+      {/* Academy Navigation Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+        <Link
+          href="/courses"
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <Home className="size-3" />
+          <span>{t("Courses", "কোর্সসমূহ")}</span>
+        </Link>
+        <ChevronRight className="size-3 text-muted-foreground/60" />
+        <Link
+          href={`/courses?level=${course.level}`}
+          className="hover:text-foreground transition-colors uppercase"
+        >
+          {course.level?.replace("_", " ") || "ALL LEVELS"}
+        </Link>
+        <ChevronRight className="size-3 text-muted-foreground/60" />
+        <span className="text-foreground truncate max-w-xs">{course.title}</span>
+      </nav>
+
+      {/* Course Hero Banner (Academy Style) */}
+      <header className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card/95 to-primary/5 p-6 md:p-10 shadow-xs">
+        <div className="max-w-4xl space-y-4">
+          {/* Badge Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-[10px] font-mono uppercase bg-background/80">
+              {course.level?.replace("_", " ") || "ALL LEVELS"}
+            </Badge>
+
+            {course.isFree ? (
+              <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] font-bold">
+                {t("FREE COURSE", "ফ্রি কোর্স")}
+              </Badge>
+            ) : (
+              <Badge className="bg-primary text-primary-foreground text-[10px] font-mono font-bold">
+                ৳ {course.discountPrice || course.price}
+              </Badge>
+            )}
+
+            {hasDiscount ? (
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-mono font-bold">
+                {discountPercent}% OFF
+              </Badge>
+            ) : null}
+
+            {course.featured ? (
+              <Badge className="bg-amber-500 text-white text-[10px] gap-1 shadow-xs">
+                <Sparkles className="size-2.5" />
+                <span>{t("Featured", "ফিচার্ড")}</span>
+              </Badge>
+            ) : null}
+
+            <Badge variant="secondary" className="text-[10px] gap-1">
+              <Award className="size-2.5" />
+              <span>{t("Certificate Included", "সার্টিফিকেট অন্তর্ভুক্ত")}</span>
+            </Badge>
+          </div>
+
+          {/* Main Course Title */}
+          <h1 className="font-heading text-2xl font-extrabold sm:text-3xl lg:text-4xl text-foreground leading-tight tracking-tight">
+            {course.title}
+          </h1>
+
+          {/* Course Pitch / Excerpt */}
+          {course.excerpt ? (
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-3xl">
+              {course.excerpt}
+            </p>
+          ) : null}
+
+          {/* Meta Info Row */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-muted-foreground pt-3 border-t border-border/60">
+            {leadInstructor ? (
+              <div className="flex items-center gap-2">
+                <Avatar className="size-6">
+                  {leadInstructor.image ? (
+                    <AvatarImage src={leadInstructor.image} alt={leadInstructor.name || ""} />
+                  ) : null}
+                  <AvatarFallback className="text-[10px]">
+                    {leadInstructor.name?.charAt(0).toUpperCase() || "I"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-foreground font-medium">{leadInstructor.name}</span>
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-1.5 font-mono">
+              <Layers className="size-3.5 text-primary" />
+              <span>
+                {course.sections.length} {t("Modules", "মডিউল")}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-mono">
+              <BookOpen className="size-3.5 text-primary" />
+              <span>
+                {course.stats?.totalLessons || 0} {t("Lectures", "টি পাঠ")}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-mono">
+              <Clock className="size-3.5 text-primary" />
+              <span>{totalDurationFormatted}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-mono">
+              <Users className="size-3.5 text-primary" />
+              <span>
+                {course._count?.enrollments || 0} {t("Enrolled", "শিক্ষার্থী")}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 font-mono">
+              <CalendarDays className="size-3.5 text-primary" />
+              <span>{formatDate(course.updatedAt, lang)}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main 2-Column Course Layout */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] items-start">
+        {/* Left Column: Academic Syllabus & Details */}
+        <div className="space-y-8 min-w-0">
+          {/* 1. What You Will Learn Card */}
+          <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 sm:p-6 space-y-4">
+            <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              <span>{t("What you'll learn in this course", "এই কোর্স থেকে আপনি যা যা শিখবেন")}</span>
+            </h2>
+
+            <div className="grid gap-3 sm:grid-cols-2 text-xs leading-relaxed text-muted-foreground">
+              {learningOutcomes.map((outcome, idx) => (
+                <div key={idx} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span className="text-foreground/90">{outcome}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 2. Interactive Course Curriculum Accordion */}
+          <CourseCurriculum
+            courseTitle={course.title}
+            courseSlug={course.slug}
+            sections={course.sections}
+            totalLessons={course.stats?.totalLessons || 0}
+            totalDuration={totalDurationFormatted}
+            isFree={course.isFree}
+            price={course.price}
+            discountPrice={course.discountPrice}
+            hasAccess={course.hasAccess}
+          />
+
+          {/* 3. Course Requirements / Prerequisites */}
+          <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-3">
+            <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
+              <Compass className="size-4 text-primary" />
+              <span>{t("Requirements & Prerequisites", "প্রয়োজনীয় পূর্বশর্ত")}</span>
+            </h2>
+            <ul className="space-y-2 text-xs text-muted-foreground">
+              {prerequisites.map((item, idx) => (
+                <li key={idx} className="flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-primary shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* 4. Detailed Description / Overview */}
+          {course.description ? (
+            <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-3">
+              <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
+                <FileText className="size-4 text-primary" />
+                <span>{t("Course Description", "কোর্সের বিস্তারিত বিবরণ")}</span>
+              </h2>
+              <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {course.description}
+              </div>
+            </section>
+          ) : null}
+
+          {/* 5. Course Features / Inclusions Grid */}
+          <section className="space-y-3">
+            <h2 className="font-heading text-base font-bold text-foreground">
+              {t("This course includes", "এই কোর্সের সাথে থাকছে")}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
+                <PlayCircle className="size-5 text-primary shrink-0" />
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground block">
+                    {course.stats?.totalLessons || 0} {t("On-demand Video Lessons", "ভিডিও লেকচার")}
+                  </span>
+                  <span className="text-muted-foreground text-[11px]">
+                    {t("High quality step-by-step videos", "এইচডি কোয়ালিটি লেকচার")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
+                <HelpCircle className="size-5 text-amber-500 shrink-0" />
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground block">
+                    {t("Quizzes & Practice Tasks", "কুইজ ও অনুশীলন")}
+                  </span>
+                  <span className="text-muted-foreground text-[11px]">
+                    {t("Test and reinforce your understanding", "জ্ঞান যাচাইয়ের সুযোগ")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
+                <FileCode className="size-5 text-blue-500 shrink-0" />
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground block">
+                    {t("Project Source Code", "প্রজেক্টের সোর্স কোড")}
+                  </span>
+                  <span className="text-muted-foreground text-[11px]">
+                    {t("Full GitHub repositories & assets", "সম্পূর্ণ গিটহাব রিপো")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
+                <Award className="size-5 text-emerald-500 shrink-0" />
+                <div className="text-xs">
+                  <span className="font-semibold text-foreground block">
+                    {t("Certificate of Completion", "কোর্স সমাপন সনদ")}
+                  </span>
+                  <span className="text-muted-foreground text-[11px]">
+                    {t("Verified credential upon completion", "যাচাইকৃত সনদ")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 6. Instructors Section */}
+          {courseInstructors.length > 0 ? (
+            <section className="space-y-4 border-t border-border pt-6">
+              <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+                <GraduationCap className="size-5 text-primary" />
+                <span>{t("Meet Your Instructors", "ইনস্ট্রাক্টর পরিচিতি")}</span>
+              </h2>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {courseInstructors.map((item: any, idx: number) => {
+                  const instUser = item.instructor?.user
+                  const initials = (instUser?.name || "?").trim().charAt(0).toUpperCase()
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-xs"
+                    >
+                      <Avatar className="size-12 shrink-0 border border-border">
+                        {instUser?.image ? (
+                          <AvatarImage src={instUser.image} alt={instUser?.name} />
+                        ) : null}
+                        <AvatarFallback className="font-semibold">{initials}</AvatarFallback>
+                      </Avatar>
+
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-sm font-bold text-foreground truncate">
+                            {instUser?.name}
+                          </h3>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            {item.role || t("Instructor", "শিক্ষক")}
+                          </Badge>
+                        </div>
+
+                        {item.instructor?.expertise ? (
+                          <p className="text-[11px] text-primary font-medium line-clamp-1">
+                            {item.instructor.expertise}
+                          </p>
+                        ) : null}
+
+                        {item.instructor?.bio ? (
+                          <p className="text-[11px] text-muted-foreground line-clamp-3 leading-relaxed">
+                            {item.instructor.bio}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {/* 7. Frequently Asked Questions (FAQ) */}
+          <section className="space-y-4 border-t border-border pt-6">
+            <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
+              <MessageSquare className="size-5 text-primary" />
+              <span>{t("Frequently Asked Questions", "সাধারণ কিছু প্রশ্ন")}</span>
+            </h2>
+
+            <div className="space-y-3">
+              <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
+                <h4 className="text-xs font-bold text-foreground">
+                  {t(
+                    "When do I get access to the course content?",
+                    "কোর্সে যুক্ত হওয়ার পর কখন অ্যাক্সেস পাব?"
+                  )}
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {course.isFree
+                    ? t(
+                        "Immediately! As soon as you click Enroll for Free, the course will be unlocked in your learning portal.",
+                        "তাৎক্ষণিকভাবে! ফ্রি কোর্সে এনরোল করার সাথে সাথেই ক্লাসরুম পোর্টালে সকল লেকচার আনলক হয়ে যাবে।"
+                      )
+                    : t(
+                        "For paid courses, once you submit your payment transaction ID, our team approves your enrollment and unlocks full access.",
+                        "পেইড কোর্সের ক্ষেত্রে আপনার বিকাশ/নগদ পেমেন্ট ট্রানজেকশন আইডি সাবমিট করার পর আমাদের টিম ভেরিফাই করে পূর্ণ অ্যাক্সেস চালু করে দিবে।"
+                      )}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
+                <h4 className="text-xs font-bold text-foreground">
+                  {t("Do I get lifetime access to the materials?", "আমি কি আজীবন অ্যাক্সেস পাব?")}
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    "Yes! You will have lifetime access to all lectures, project resources, code repositories, and future updates to this course.",
+                    "হ্যাঁ! একবার এনরোল করলে আপনি এই কোর্সের সকল ভিডিও, রিসোর্স ও ভবিষ্যতের সব আপডেটে আজীবন অ্যাক্সেস পাবেন।"
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
+                <h4 className="text-xs font-bold text-foreground">
+                  {t(
+                    "How can I ask questions if I get stuck?",
+                    "কোডিংয়ে কোনো সমস্যা হলে সাহায্য কীভাবে পাব?"
+                  )}
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {t(
+                    "Every lesson in the classroom has an active discussion area. You can also connect with instructors and peers directly in our community channels.",
+                    "ক্লাসরুমের প্রতিটি পাঠের নিচে আলোচনা সেকশন রয়েছে। এছাড়া সোসাইটির ডিসকর্ড/গ্রুপে সরাসরি সিনিয়র ও ইনস্ট্রাক্টরদের সাহায্য পাবেন।"
+                  )}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Tags */}
+          {course.tags.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-4">
+              <span className="text-xs text-muted-foreground font-mono mr-1">
+                {t("Tags:", "ট্যাগ:")}
+              </span>
+              {course.tags.map((tag: string) => (
+                <Link key={tag} href={`/courses?tag=${encodeURIComponent(tag)}`}>
+                  <Badge variant="secondary" className="text-[10px] font-normal hover:bg-muted">
+                    #{tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Right Column: Sticky Tuition & Enrollment Card */}
+        <aside className="sticky top-6 space-y-4">
+          <Card id="enroll" className="overflow-hidden border-border shadow-md">
+            {/* Preview Thumbnail with Play Icon & Interactive Modal Trigger */}
+            <CoursePreviewTrigger
+              thumbnail={course.thumbnail}
+              title={course.title}
+              duration={totalDurationFormatted}
+              firstPreviewLessonId={firstPreviewLesson?.id}
+            />
+
+            {/* Tuition Pricing Header */}
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase font-mono text-muted-foreground font-semibold">
+                  {t("Tuition Fee", "কোর্স ফি")}
+                </span>
+                {hasDiscount ? (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-mono font-bold">
+                    {discountPercent}% {t("OFF", "ছাড়")}
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="flex items-baseline gap-2 mt-1">
+                {course.isFree ? (
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-heading text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                      {t("Free", "ফ্রি")}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      ({t("100% Free Forever", "১০০% সম্পূর্ণ ফ্রি")})
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-heading text-3xl font-black text-foreground">
+                      ৳ {course.discountPrice || course.price}
+                    </span>
+                    {hasDiscount ? (
+                      <span className="text-sm text-muted-foreground line-through font-mono">
+                        ৳ {course.price}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </CardHeader>
+
+            {/* Enrollment CTA & Highlights */}
+            <CardContent className="space-y-5 pt-0">
+              {/* Primary Enrollment Action Button */}
+              <CourseEnrollCta
+                course={{
+                  id: course.id,
+                  title: course.title,
+                  slug: course.slug,
+                  isFree: course.isFree,
+                  price: course.price,
+                  discountPrice: course.discountPrice,
+                }}
+                enrollment={course.enrollment}
+                isAuthenticated={Boolean(session?.user)}
+                paymentSettings={{
+                  bkashPersonalNumber: settings.bkashPersonalNumber,
+                  nagadPersonalNumber: settings.nagadPersonalNumber,
+                  rocketPersonalNumber: settings.rocketPersonalNumber,
+                }}
+              />
+
+              <div className="space-y-2.5 pt-2 border-t border-border/60 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="size-4 text-emerald-500 shrink-0" />
+                  <span>{t("Full lifetime access to all lessons", "সব পাঠে আজীবন অ্যাক্সেস")}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                  <span>
+                    {t(
+                      "Access on mobile, tablet & desktop",
+                      "মোবাইল, ট্যাবলেট ও পিসিতে ব্যবহার উপযোগী"
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                  <span>{t("Quizzes & hands-on assignments", "অনুশীলনী কুইজ ও অ্যাসাইনমেন্ট")}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                  <span>
+                    {t("Verified certificate of completion", "যাচাইযোগ্য কোর্স সমাপ্তি সনদ")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                  <span>
+                    {t("Direct instructor & community support", "সরাসরি শিক্ষক ও কমিউনিটি সহায়তা")}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+
+      {/* Related Courses Section */}
+      {relatedCourses.length > 0 ? (
+        <section className="space-y-5 border-t border-border pt-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-heading text-xl font-bold text-foreground">
+                {t("Related Courses You Might Like", "সম্পর্কিত অন্যান্য কোর্স")}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t(
+                  "Continue expanding your technical stack with these tracks",
+                  "আপনার স্কিল বাড়াতে এই কোর্সগুলো দেখতে পারেন"
+                )}
+              </p>
+            </div>
+            <Link
+              href="/courses"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              {t("Explore all", "সব দেখুন")}
+            </Link>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedCourses.map((item) => (
+              <CourseCard key={item.id} course={item} lang={lang} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  )
+}

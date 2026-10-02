@@ -161,7 +161,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-8">
+    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -85,7 +85,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/posts">) {
   const popularTags = facets.tags.slice(0, 12)
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-8">
+    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
       <header className="space-y-1.5">
         <h1 className="font-heading text-2xl font-semibold">{t("Blog", "ব্লগ")}</h1>
         <p className="text-muted-foreground text-sm">{SITE_DESCRIPTION}</p>
