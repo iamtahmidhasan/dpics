@@ -132,7 +132,7 @@ export function Footer() {
             <FooterHeading>{t(HEADINGS.explore)}</FooterHeading>
             <ul className="flex flex-col gap-2.5">
               {EXPLORE_LINKS.map((link) => (
-                <li key={link.href}>
+                <li key={`${link.label.en}-${link.href}`}>
                   <FooterLink link={link} t={t} />
                 </li>
               ))}
@@ -143,7 +143,7 @@ export function Footer() {
             <FooterHeading>{t(HEADINGS.involve)}</FooterHeading>
             <ul className="flex flex-col gap-2.5">
               {INVOLVE_LINKS.map((link) => (
-                <li key={link.href}>
+                <li key={`${link.label.en}-${link.href}`}>
                   <FooterLink link={link} t={t} />
                 </li>
               ))}

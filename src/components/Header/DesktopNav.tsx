@@ -153,7 +153,7 @@ export function DesktopNav({
                   )}
                   <ul className="space-y-1">
                     {col.links.map((link) => (
-                      <li key={link.href}>
+                      <li key={`${link.label.en}-${link.href}`}>
                         <Link
                           href={link.href}
                           className="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted"

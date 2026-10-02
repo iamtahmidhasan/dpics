@@ -36,7 +36,7 @@ export function MobileNav({
         const isOpen = openIndex === i
         const isActive = pathname === item.href
         return (
-          <div key={item.href}>
+          <div key={`${item.label.en}-${item.href}`}>
             {hasChildren ? (
               <div className="flex w-full items-center">
                 <Link
@@ -82,7 +82,7 @@ export function MobileNav({
               >
                 {item.children.map((child) => (
                   <Link
-                    key={child.href}
+                    key={`${child.label.en}-${child.href}`}
                     href={child.href}
                     onClick={onNavigate}
                     data-active={pathname === child.href || undefined}
