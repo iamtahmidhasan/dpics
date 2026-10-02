@@ -12,6 +12,7 @@ import { isOnboarded, isSetupComplete, type SelfAssignableRole } from "@/lib/rol
 import { getBatchMemberStats } from "@/lib/services/member-id.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { getSession } from "@/lib/session"
+import { normalizeImageList } from "@/lib/user-image"
 
 export const metadata: Metadata = {
   title: "Complete Registration",
@@ -109,7 +110,7 @@ export default async function RegisterPage() {
             name: user.name || "",
             email: user.email || "",
             phone: user.phone ?? "",
-            image: user.image ?? null,
+            images: normalizeImageList(user.image),
           }}
           signupPolicy={signupPolicy}
         />

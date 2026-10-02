@@ -8,6 +8,7 @@ import { useState } from "react"
 import { TextField } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
 import { MAX_IMAGES, PicturePicker, isImageSource } from "@/components/picture-picker"
+import { normalizeImageList } from "@/lib/user-image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -22,7 +23,8 @@ export type UserSeed = {
   name: string
   email: string
   phone: string
-  image?: string | null
+  image?: string | string[] | null
+  images?: string[] | null
 }
 
 export type UserDetails = {
@@ -49,7 +51,9 @@ export function ProfileStep({
   const [name, setName] = useState(seed.name)
   const [email, setEmail] = useState(seed.email)
   const [phone, setPhone] = useState(seed.phone)
-  const [images, setImages] = useState<string[]>(seed.image ? [seed.image] : [])
+  const [images, setImages] = useState<string[]>(() =>
+    normalizeImageList(seed.images ?? seed.image)
+  )
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [imageUrl, setImageUrl] = useState("")
   const [imageError, setImageError] = useState<string | null>(null)

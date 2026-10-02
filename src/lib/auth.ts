@@ -14,14 +14,29 @@ function clampSelectedImage(selactedImg: unknown, imageCount: number): string {
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "github"],
+      updateUserInfoOnLink: true,
+    },
+  },
   socialProviders: {
     google: {
       clientId: (process.env.GOOGLE_CLIENT_ID ?? "") as string,
       clientSecret: (process.env.GOOGLE_CLIENT_SECRET ?? "") as string,
+      overrideUserInfoOnSignIn: true,
+      mapProfileToUser: (profile) => ({
+        image: profile.picture,
+      }),
     },
     github: {
       clientId: (process.env.GITHUB_CLIENT_ID ?? "") as string,
       clientSecret: (process.env.GITHUB_CLIENT_SECRET ?? "") as string,
+      overrideUserInfoOnSignIn: true,
+      mapProfileToUser: (profile) => ({
+        image: profile.avatar_url,
+      }),
     },
   },
   emailAndPassword: {
@@ -99,6 +114,10 @@ export const auth = betterAuth({
           if (user.image === undefined) return
 
           const image = normalizeImageList(user.image)
+          if (image.length === 0) {
+            const { image: _omitted, ...rest } = user
+            return { data: rest }
+          }
 
           return {
             data: {
