@@ -53,19 +53,23 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
-  const { slug } = await params
+  const [{ slug }, lang] = await Promise.all([params, getLang()])
   const course = await CourseService.getCourseBySlug(slug)
 
   if (!course) {
     return { title: "Course Not Found | DPICS Academy" }
   }
 
+  const isBn = lang === "bn"
+  const title = (isBn && course.titleBn) ? course.titleBn : course.title
+  const excerpt = (isBn && course.excerptBn) ? course.excerptBn : (course.excerpt || `Learn ${course.title} with DPI Computing Society`)
+
   return {
-    title: `${course.title} | DPICS Academy`,
-    description: course.excerpt || `Learn ${course.title} with DPI Computing Society`,
+    title: `${title} | DPICS Academy`,
+    description: excerpt,
     openGraph: {
-      title: `${course.title} | DPICS Academy`,
-      description: course.excerpt || `Learn ${course.title} with DPI Computing Society`,
+      title: `${title} | DPICS Academy`,
+      description: excerpt,
       images: course.thumbnail ? [course.thumbnail] : undefined,
     },
   }
@@ -222,6 +226,11 @@ export default async function CourseDetailPage({
     ),
   ]
 
+  const isBn = lang === "bn"
+  const displayTitle = (isBn && course.titleBn) ? course.titleBn : course.title
+  const displayExcerpt = (isBn && course.excerptBn) ? course.excerptBn : course.excerpt
+  const displayDescription = (isBn && course.descriptionBn) ? course.descriptionBn : (course.description || course.descriptionBn)
+
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8 space-y-10">
       {/* Academy Navigation Breadcrumb */}
@@ -241,7 +250,7 @@ export default async function CourseDetailPage({
           {course.level?.replace("_", " ") || "ALL LEVELS"}
         </Link>
         <ChevronRight className="size-3 text-muted-foreground/60" />
-        <span className="text-foreground truncate max-w-xs">{course.title}</span>
+        <span className="text-foreground truncate max-w-xs">{displayTitle}</span>
       </nav>
 
       {/* Course Hero Banner (Academy Style) */}
@@ -284,13 +293,13 @@ export default async function CourseDetailPage({
 
           {/* Main Course Title */}
           <h1 className="font-heading text-2xl font-extrabold sm:text-3xl lg:text-4xl text-foreground leading-tight tracking-tight">
-            {course.title}
+            {displayTitle}
           </h1>
 
           {/* Course Pitch / Excerpt */}
-          {course.excerpt ? (
+          {displayExcerpt ? (
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-3xl">
-              {course.excerpt}
+              {displayExcerpt}
             </p>
           ) : null}
 
@@ -350,7 +359,7 @@ export default async function CourseDetailPage({
         <div className="space-y-8 min-w-0">
           {/* 1. Interactive Course Curriculum Accordion */}
           <CourseCurriculum
-            courseTitle={course.title}
+            courseTitle={displayTitle}
             courseSlug={course.slug}
             sections={course.sections}
             totalLessons={course.stats?.totalLessons || 0}
@@ -378,14 +387,14 @@ export default async function CourseDetailPage({
           </section>
 
           {/* 3. Detailed Description / Overview with Markdown HTML Rendering */}
-          {course.description ? (
+          {displayDescription ? (
             <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-3">
               <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
                 <FileText className="size-4 text-primary" />
                 <span>{t("Course Description", "কোর্সের বিস্তারিত বিবরণ")}</span>
               </h2>
               <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                <MarkdownContent>{course.description}</MarkdownContent>
+                <MarkdownContent>{displayDescription}</MarkdownContent>
               </div>
             </section>
           ) : null}

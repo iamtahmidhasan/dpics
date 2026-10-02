@@ -1,12 +1,32 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight, Layers, Loader2, Save } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Globe,
+  ImageIcon,
+  ImageOff,
+  Layers,
+  Loader2,
+  Save,
+  Sparkles,
+} from "lucide-react"
 
+import { MarkdownEditor } from "@/components/posts/markdown-editor"
+import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -17,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "cn"
 
@@ -26,15 +45,28 @@ interface CourseFormProps {
   isEditing?: boolean
 }
 
+type LangTab = "en" | "bn"
+
 export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps) {
   const { t } = useLanguage()
   const router = useRouter()
 
+  const [activeTab, setActiveTab] = React.useState<LangTab>("en")
+
+  // English fields
   const [title, setTitle] = React.useState(initialCourse?.title || "")
   const [slug, setSlug] = React.useState(initialCourse?.slug || "")
   const [excerpt, setExcerpt] = React.useState(initialCourse?.excerpt || "")
   const [description, setDescription] = React.useState(initialCourse?.description || "")
+
+  // Bangla fields
+  const [titleBn, setTitleBn] = React.useState(initialCourse?.titleBn || "")
+  const [excerptBn, setExcerptBn] = React.useState(initialCourse?.excerptBn || "")
+  const [descriptionBn, setDescriptionBn] = React.useState(initialCourse?.descriptionBn || "")
+
+  // Shared metadata
   const [thumbnail, setThumbnail] = React.useState(initialCourse?.thumbnail || "")
+  const [thumbnailError, setThumbnailError] = React.useState(false)
   const [level, setLevel] = React.useState(initialCourse?.level || "ALL_LEVELS")
   const [isFree, setIsFree] = React.useState(
     initialCourse ? Boolean(initialCourse.isFree) : true
@@ -57,6 +89,11 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
 
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+
+  // Reset thumbnail error when URL changes
+  React.useEffect(() => {
+    setThumbnailError(false)
+  }, [thumbnail])
 
   const handleTitleChange = (val: string) => {
     setTitle(val)
@@ -82,10 +119,13 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
 
       const payload = {
         title,
+        titleBn: titleBn.trim() ? titleBn : null,
         slug,
-        excerpt,
-        description,
-        thumbnail,
+        excerpt: excerpt.trim() ? excerpt : null,
+        excerptBn: excerptBn.trim() ? excerptBn : null,
+        description: description.trim() ? description : null,
+        descriptionBn: descriptionBn.trim() ? descriptionBn : null,
+        thumbnail: thumbnail.trim() ? thumbnail : null,
         level,
         isFree,
         price: isFree ? 0 : parseInt(price) || 0,
@@ -95,9 +135,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
         featured,
       }
 
-      const url = isEditing
-        ? `/api/courses/${initialCourse.id}`
-        : "/api/courses"
+      const url = isEditing ? `/api/courses/${initialCourse.id}` : "/api/courses"
       const method = isEditing ? "PATCH" : "POST"
 
       const res = await fetch(url, {
@@ -115,7 +153,6 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
       const savedId = isEditing ? initialCourse.id : data.course?.id
 
       if (!isEditing && savedId) {
-        // Go to curriculum builder for the newly created course
         router.push(`/admin/courses/${savedId}/curriculum`)
       } else {
         router.push("/admin/courses")
@@ -130,6 +167,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      {/* Navigation header */}
       <div className="flex items-center justify-between">
         <Link
           href="/admin/courses"
@@ -147,39 +185,178 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
             href={`/admin/courses/${initialCourse.id}/curriculum`}
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
-              "text-xs gap-1.5"
+              "text-xs gap-1.5 font-medium"
             )}
           >
             <Layers className="size-3.5 text-primary" />
-            <span>{t("Edit Curriculum Syllabus", "সিলেবাস সম্পাদনা")}</span>
+            <span>{t("Manage Curriculum Syllabus", "সিলেবাস সম্পাদনা")}</span>
             <ArrowRight className="size-3" />
           </Link>
         ) : null}
       </div>
 
       <div className="grid gap-6">
-        {/* Basic Information */}
+        {/* Bilingual Content Switcher Card */}
+        <Card className="border-border shadow-xs overflow-hidden">
+          <CardHeader className="bg-muted/20 border-b border-border pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Globe className="size-4 text-primary" />
+                  <span>{t("Bilingual Course Content", "দ্বিভাষিক কোর্স বিষয়বস্তু")}</span>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {t(
+                    "Provide title, excerpt, and rich markdown description in English and Bangla.",
+                    "ইংরেজি ও বাংলা উভয় ভাষায় কোর্সের শিরোনাম, সারসংক্ষেপ এবং মার্কডাউন বিবরণ লিখুন।"
+                  )}
+                </CardDescription>
+              </div>
+
+              {/* Language Switcher Tabs */}
+              <div className="flex items-center rounded-lg border border-border bg-card p-1 shadow-xs shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("en")}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+                    activeTab === "en"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span>English</span>
+                  {title.trim() && <Check className="size-3" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("bn")}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+                    activeTab === "bn"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span>বাংলা (Bangla)</span>
+                  {titleBn.trim() && <Check className="size-3" />}
+                </button>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-5 pt-5">
+            {activeTab === "en" ? (
+              /* English Fields */
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Course Title (English)", "কোর্স শিরোনাম (ইংরেজি)")} *
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+                  </div>
+                  <Input
+                    value={title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    placeholder="e.g. Master Full-Stack Next.js 15 & React 19"
+                    className="text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Short Excerpt (English)", "সংক্ষিপ্ত বিবরণ (ইংরেজি)")}
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+                  </div>
+                  <Input
+                    value={excerpt}
+                    onChange={(e) => setExcerpt(e.target.value)}
+                    placeholder="One sentence summary of the course in English"
+                    className="text-xs"
+                  />
+                </div>
+
+                {/* Markdown Editor for English Description */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Detailed Description (English Markdown)", "কোর্সের বিস্তারিত বিবরণ (ইংরেজি মার্কডাউন)")}
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground font-mono">Markdown Editor</span>
+                  </div>
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <MarkdownEditor
+                      value={description}
+                      onChange={setDescription}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Bangla Fields */
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Course Title (Bangla)", "কোর্স শিরোনাম (বাংলা)")}
+                    </Label>
+                    <span className="text-[10px] text-primary font-mono font-semibold">বাংলা</span>
+                  </div>
+                  <Input
+                    value={titleBn}
+                    onChange={(e) => setTitleBn(e.target.value)}
+                    placeholder="যেমন: ফুল-স্ট্যাক নেক্সট.জেএস ১৫ ও রিয়েক্ট ১৯ মাস্টারি"
+                    className="text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Short Excerpt (Bangla)", "সংক্ষিপ্ত বিবরণ (বাংলা)")}
+                    </Label>
+                    <span className="text-[10px] text-primary font-mono font-semibold">বাংলা</span>
+                  </div>
+                  <Input
+                    value={excerptBn}
+                    onChange={(e) => setExcerptBn(e.target.value)}
+                    placeholder="বাংলায় এক লাইনে কোর্সের সংক্ষিপ্ত রূপরেখা"
+                    className="text-xs"
+                  />
+                </div>
+
+                {/* Markdown Editor for Bangla Description */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">
+                      {t("Detailed Description (Bangla Markdown)", "কোর্সের বিস্তারিত বিবরণ (বাংলা মার্কডাউন)")}
+                    </Label>
+                    <span className="text-[10px] text-primary font-mono font-semibold">বাংলা এডিটর</span>
+                  </div>
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <MarkdownEditor
+                      value={descriptionBn}
+                      onChange={setDescriptionBn}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* URL Slug & Skill Level */}
         <Card className="border-border shadow-xs">
           <CardHeader>
             <CardTitle className="text-base font-bold">
-              {t("Course Information", "কোর্সের সাধারণ তথ্য")}
+              {t("URL & Classification", "ইউআরএল ও ক্যাটাগরি")}
             </CardTitle>
-            <CardDescription className="text-xs">
-              {t("Title, URL slug, summary, and skill level.", "কোর্সের নাম, ইউআরএল এবং লেভেল নির্ধারণ করুন।")}
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">{t("Course Title", "কোর্স শিরোনাম")} *</Label>
-              <Input
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="e.g. Master Full-Stack Next.js 15 & React 19"
-                className="text-xs"
-                required
-              />
-            </div>
-
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">{t("URL Slug", "ইউআরএল স্ল্যাগ")} *</Label>
               <Input
@@ -192,16 +369,6 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
               <p className="text-[11px] text-muted-foreground font-mono">
                 /courses/{slug || "slug-here"}
               </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">{t("Short Excerpt", "সংক্ষিপ্ত বিবরণ")}</Label>
-              <Input
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-                placeholder="One sentence summary explaining who this course is for and what it covers"
-                className="text-xs"
-              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -221,7 +388,9 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">{t("Tags (comma-separated)", "ট্যাগ (কমা দিয়ে আলাদা করুন)")}</Label>
+                <Label className="text-xs font-semibold">
+                  {t("Tags (comma-separated)", "ট্যাগ (কমা দিয়ে আলাদা করুন)")}
+                </Label>
                 <Input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
@@ -230,15 +399,75 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Thumbnail with Live Image Preview */}
+        <Card className="border-border shadow-xs">
+          <CardHeader>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <ImageIcon className="size-4 text-primary" />
+              <span>{t("Course Thumbnail Image", "কোর্স থাম্বনেইল ছবি")}</span>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {t(
+                "Enter a public image URL. A 16:9 live preview is rendered below.",
+                "ছবির ইউআরএল দিন। নিচে সরাসরি ১৬:৯ অনুপাতে প্রিভিউ দেখতে পাবেন।"
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">{t("Thumbnail Image URL", "থাম্বনেইল ইমেজ ইউআরএল")}</Label>
+              <Label className="text-xs font-semibold">
+                {t("Thumbnail Image URL", "থাম্বনেইল ইমেজ ইউআরএল")}
+              </Label>
               <Input
                 value={thumbnail}
                 onChange={(e) => setThumbnail(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
                 className="text-xs font-mono"
               />
+            </div>
+
+            {/* Live Image Preview Box */}
+            <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+              <span className="text-[11px] font-mono text-muted-foreground uppercase font-semibold block">
+                {t("Live Card Preview (16:9)", "লাইভ কার্ড প্রিভিউ (১৬:৯)")}
+              </span>
+
+              <div className="relative aspect-video max-w-md overflow-hidden rounded-lg border border-border bg-muted">
+                {thumbnail.trim() && !thumbnailError ? (
+                  <Image
+                    src={thumbnail.trim()}
+                    alt={title || "Course thumbnail preview"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 440px"
+                    className="object-cover"
+                    onError={() => setThumbnailError(true)}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/60 p-4 text-center">
+                    {thumbnailError ? (
+                      <>
+                        <ImageOff className="size-8 text-destructive/60" />
+                        <span className="text-xs text-destructive">
+                          {t("Unable to load image from URL", "ইউআরএল থেকে ছবি লোড করা যায়নি")}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="size-8" />
+                        <span className="text-xs">
+                          {t(
+                            "Enter an image URL above to preview the course thumbnail",
+                            "কোর্স থাম্বনেইল দেখতে উপরে একটি ছবির ইউআরএল দিন"
+                          )}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -250,7 +479,10 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
               {t("Pricing & Enrollment", "কোর্স ফি ও এনরোলমেন্ট")}
             </CardTitle>
             <CardDescription className="text-xs">
-              {t("Set whether this course is 100% free or requires tuition fee payment.", "কোর্সটি সম্পূর্ণ ফ্রি নাকি পেইড তা নির্ধারণ করুন।")}
+              {t(
+                "Set whether this course is 100% free or requires tuition fee payment.",
+                "কোর্সটি সম্পূর্ণ ফ্রি নাকি পেইড তা নির্ধারণ করুন।"
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -281,7 +513,9 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold">{t("Discounted Fee (৳, Optional)", "ডিসকাউন্ট ফি (৳)")}</Label>
+                  <Label className="text-xs font-semibold">
+                    {t("Discounted Fee (৳, Optional)", "ডিসকাউন্ট ফি (৳, ঐচ্ছিক)")}
+                  </Label>
                   <Input
                     type="number"
                     value={discountPrice}
@@ -292,27 +526,6 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Course Description Markdown */}
-        <Card className="border-border shadow-xs">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">
-              {t("Detailed Description", "কোর্সের বিস্তারিত বিবরণ")}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {t("Full syllabus, prerequisite notes, and what makes this course unique (Markdown supported).", "পূর্ণ বিবরণ ও সিলেবাসের রূপরেখা লিখুন (মার্কডাউন সমর্থিত)।")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Textarea
-              rows={8}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="### What you'll learn&#10;- Core fundamentals&#10;- Building real world projects&#10;- Deployment and testing..."
-              className="text-xs font-mono leading-relaxed"
-            />
           </CardContent>
         </Card>
 
@@ -379,7 +592,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
             {t("Cancel", "বাতিল")}
           </Link>
 
-          <Button type="submit" size="sm" disabled={loading} className="gap-1.5 font-bold">
+          <Button type="submit" size="sm" disabled={loading} className="gap-1.5 font-bold cursor-pointer">
             {loading ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (

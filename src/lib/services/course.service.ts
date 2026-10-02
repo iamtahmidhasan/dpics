@@ -2,12 +2,16 @@ import "server-only"
 
 import prisma from "@/lib/prisma"
 import type { CourseLevel } from "@/generated/prisma/enums"
+import { resolveUserImage, normalizeImageList } from "@/lib/user-image"
 
 export interface CreateCourseInput {
   title: string
+  titleBn?: string | null
   slug: string
   excerpt?: string | null
+  excerptBn?: string | null
   description?: string | null
+  descriptionBn?: string | null
   thumbnail?: string | null
   level?: CourseLevel
   isFree?: boolean
@@ -28,7 +32,9 @@ export interface LessonInstructorInput {
 export interface LessonInput {
   id?: string
   title: string
+  titleBn?: string | null
   description?: string | null
+  descriptionBn?: string | null
   orderIndex: number
   isPreview?: boolean
   videoUrl?: string | null
@@ -45,7 +51,9 @@ export interface LessonInput {
 export interface SectionInput {
   id?: string
   title: string
+  titleBn?: string | null
   description?: string | null
+  descriptionBn?: string | null
   orderIndex: number
   lessons: LessonInput[]
 }
@@ -84,7 +92,9 @@ export class CourseService {
     if (search && search.trim().length > 0) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
+        { titleBn: { contains: search, mode: "insensitive" } },
         { excerpt: { contains: search, mode: "insensitive" } },
+        { excerptBn: { contains: search, mode: "insensitive" } },
         { tags: { has: search.trim() } },
       ]
     }
@@ -100,6 +110,7 @@ export class CourseService {
               select: {
                 id: true,
                 title: true,
+                titleBn: true,
                 videoDuration: true,
                 isPreview: true,
                 instructors: {
@@ -110,6 +121,7 @@ export class CourseService {
                           select: {
                             id: true,
                             name: true,
+                            email: true,
                             image: true,
                             selactedImg: true,
                           },
@@ -140,10 +152,17 @@ export class CourseService {
         for (const lesson of section.lessons) {
           for (const li of lesson.instructors) {
             if (li.instructor?.user && !instructorsMap.has(li.instructor.id)) {
+              const { avatar } = resolveUserImage(
+                normalizeImageList(li.instructor.user.image),
+                li.instructor.user.selactedImg
+              )
               instructorsMap.set(li.instructor.id, {
                 id: li.instructor.id,
+                instructorId: li.instructor.instructorId,
                 name: li.instructor.user.name,
-                image: li.instructor.user.image,
+                email: li.instructor.user.email,
+                avatar,
+                image: avatar,
                 selactedImg: li.instructor.user.selactedImg,
                 role: li.role,
               })
@@ -239,7 +258,9 @@ export class CourseService {
           id: lesson.id,
           sectionId: lesson.sectionId,
           title: lesson.title,
+          titleBn: lesson.titleBn,
           description: isUnlocked ? lesson.description : null,
+          descriptionBn: isUnlocked ? lesson.descriptionBn : null,
           orderIndex: lesson.orderIndex,
           isPreview: lesson.isPreview,
           videoDuration: lesson.videoDuration,
@@ -252,19 +273,25 @@ export class CourseService {
           assignment: isUnlocked ? lesson.assignment : null,
           resources: isUnlocked ? lesson.resources : null,
           externalLinks: isUnlocked ? lesson.externalLinks : null,
-          instructors: lesson.instructors.map((li) => ({
-            id: li.id,
-            instructorId: li.instructorId,
-            role: li.role,
-            name: li.instructor.user.name,
-            email: li.instructor.user.email,
-            image: Array.isArray(li.instructor.user.image)
-              ? li.instructor.user.image[0]
-              : li.instructor.user.image,
-            selactedImg: li.instructor.user.selactedImg,
-            expertise: li.instructor.expertise || null,
-            bio: li.instructor.bio || null,
-          })),
+          instructors: lesson.instructors.map((li) => {
+            const { avatar } = resolveUserImage(
+              normalizeImageList(li.instructor.user.image),
+              li.instructor.user.selactedImg
+            )
+            return {
+              id: li.id,
+              instructorId: li.instructorId,
+              role: li.role,
+              name: li.instructor.user.name,
+              email: li.instructor.user.email,
+              avatar,
+              image: avatar,
+              rawImages: li.instructor.user.image,
+              selactedImg: li.instructor.user.selactedImg,
+              expertise: li.instructor.expertise || null,
+              bio: li.instructor.bio || null,
+            }
+          }),
           isCompleted: Array.isArray(lesson.progress) && lesson.progress.length > 0 ? lesson.progress[0].completed : false,
         }
       }),
@@ -283,8 +310,59 @@ export class CourseService {
     const progressPercentage =
       totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0
 
+    // Aggregate unique instructors across all lessons
+    const courseInstructorsMap = new Map<string, any>()
+    for (const s of sanitizedSections) {
+      for (const l of s.lessons) {
+        for (const inst of l.instructors) {
+          const key = inst.instructorId || inst.id
+          if (key && !courseInstructorsMap.has(key)) {
+            courseInstructorsMap.set(key, inst)
+          }
+        }
+      }
+    }
+
+    let courseInstructors = Array.from(courseInstructorsMap.values())
+    if (courseInstructors.length === 0) {
+      const fallbackInstructors = await prisma.instructor.findMany({
+        where: { status: "ACTIVE" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              selactedImg: true,
+            },
+          },
+        },
+        take: 3,
+      })
+      courseInstructors = fallbackInstructors.map((fi) => {
+        const { avatar } = resolveUserImage(
+          normalizeImageList(fi.user.image),
+          fi.user.selactedImg
+        )
+        return {
+          id: fi.id,
+          instructorId: fi.instructorId,
+          role: "Instructor",
+          name: fi.user.name,
+          email: fi.user.email,
+          avatar,
+          image: avatar,
+          selactedImg: fi.user.selactedImg,
+          bio: fi.bio || "Senior Instructor at DPI Computing Society.",
+          expertise: fi.expertise,
+        }
+      })
+    }
+
     return {
       ...course,
+      instructors: courseInstructors,
       sections: sanitizedSections,
       enrollment,
       hasAccess,
@@ -341,9 +419,12 @@ export class CourseService {
     return prisma.course.create({
       data: {
         title: data.title.trim(),
+        titleBn: data.titleBn?.trim() || null,
         slug: data.slug.trim().toLowerCase(),
         excerpt: data.excerpt?.trim() || null,
+        excerptBn: data.excerptBn?.trim() || null,
         description: data.description?.trim() || null,
+        descriptionBn: data.descriptionBn?.trim() || null,
         thumbnail: data.thumbnail?.trim() || null,
         level: data.level || "ALL_LEVELS",
         isFree: data.isFree ?? true,
@@ -363,7 +444,12 @@ export class CourseService {
   static async updateCourse(id: string, data: UpdateCourseInput) {
     const updateData: any = { ...data }
     if (updateData.title) updateData.title = updateData.title.trim()
+    if (updateData.titleBn !== undefined) updateData.titleBn = updateData.titleBn?.trim() || null
     if (updateData.slug) updateData.slug = updateData.slug.trim().toLowerCase()
+    if (updateData.excerpt !== undefined) updateData.excerpt = updateData.excerpt?.trim() || null
+    if (updateData.excerptBn !== undefined) updateData.excerptBn = updateData.excerptBn?.trim() || null
+    if (updateData.description !== undefined) updateData.description = updateData.description?.trim() || null
+    if (updateData.descriptionBn !== undefined) updateData.descriptionBn = updateData.descriptionBn?.trim() || null
     if (updateData.isFree) {
       updateData.price = 0
       updateData.discountPrice = null
@@ -412,23 +498,25 @@ export class CourseService {
       for (let sIdx = 0; sIdx < sections.length; sIdx++) {
         const secInput = sections[sIdx]
 
+        const sectionData = {
+          title: secInput.title.trim(),
+          titleBn: secInput.titleBn?.trim() || null,
+          description: secInput.description?.trim() || null,
+          descriptionBn: secInput.descriptionBn?.trim() || null,
+          orderIndex: sIdx,
+        }
+
         let sectionRecord: any
         if (secInput.id && existingSectionIds.has(secInput.id)) {
           sectionRecord = await tx.courseSection.update({
             where: { id: secInput.id },
-            data: {
-              title: secInput.title.trim(),
-              description: secInput.description?.trim() || null,
-              orderIndex: sIdx,
-            },
+            data: sectionData,
           })
         } else {
           sectionRecord = await tx.courseSection.create({
             data: {
               courseId,
-              title: secInput.title.trim(),
-              description: secInput.description?.trim() || null,
-              orderIndex: sIdx,
+              ...sectionData,
             },
           })
         }
@@ -453,7 +541,9 @@ export class CourseService {
           const lessonData = {
             sectionId: sectionRecord.id,
             title: lesInput.title.trim(),
+            titleBn: lesInput.titleBn?.trim() || null,
             description: lesInput.description?.trim() || null,
+            descriptionBn: lesInput.descriptionBn?.trim() || null,
             orderIndex: lIdx,
             isPreview: Boolean(lesInput.isPreview),
             videoUrl: lesInput.videoUrl?.trim() || null,
@@ -523,15 +613,23 @@ export class CourseService {
       orderBy: { createdAt: "desc" },
     })
 
-    return instructors.map((inst) => ({
-      id: inst.id,
-      userId: inst.userId,
-      instructorId: inst.instructorId,
-      name: inst.user.name,
-      email: inst.user.email,
-      image: inst.user.image,
-      selactedImg: inst.user.selactedImg,
-      expertise: inst.expertise,
-    }))
+    return instructors.map((inst) => {
+      const { avatar } = resolveUserImage(
+        normalizeImageList(inst.user.image),
+        inst.user.selactedImg
+      )
+      return {
+        id: inst.id,
+        userId: inst.userId,
+        instructorId: inst.instructorId,
+        name: inst.user.name,
+        email: inst.user.email,
+        avatar,
+        image: avatar,
+        rawImages: inst.user.image,
+        selactedImg: inst.user.selactedImg,
+        expertise: inst.expertise,
+      }
+    })
   }
 }

@@ -44,6 +44,10 @@ export function CourseCard({ course, lang, href, className }: CourseCardProps) {
     ? Math.round(((course.price - course.discountPrice) / course.price) * 100)
     : 0
 
+  const isBn = lang === "bn"
+  const displayTitle = (isBn && course.titleBn) ? course.titleBn : course.title
+  const displayExcerpt = (isBn && course.excerptBn) ? course.excerptBn : course.excerpt
+
   return (
     <article
       className={cn(
@@ -56,7 +60,7 @@ export function CourseCard({ course, lang, href, className }: CourseCardProps) {
         {course.thumbnail ? (
           <Image
             src={course.thumbnail}
-            alt={course.title}
+            alt={displayTitle}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -114,14 +118,14 @@ export function CourseCard({ course, lang, href, className }: CourseCardProps) {
         {/* Course Title */}
         <h3 className="font-heading text-base font-bold leading-snug tracking-tight text-foreground line-clamp-2">
           <Link href={target} className="after:absolute after:inset-0 hover:text-primary transition-colors">
-            {course.title}
+            {displayTitle}
           </Link>
         </h3>
 
         {/* Excerpt */}
-        {course.excerpt ? (
+        {displayExcerpt ? (
           <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
-            {course.excerpt}
+            {displayExcerpt}
           </p>
         ) : null}
 

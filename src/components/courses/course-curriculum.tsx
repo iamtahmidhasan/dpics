@@ -89,7 +89,8 @@ export function CourseCurriculum({
   hasAccess = false,
   className,
 }: CourseCurriculumProps) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+  const isBn = lang === "bn"
 
   // Track expanded state for each section (default first 2 expanded)
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>(() => {
@@ -110,11 +111,12 @@ export function CourseCurriculum({
     }[] = []
 
     sections.forEach((sec, sIdx) => {
+      const sTitle = (isBn && sec.titleBn) ? sec.titleBn : sec.title
       sec.lessons.forEach((les, lIdx) => {
         if (les.isPreview) {
           list.push({
             lesson: les,
-            sectionTitle: sec.title,
+            sectionTitle: sTitle,
             sectionIndex: sIdx + 1,
             lessonIndex: lIdx + 1,
           })
@@ -122,7 +124,7 @@ export function CourseCurriculum({
       })
     })
     return list
-  }, [sections])
+  }, [sections, isBn])
 
   // Preview Modal State
   const [previewModalOpen, setPreviewModalOpen] = React.useState(false)
@@ -239,6 +241,7 @@ export function CourseCurriculum({
         {sections.map((section, sIdx) => {
           const isExpanded = Boolean(expandedSections[section.id])
           const lessonCount = section.lessons.length
+          const sectionTitle = (isBn && section.titleBn) ? section.titleBn : section.title
 
           return (
             <div key={section.id} className="transition-colors">
@@ -261,7 +264,7 @@ export function CourseCurriculum({
                       {t("Section", "সেকশন")} {sIdx + 1}
                     </span>
                     <h3 className="text-sm font-semibold text-foreground truncate">
-                      {section.title}
+                      {sectionTitle}
                     </h3>
                   </div>
                 </div>
@@ -276,6 +279,7 @@ export function CourseCurriculum({
                 <div className="divide-y divide-border/40 bg-card">
                   {section.lessons.map((lesson, lIdx) => {
                     const isPreviewable = Boolean(lesson.isPreview)
+                    const lessonTitle = (isBn && lesson.titleBn) ? lesson.titleBn : lesson.title
 
                     // Case 1: Active Enrolled User can click any lesson directly to classroom
                     if (hasAccess && courseSlug) {
@@ -291,7 +295,7 @@ export function CourseCurriculum({
                             </span>
                             {getLessonIcon(lesson.type)}
                             <span className="text-foreground font-medium truncate hover:text-primary transition-colors">
-                              {lesson.title}
+                              {lessonTitle}
                             </span>
                           </div>
 
@@ -313,7 +317,7 @@ export function CourseCurriculum({
                         <div
                           key={lesson.id}
                           onClick={() =>
-                            openPreview(lesson, section.title, sIdx + 1, lIdx + 1)
+                            openPreview(lesson, sectionTitle, sIdx + 1, lIdx + 1)
                           }
                           className="px-4 py-3 flex items-center justify-between text-xs transition-colors hover:bg-primary/5 cursor-pointer group gap-3"
                           role="button"
@@ -321,10 +325,10 @@ export function CourseCurriculum({
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault()
-                              openPreview(lesson, section.title, sIdx + 1, lIdx + 1)
+                              openPreview(lesson, sectionTitle, sIdx + 1, lIdx + 1)
                             }
                           }}
-                          aria-label={`${t("Preview lesson:", "প্রিভিউ পাঠ:")} ${lesson.title}`}
+                          aria-label={`${t("Preview lesson:", "প্রিভিউ পাঠ:")} ${lessonTitle}`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <span className="text-[11px] font-mono text-muted-foreground/70 w-5 shrink-0">
@@ -334,7 +338,7 @@ export function CourseCurriculum({
                               <PlayCircle className="size-3.5 fill-primary/10" />
                             </div>
                             <span className="text-foreground font-medium truncate group-hover:text-primary transition-colors">
-                              {lesson.title}
+                              {lessonTitle}
                             </span>
                           </div>
 
@@ -369,7 +373,7 @@ export function CourseCurriculum({
                           </span>
                           {getLessonIcon(lesson.type)}
                           <span className="text-muted-foreground font-medium truncate">
-                            {lesson.title}
+                            {lessonTitle}
                           </span>
                         </div>
 
@@ -403,10 +407,9 @@ export function CourseCurriculum({
               </span>
               <span>•</span>
               <span className="truncate">{activePreview?.sectionTitle}</span>
-              
             </div>
             <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-              {activePreview?.lesson.title}
+              {activePreview?.lesson ? ((isBn && activePreview.lesson.titleBn) ? activePreview.lesson.titleBn : activePreview.lesson.title) : ""}
             </DialogTitle>
           </div>
 
@@ -416,7 +419,7 @@ export function CourseCurriculum({
               <VideoPlayer
                 key={activePreview.lesson.id}
                 videoUrl={activePreview.lesson.videoUrl}
-                title={activePreview.lesson.title}
+                title={(isBn && activePreview.lesson.titleBn) ? activePreview.lesson.titleBn : activePreview.lesson.title}
               />
             ) : null}
           </div>
@@ -430,6 +433,7 @@ export function CourseCurriculum({
               <div className="flex items-center gap-1.5 min-w-0">
                 {allPreviewLessons.map((item) => {
                   const isSelected = activePreview?.lesson.id === item.lesson.id
+                  const plTitle = (isBn && item.lesson.titleBn) ? item.lesson.titleBn : item.lesson.title
                   return (
                     <button
                       key={item.lesson.id}
@@ -444,7 +448,7 @@ export function CourseCurriculum({
                     >
                       <Play className="size-2.5 fill-current" />
                       <span className="truncate max-w-[180px]">
-                        {item.lessonIndex}. {item.lesson.title}
+                        {item.lessonIndex}. {plTitle}
                       </span>
                       {item.lesson.videoDuration ? (
                         <span className="opacity-75 text-[10px] font-mono">
@@ -460,11 +464,14 @@ export function CourseCurriculum({
 
           {/* Description & Enrollment Prompt */}
           <div className="p-4 sm:p-5 space-y-4">
-            {activePreview?.lesson.description ? (
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                {activePreview.lesson.description}
-              </div>
-            ) : null}
+            {activePreview?.lesson ? (() => {
+              const desc = (isBn && activePreview.lesson.descriptionBn) ? activePreview.lesson.descriptionBn : activePreview.lesson.description
+              return desc ? (
+                <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {desc}
+                </div>
+              ) : null
+            })() : null}
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg border border-primary/20 bg-primary/5">
               <div className="space-y-0.5">

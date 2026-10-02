@@ -429,9 +429,12 @@ enum EnrollmentStatus {
 model Course {
   id             String             @id @default(cuid())
   title          String
+  titleBn        String?
   slug           String             @unique
   excerpt        String?
+  excerptBn      String?
   description    String?            @db.Text
+  descriptionBn  String?            @db.Text
   thumbnail      String?
   level          CourseLevel        @default(ALL_LEVELS)
   isFree         Boolean            @default(true)
@@ -454,17 +457,19 @@ model Course {
 }
 
 model CourseSection {
-  id          String   @id @default(cuid())
-  courseId    String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  orderIndex  Int      @default(0)
+  id            String   @id @default(cuid())
+  courseId      String
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title         String
+  titleBn       String?
+  description   String?
+  descriptionBn String?
+  orderIndex    Int      @default(0)
 
-  lessons     Lesson[]
+  lessons       Lesson[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([courseId, orderIndex])
   @@map("course_section")
@@ -475,7 +480,9 @@ model Lesson {
   sectionId     String
   section       CourseSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   title         String
+  titleBn       String?
   description   String?            @db.Text
+  descriptionBn String?            @db.Text
   orderIndex    Int                @default(0)
   isPreview     Boolean            @default(false)
 

@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react"
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -84,7 +85,9 @@ export function CurriculumBuilder({
   // Module / Section Modal State
   const [moduleModalOpen, setModuleModalOpen] = React.useState(false)
   const [moduleTitle, setModuleTitle] = React.useState("")
+  const [moduleTitleBn, setModuleTitleBn] = React.useState("")
   const [moduleDescription, setModuleDescription] = React.useState("")
+  const [moduleDescriptionBn, setModuleDescriptionBn] = React.useState("")
   const [moduleError, setModuleError] = React.useState<string | null>(null)
 
   // Delete Confirmation Modal State
@@ -109,7 +112,9 @@ export function CurriculumBuilder({
   // Lesson Form Draft
   const [lessonDraft, setLessonDraft] = React.useState<any>({
     title: "",
+    titleBn: "",
     description: "",
+    descriptionBn: "",
     videoUrl: "",
     videoDuration: "",
     isPreview: false,
@@ -134,7 +139,9 @@ export function CurriculumBuilder({
       setLessonDraft({
         id: les.id,
         title: les.title || "",
+        titleBn: les.titleBn || "",
         description: les.description || "",
+        descriptionBn: les.descriptionBn || "",
         videoUrl: les.videoUrl || "",
         videoDuration: les.videoDuration || "",
         isPreview: Boolean(les.isPreview),
@@ -149,7 +156,9 @@ export function CurriculumBuilder({
     } else {
       setLessonDraft({
         title: "",
+        titleBn: "",
         description: "",
+        descriptionBn: "",
         videoUrl: "",
         videoDuration: "",
         isPreview: false,
@@ -168,7 +177,7 @@ export function CurriculumBuilder({
 
   // Save Lesson from Draft into local state
   const handleSaveLessonDraft = () => {
-    if (!lessonDraft.title.trim()) {
+    if (!lessonDraft.title.trim() && !lessonDraft.titleBn?.trim()) {
       setLessonError(t("Lesson title is required", "পাঠের শিরোনাম আবশ্যক"))
       return
     }
@@ -184,10 +193,12 @@ export function CurriculumBuilder({
         secLessons[editingLessonIdx] = {
           ...secLessons[editingLessonIdx],
           ...lessonDraft,
+          title: lessonDraft.title.trim() || lessonDraft.titleBn.trim(),
         }
       } else {
         secLessons.push({
           ...lessonDraft,
+          title: lessonDraft.title.trim() || lessonDraft.titleBn.trim(),
           orderIndex: secLessons.length,
         })
       }
@@ -203,7 +214,9 @@ export function CurriculumBuilder({
   // Open Add Section Modal
   const openAddSectionModal = () => {
     setModuleTitle("")
+    setModuleTitleBn("")
     setModuleDescription("")
+    setModuleDescriptionBn("")
     setModuleError(null)
     setModuleModalOpen(true)
   }
@@ -211,7 +224,7 @@ export function CurriculumBuilder({
   // Confirm Add Section
   const handleConfirmAddSection = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!moduleTitle.trim()) {
+    if (!moduleTitle.trim() && !moduleTitleBn.trim()) {
       setModuleError(t("Module title is required", "মডিউলের শিরোনাম আবশ্যক"))
       return
     }
@@ -219,8 +232,10 @@ export function CurriculumBuilder({
     setSections((prev) => [
       ...prev,
       {
-        title: moduleTitle.trim(),
+        title: (moduleTitle.trim() || moduleTitleBn.trim()),
+        titleBn: moduleTitleBn.trim() || null,
         description: moduleDescription.trim() || null,
+        descriptionBn: moduleDescriptionBn.trim() || null,
         orderIndex: prev.length,
         lessons: [],
       },
@@ -369,8 +384,8 @@ export function CurriculumBuilder({
                 className="overflow-hidden rounded-xl border border-border bg-card shadow-xs"
               >
                 {/* Section Header */}
-                <div className="flex items-center justify-between bg-muted/40 px-4 py-3 border-b border-border/70">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/40 px-4 py-3 border-b border-border/70 gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <button
                       type="button"
                       onClick={() =>
@@ -379,7 +394,7 @@ export function CurriculumBuilder({
                           [section.id || sIdx]: !isExpanded,
                         }))
                       }
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground shrink-0"
                     >
                       {isExpanded ? (
                         <ChevronDown className="size-4" />
@@ -387,22 +402,47 @@ export function CurriculumBuilder({
                         <ChevronRight className="size-4" />
                       )}
                     </button>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary shrink-0">
                       {t("Module", "মডিউল")} {sIdx + 1}
                     </span>
-                    <input
-                      type="text"
-                      value={section.title}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        setSections((prev) => {
-                          const updated = [...prev]
-                          updated[sIdx] = { ...updated[sIdx], title: val }
-                          return updated
-                        })
-                      }}
-                      className="bg-transparent font-semibold text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary rounded px-1 min-w-[200px]"
-                    />
+
+                    <div className="flex flex-1 items-center gap-2 min-w-0">
+                      <div className="relative flex-1 min-w-[120px]">
+                        <input
+                          type="text"
+                          value={section.title || ""}
+                          placeholder={t("Module title (EN)", "মডিউল শিরোনাম (ইংরেজি)")}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSections((prev) => {
+                              const updated = [...prev]
+                              updated[sIdx] = { ...updated[sIdx], title: val }
+                              return updated
+                            })
+                          }}
+                          className="w-full bg-background/50 border border-border/60 font-semibold text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary rounded px-2 py-1 pr-7"
+                        />
+                        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-muted-foreground uppercase pointer-events-none">EN</span>
+                      </div>
+
+                      <div className="relative flex-1 min-w-[120px]">
+                        <input
+                          type="text"
+                          value={section.titleBn || ""}
+                          placeholder={t("Module title (বাংলা)", "মডিউল শিরোনাম (বাংলা)")}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSections((prev) => {
+                              const updated = [...prev]
+                              updated[sIdx] = { ...updated[sIdx], titleBn: val }
+                              return updated
+                            })
+                          }}
+                          className="w-full bg-background/50 border border-border/60 font-semibold text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary rounded px-2 py-1 pr-11"
+                        />
+                        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-emerald-600 dark:text-emerald-400 uppercase pointer-events-none">বাংলা</span>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -463,9 +503,16 @@ export function CurriculumBuilder({
                               )}
 
                               <div className="truncate">
-                                <span className="font-medium text-foreground block truncate">
-                                  {lesson.title}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap truncate">
+                                  <span className="font-medium text-foreground truncate">
+                                    {lesson.title || lesson.titleBn}
+                                  </span>
+                                  {lesson.titleBn && lesson.title && lesson.titleBn !== lesson.title && (
+                                    <span className="text-[11px] text-muted-foreground truncate">
+                                      ({lesson.titleBn})
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                   {lesson.videoDuration && (
                                     <span>{lesson.videoDuration}</span>
@@ -532,26 +579,58 @@ export function CurriculumBuilder({
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleConfirmAddSection} className="space-y-4">
+          <form onSubmit={handleConfirmAddSection} className="space-y-3.5">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("Module Title", "মডিউল শিরোনাম")} *</Label>
+              <Label className="text-xs flex items-center justify-between">
+                <span>{t("Module Title (English)", "মডিউল শিরোনাম (ইংরেজি)")} *</span>
+                <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+              </Label>
               <Input
                 value={moduleTitle}
                 onChange={(e) => setModuleTitle(e.target.value)}
                 placeholder="e.g. Module 1: Getting Started & Setup"
                 className="text-xs"
                 autoFocus
-                required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("Short Description (Optional)", "সংক্ষিপ্ত বিবরণ (ঐচ্ছিক)")}</Label>
+              <Label className="text-xs flex items-center justify-between">
+                <span>{t("Module Title (Bangla)", "মডিউল শিরোনাম (বাংলা)")}</span>
+                <span className="text-[10px] text-emerald-600 font-mono">বাংলা</span>
+              </Label>
+              <Input
+                value={moduleTitleBn}
+                onChange={(e) => setModuleTitleBn(e.target.value)}
+                placeholder="যেমন: মডিউল ১: শুরু ও প্রস্তুতি"
+                className="text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center justify-between">
+                <span>{t("Description (English - Optional)", "বিবরণ (ইংরেজি - ঐচ্ছিক)")}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+              </Label>
               <Textarea
                 rows={2}
                 value={moduleDescription}
                 onChange={(e) => setModuleDescription(e.target.value)}
                 placeholder="Brief summary of what this module covers..."
+                className="text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center justify-between">
+                <span>{t("Description (Bangla - Optional)", "বিবরণ (বাংলা - ঐচ্ছিক)")}</span>
+                <span className="text-[10px] text-emerald-600 font-mono">বাংলা</span>
+              </Label>
+              <Textarea
+                rows={2}
+                value={moduleDescriptionBn}
+                onChange={(e) => setModuleDescriptionBn(e.target.value)}
+                placeholder="এই মডিউলে যা শেখানো হবে..."
                 className="text-xs"
               />
             </div>
@@ -716,17 +795,82 @@ export function CurriculumBuilder({
             {/* TAB 1: General & Video */}
             {lessonTab === "general" && (
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t("Lesson Title", "পাঠ শিরোনাম")} *</Label>
-                  <Input
-                    value={lessonDraft.title}
-                    onChange={(e) =>
-                      setLessonDraft((prev: any) => ({ ...prev, title: e.target.value }))
-                    }
-                    placeholder="e.g. 01. Introduction to Next.js App Router"
-                    className="text-xs"
-                    required
-                  />
+                <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/15">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-primary" />
+                      {t("Lesson Title & Notes (Bilingual)", "পাঠের নাম ও নোট (দ্বিভাষিক)")}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {t("Shared video, independent language contents", "ভিডিও এক থাকবে, নাম ও নোট দুই ভাষায়")}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center justify-between">
+                        <span>{t("Lesson Title (English)", "পাঠের শিরোনাম (ইংরেজি)")} *</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+                      </Label>
+                      <Input
+                        value={lessonDraft.title}
+                        onChange={(e) =>
+                          setLessonDraft((prev: any) => ({ ...prev, title: e.target.value }))
+                        }
+                        placeholder="e.g. 01. Introduction to Next.js App Router"
+                        className="text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center justify-between">
+                        <span>{t("Lesson Title (Bangla)", "পাঠের শিরোনাম (বাংলা)")}</span>
+                        <span className="text-[10px] text-emerald-600 font-mono">বাংলা</span>
+                      </Label>
+                      <Input
+                        value={lessonDraft.titleBn || ""}
+                        onChange={(e) =>
+                          setLessonDraft((prev: any) => ({ ...prev, titleBn: e.target.value }))
+                        }
+                        placeholder="যেমন: ০১. নেক্সট জেএস পরিচিতি ও সেটআপ"
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center justify-between">
+                        <span>{t("Lesson Notes (English - Markdown)", "লেকচার নোট (ইংরেজি - মার্কডাউন)")}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">EN</span>
+                      </Label>
+                      <Textarea
+                        rows={4}
+                        value={lessonDraft.description || ""}
+                        onChange={(e) =>
+                          setLessonDraft((prev: any) => ({ ...prev, description: e.target.value }))
+                        }
+                        placeholder="Key takeaways, formulas, bullet points..."
+                        className="text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center justify-between">
+                        <span>{t("Lesson Notes (Bangla - Markdown)", "লেকচার নোট (বাংলা - মার্কডাউন)")}</span>
+                        <span className="text-[10px] text-emerald-600 font-mono">বাংলা</span>
+                      </Label>
+                      <Textarea
+                        rows={4}
+                        value={lessonDraft.descriptionBn || ""}
+                        onChange={(e) =>
+                          setLessonDraft((prev: any) => ({ ...prev, descriptionBn: e.target.value }))
+                        }
+                        placeholder="এই পাঠের মূল সূত্র, পয়েন্ট ও নোট..."
+                        className="text-xs font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -772,19 +916,6 @@ export function CurriculumBuilder({
                     onCheckedChange={(checked) =>
                       setLessonDraft((prev: any) => ({ ...prev, isPreview: checked }))
                     }
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t("Lesson Notes / Overview (Markdown)", "লেকচার নোট ও বিবরণ")}</Label>
-                  <Textarea
-                    rows={4}
-                    value={lessonDraft.description || ""}
-                    onChange={(e) =>
-                      setLessonDraft((prev: any) => ({ ...prev, description: e.target.value }))
-                    }
-                    placeholder="Key takeaways, formulas, bullet points..."
-                    className="text-xs font-mono"
                   />
                 </div>
               </div>
@@ -1204,9 +1335,19 @@ export function CurriculumBuilder({
                               }}
                               className="size-4 text-primary rounded"
                             />
-                            <div>
-                              <span className="font-semibold text-foreground block">{inst.name}</span>
-                              <span className="text-[10px] text-muted-foreground">{inst.email}</span>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="size-8 shrink-0">
+                                {inst.avatar || (typeof inst.image === "string" ? inst.image : null) ? (
+                                  <AvatarImage src={inst.avatar || inst.image} alt={inst.name || ""} />
+                                ) : null}
+                                <AvatarFallback className="text-[10px]">
+                                  {(inst.name || "?").charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <span className="font-semibold text-foreground block">{inst.name}</span>
+                                <span className="text-[10px] text-muted-foreground">{inst.email}</span>
+                              </div>
                             </div>
                           </div>
 

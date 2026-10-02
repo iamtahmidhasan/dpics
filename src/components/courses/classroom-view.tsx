@@ -47,7 +47,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { VideoPlayer } from "@/components/courses/video-player"
+import { MarkdownContent } from "@/components/posts/markdown-content"
 import { useLanguage } from "@/components/language-provider"
+import { resolveUserImage, normalizeImageList } from "@/lib/user-image"
 import { cn } from "cn"
 
 interface ClassroomViewProps {
@@ -58,7 +60,8 @@ interface ClassroomViewProps {
 type TabType = "overview" | "live" | "documents" | "quiz" | "assignment" | "resources" | "instructors"
 
 export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+  const isBn = lang === "bn"
   const router = useRouter()
 
   // Flatten all lessons across sections
@@ -73,6 +76,34 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
     }
     return allLessons[0]?.id || ""
   })
+
+  const currentLesson = allLessons.find((l: any) => l.id === activeLessonId) || allLessons[0]
+
+  // Instructors for current lesson (with fallback to course-level instructors)
+  const lessonInstructors = React.useMemo(() => {
+    if (Array.isArray(currentLesson?.instructors) && currentLesson.instructors.length > 0) {
+      return currentLesson.instructors
+    }
+    if (Array.isArray(course?.instructors) && course.instructors.length > 0) {
+      return course.instructors
+    }
+    return []
+  }, [currentLesson?.instructors, course?.instructors])
+
+  const leadInstructor = lessonInstructors[0] || null
+
+  const getInstructorAvatar = React.useCallback((inst: any): string | null => {
+    if (!inst) return null
+    if (inst.avatar) return inst.avatar
+    if (typeof inst.image === "string" && (inst.image.startsWith("/") || inst.image.startsWith("http"))) {
+      return inst.image
+    }
+    const { avatar } = resolveUserImage(
+      normalizeImageList(inst.rawImages || inst.image),
+      inst.selactedImg
+    )
+    return avatar
+  }, [])
 
   // Collapsed / expanded state for modules in sidebar
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>(() => {
@@ -100,7 +131,6 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
   // Active Tab
   const [activeTab, setActiveTab] = React.useState<TabType>("overview")
 
-  const currentLesson = allLessons.find((l: any) => l.id === activeLessonId) || allLessons[0]
   const currentIndex = allLessons.findIndex((l: any) => l.id === activeLessonId)
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
@@ -194,17 +224,17 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
       list.push({ id: "resources", label: { en: "Resources", bn: "রিসোর্স" }, icon: Code2 })
     }
 
-    if (Array.isArray(currentLesson?.instructors) && currentLesson.instructors.length > 0) {
+    if (lessonInstructors.length > 0) {
       list.push({
         id: "instructors",
         label: { en: "Instructors", bn: "শিক্ষক" },
         icon: Users,
-        count: currentLesson.instructors.length,
+        count: lessonInstructors.length,
       })
     }
 
     return list
-  }, [currentLesson, quizQuestions.length])
+  }, [currentLesson, quizQuestions.length, lessonInstructors])
 
   // If active tab doesn't exist for new lesson, reset to overview
   React.useEffect(() => {
@@ -240,7 +270,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                     {t("Module", "মডিউল")} {sIdx + 1}
                   </span>
                   <span className="truncate font-semibold text-foreground block">
-                    {section.title}
+                    {(isBn && section.titleBn) ? section.titleBn : section.title}
                   </span>
                 </div>
               </div>
@@ -256,6 +286,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                 {sectionLessons.map((lesson: any) => {
                   const isActive = lesson.id === activeLessonId
                   const isDone = completedMap[lesson.id]
+                  const lessonDisplayTitle = (isBn && lesson.titleBn) ? lesson.titleBn : lesson.title
 
                   return (
                     <div
@@ -285,7 +316,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
 
                         <div className="truncate">
                           <span className={cn("truncate block", isActive ? "text-primary font-semibold" : "text-foreground")}>
-                            {lesson.title}
+                            {lessonDisplayTitle}
                           </span>
                           {lesson.videoDuration && (
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
@@ -336,11 +367,29 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
 
           <div className="flex min-w-0 flex-col gap-0.5">
             <h1 className="truncate font-heading text-lg font-semibold text-foreground">
-              {course.title}
+              {(isBn && course.titleBn) ? course.titleBn : course.title}
             </h1>
-            <p className="truncate text-xs/relaxed text-muted-foreground">
-              {completedCount} / {allLessons.length} {t("lessons completed", "টি পাঠ সম্পন্ন")} • {progressPercent}%
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs/relaxed text-muted-foreground">
+              <span>
+                {completedCount} / {allLessons.length} {t("lessons completed", "টি পাঠ সম্পন্ন")} • {progressPercent}%
+              </span>
+              {leadInstructor ? (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1.5 font-medium text-foreground">
+                    <Avatar className="size-4 shrink-0">
+                      {getInstructorAvatar(leadInstructor) ? (
+                        <AvatarImage src={getInstructorAvatar(leadInstructor)!} alt={leadInstructor.name || ""} />
+                      ) : null}
+                      <AvatarFallback className="text-[8px]">
+                        {(leadInstructor.name || "?").charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{leadInstructor.name}</span>
+                  </div>
+                </>
+              ) : null}
+            </div>
             <div className="flex flex-wrap gap-1">
               <Badge variant="outline" className="text-[10px] font-mono">
                 {course.level?.replace("_", " ") || "ALL LEVELS"}
@@ -425,7 +474,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                   )}
                 </div>
                 <h2 className="font-heading text-sm md:text-base font-semibold text-foreground truncate mt-1">
-                  {currentLesson?.title}
+                  {(isBn && currentLesson?.titleBn) ? currentLesson.titleBn : currentLesson?.title}
                 </h2>
               </div>
 
@@ -528,15 +577,54 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {currentLesson?.description ? (
-                    <div className="text-xs/relaxed text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                      {currentLesson.description}
-                    </div>
-                  ) : (
-                    <p className="text-xs/relaxed text-muted-foreground italic">
-                      {t("No specific notes for this lesson. Enjoy the video lecture!", "এই পাঠের জন্য কোনো অতিরিক্ত নোট নেই।")}
-                    </p>
-                  )}
+                  {(() => {
+                    const desc = (isBn && currentLesson?.descriptionBn) ? currentLesson.descriptionBn : currentLesson?.description
+                    return (
+                      <div className="space-y-4">
+                        {desc ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground text-xs leading-relaxed">
+                            <MarkdownContent>{desc}</MarkdownContent>
+                          </div>
+                        ) : (
+                          <p className="text-xs/relaxed text-muted-foreground italic">
+                            {t("No specific notes for this lesson. Enjoy the video lecture!", "এই পাঠের জন্য কোনো অতিরিক্ত নোট নেই।")}
+                          </p>
+                        )}
+
+                        {/* Lesson Instructor badges */}
+                        {lessonInstructors.length > 0 && (
+                          <div className="mt-6 border-t border-border pt-4">
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase font-mono block mb-2">
+                              {t("Instructor(s)", "ইনস্ট্রাক্টর")}
+                            </span>
+                            <div className="flex flex-wrap gap-2.5">
+                              {lessonInstructors.map((inst: any, idx: number) => {
+                                const imgSrc = getInstructorAvatar(inst)
+                                const initials = (inst.name || "?").trim().charAt(0).toUpperCase()
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 bg-muted/20 text-xs"
+                                  >
+                                    <Avatar className="size-7 shrink-0">
+                                      {imgSrc ? <AvatarImage src={imgSrc} alt={inst.name || ""} /> : null}
+                                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                      <span className="font-medium text-foreground block">{inst.name}</span>
+                                      <span className="text-[10px] text-muted-foreground block">
+                                        {inst.role || t("Instructor", "শিক্ষক")}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             )}
@@ -881,27 +969,28 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
             )}
 
             {/* 7. Instructors */}
-            {activeTab === "instructors" && Array.isArray(currentLesson?.instructors) && currentLesson.instructors.length > 0 && (
+            {activeTab === "instructors" && lessonInstructors.length > 0 && (
               <Card size="sm">
                 <CardHeader>
-                  <CardTitle>{t("Lesson Instructors", "পাঠের শিক্ষকবৃন্দ")}</CardTitle>
+                  <CardTitle>{t("Course & Lesson Instructors", "ইনস্ট্রাক্টর পরিচিতি")}</CardTitle>
                   <CardDescription>
-                    {t("The mentors guiding you through this lesson.", "এই পাঠে পাঠদানকারী ইনস্ট্রাক্টরগণ।")}
+                    {t("The mentors guiding you through this course.", "এই কোর্সে পাঠদানকারী ইনস্ট্রাক্টরগণ।")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {currentLesson.instructors.map((inst: any, idx: number) => {
+                    {lessonInstructors.map((inst: any, idx: number) => {
+                      const imgSrc = getInstructorAvatar(inst)
                       const initials = (inst.name || "?").trim().charAt(0).toUpperCase()
 
                       return (
                         <div
                           key={idx}
-                          className="flex items-center gap-3 rounded-md border border-border p-3 bg-muted/20"
+                          className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/20"
                         >
-                          <Avatar className="size-10">
-                            {inst.avatar ? (
-                              <AvatarImage src={inst.avatar} alt={inst.name} />
+                          <Avatar className="size-11 shrink-0 mt-0.5">
+                            {imgSrc ? (
+                              <AvatarImage src={imgSrc} alt={inst.name || ""} />
                             ) : null}
                             <AvatarFallback>{initials}</AvatarFallback>
                           </Avatar>
@@ -910,8 +999,14 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                             <Badge variant="outline" className="text-[10px] mt-0.5">
                               {inst.role || t("Instructor", "শিক্ষক")}
                             </Badge>
+                            {inst.expertise ? (
+                              <p className="text-[11px] text-primary mt-1 font-medium line-clamp-1">{inst.expertise}</p>
+                            ) : null}
+                            {inst.bio ? (
+                              <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{inst.bio}</p>
+                            ) : null}
                             {inst.email ? (
-                              <p className="text-[10px] text-muted-foreground truncate mt-0.5">{inst.email}</p>
+                              <p className="text-[10px] text-muted-foreground truncate mt-1">{inst.email}</p>
                             ) : null}
                           </div>
                         </div>
