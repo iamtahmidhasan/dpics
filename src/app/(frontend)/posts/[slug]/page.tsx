@@ -30,9 +30,13 @@ type PostPageProps = PageProps<"/posts/[slug]">
 export const revalidate = 300
 
 export async function generateStaticParams() {
-  const page = await listPublishedPosts({ page: 1, pageSize: 50 })
-
-  return page.posts.map((post) => ({ slug: post.slug }))
+  try {
+    const page = await listPublishedPosts({ page: 1, pageSize: 50 })
+    return page.posts.map((post) => ({ slug: post.slug }))
+  } catch (error) {
+    console.warn("generateStaticParams failed to fetch posts for static pre-rendering:", error)
+    return []
+  }
 }
 
 function buildDescription(post: {

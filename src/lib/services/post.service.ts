@@ -620,7 +620,7 @@ export async function listPublishedPosts(
       : {}),
   }
 
-  const [rows, total] = await prisma.$transaction([
+  const [rows, total] = await Promise.all([
     prisma.post.findMany({
       where,
       orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
@@ -739,7 +739,7 @@ export async function listPostsForAdmin(
       : {}),
   }
 
-  const [rows, total] = await prisma.$transaction([
+  const [rows, total] = await Promise.all([
     prisma.post.findMany({
       where,
       orderBy: [{ updatedAt: "desc" }],
@@ -806,7 +806,7 @@ export async function getMyPosts(
       : {}),
   }
 
-  const [rows, total] = await prisma.$transaction([
+  const [rows, total] = await Promise.all([
     prisma.post.findMany({
       where,
       orderBy: [{ updatedAt: "desc" }],
