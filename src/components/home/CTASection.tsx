@@ -47,7 +47,7 @@ export function CTASection() {
               <Button
                 size="lg"
                 nativeButton={false}
-                render={<Link href="/sign-up" />}
+                render={<Link href="/join" />}
                 className="group h-12 gap-2 rounded-full bg-white px-8 font-semibold text-primary shadow-lg transition-all hover:bg-white/90 hover:shadow-xl"
               >
                 Join DPICS Today

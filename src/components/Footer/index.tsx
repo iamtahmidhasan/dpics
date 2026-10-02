@@ -36,9 +36,9 @@ const EXPLORE_LINKS: FooterLink[] = [
 ]
 
 const INVOLVE_LINKS: FooterLink[] = [
-  { label: { en: "Join the Society", bn: "সোসাইটিতে যোগ দিন" }, href: "/sign-up" },
+  { label: { en: "Join the Society", bn: "সোসাইটিতে যোগ দিন" }, href: "/join" },
   { label: { en: "Membership", bn: "সদস্যপদ" }, href: "/about#membership" },
-  { label: { en: "Member Sign in", bn: "সদস্য লগইন" }, href: "/sign-in" },
+  { label: { en: "Sign in / Register", bn: "লগইন / নিবন্ধন" }, href: "/join" },
   { label: { en: "Dashboard", bn: "ড্যাশবোর্ড" }, href: "/dashboard" },
 ]
 

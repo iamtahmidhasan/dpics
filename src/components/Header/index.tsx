@@ -49,7 +49,7 @@ const BANNER = {
   href: '/about',
   links: [
     { label: { en: 'Events', bn: 'ইভেন্ট' }, href: '/events' },
-    { label: { en: 'Join', bn: 'যোগদান' }, href: '/sign-up' },
+    { label: { en: 'Join', bn: 'যোগদান' }, href: '/join' },
   ],
 }
 
@@ -99,7 +99,7 @@ const NAV_ITEMS: NavItem[] = [
         links: [
           {
             label: { en: 'Join Us', bn: 'যোগ দিন' },
-            href: '/sign-up',
+            href: '/join',
             description: {
               en: 'Create your member account',
               bn: 'আপনার সদস্য অ্যাকাউন্ট তৈরি করুন',
@@ -429,7 +429,7 @@ export function Header() {
                 variant="ghost"
                 size="icon-lg"
                 nativeButton={false}
-                render={<Link href="/sign-in" aria-label="Sign in" />}
+                render={<Link href="/join" aria-label="Join" />}
               >
                 <User className="size-5" />
               </Button>

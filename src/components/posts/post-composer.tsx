@@ -19,7 +19,6 @@ import { useLanguage } from "@/components/language-provider"
 import { MarkdownEditor } from "@/components/posts/markdown-editor"
 import { SeoPreview } from "@/components/posts/seo-preview"
 import { TagInput } from "@/components/posts/tag-input"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Input } from "@/components/ui/input"
@@ -42,7 +41,6 @@ import {
   MAX_POST_TITLE_LENGTH,
 } from "@/lib/post-constants"
 import { toPostSlug } from "@/lib/post-slug"
-import { postStatusBadgeVariant, postStatusLabel } from "@/lib/post-labels"
 import { cn } from "cn"
 
 export type PostFormValues = {
@@ -135,7 +133,7 @@ export function PostComposer({
   const [categories, setCategories] = useState<CategoryOption[]>(
     initialCategories || []
   )
-  const [statusValue, setStatusValue] = useState<PostStatus>(status)
+  const [statusValue] = useState<PostStatus>(status)
   const [contentTab, setContentTab] = useState<"en" | "bn">("en")
   const [slugTouched, setSlugTouched] = useState(Boolean(initialValues?.slug))
   const [pending, setPending] = useState<null | "save" | "submit" | "withdraw" | "delete">(null)

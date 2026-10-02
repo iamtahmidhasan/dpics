@@ -112,10 +112,10 @@ export function JoinSection() {
                 <Button
                   size="lg"
                   nativeButton={false}
-                  render={<Link href="/sign-up" />}
+                  render={<Link href="/join" />}
                   className="group flex-1 gap-2 rounded-xl font-semibold shadow-lg shadow-primary/20"
                 >
-                  Sign Up Now
+                  Join Now
                   <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                 </Button>
                 <Button
@@ -131,7 +131,7 @@ export function JoinSection() {
 
               <p className="text-center text-[11px] text-muted-foreground">
                 Already a member?{' '}
-                <Link href="/sign-in" className="font-medium text-primary hover:underline">
+                <Link href="/join" className="font-medium text-primary hover:underline">
                   Sign in here
                 </Link>
               </p>

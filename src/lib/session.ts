@@ -21,7 +21,7 @@ export type { Role }
 export async function requireUser(): Promise<AuthSession> {
   const session = await getSession()
 
-  if (!session?.user) redirect("/sign-in")
+  if (!session?.user) redirect("/join")
 
   return session
 }

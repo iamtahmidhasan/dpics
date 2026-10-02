@@ -46,9 +46,9 @@ export function NotFoundContent() {
           size="lg"
           nativeButton={false}
           className="h-10 px-5 text-sm"
-          render={<Link href="/sign-in" />}
+          render={<Link href="/join" />}
         >
-          {t("Sign in", "সাইন ইন")}
+          {t("Join / Sign in", "যোগ দিন / সাইন ইন")}
         </Button>
       </div>
 

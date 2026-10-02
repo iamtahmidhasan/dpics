@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
 import { SignupWizard, type SignupPolicy } from "@/components/signup/signup-wizard"
 import { buttonVariants } from "@/components/ui/button"
@@ -7,17 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Role } from "@/generated/prisma/enums"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
-import { isOnboarded, type SelfAssignableRole } from "@/lib/roles"
+import { isOnboarded, isSetupComplete, type SelfAssignableRole } from "@/lib/roles"
 import { getBatchMemberStats } from "@/lib/services/member-id.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { getSession } from "@/lib/session"
 
 export const metadata: Metadata = {
-  title: "Sign Up",
-  description: "Create a new account",
+  title: "Complete Registration",
+  description: "Set up your profile, role, and details to join DPI Computing Society",
 }
 
-export default async function SignUpPage() {
+export default async function RegisterPage() {
   const [session, settings, batchStats, lang] = await Promise.all([
     getSession(),
     getSettings(),
@@ -26,10 +27,18 @@ export default async function SignUpPage() {
   ])
   const user = session?.user
 
-  // Master toggle blocks new account creation only. If registration is disabled
-  // and the visitor is not logged in (or already onboarded), show the closed notice.
-  // Existing accounts mid-flow (including Google users) can still finish onboarding.
-  if (!settings.isSignupEnabled && (!user || isOnboarded(user))) {
+  // User must sign in first via Google or GitHub
+  if (!user) {
+    redirect("/join")
+  }
+
+  // Already onboarded users shouldn't re-register
+  if (isSetupComplete(user)) {
+    redirect("/dashboard")
+  }
+
+  // If registration is disabled and account isn't onboarded yet
+  if (!settings.isSignupEnabled && !isOnboarded(user)) {
     const t = makeT(lang)
 
     return (
@@ -57,13 +66,6 @@ export default async function SignUpPage() {
       </div>
     )
   }
-
-  // An account that exists but never picked a role — a Google sign up landing
-  // back here, or someone who refreshed mid-flow — resumes on the basic
-  // information step instead of being asked to create an account that is
-  // already there. Google only hands over a name and a picture, so the rest of
-  // the profile still needs collecting.
-  const startStep = user && !isOnboarded(user) ? 1 : 0
 
   const isMemberBatchFull = Boolean(
     settings.isAutoStudentIdEnabled && batchStats.isLimitReached
@@ -102,12 +104,13 @@ export default async function SignUpPage() {
     <div className="flex flex-1 flex-col items-center justify-center bg-muted p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
         <SignupWizard
-          startStep={startStep}
-          initialUser={
-            user
-              ? { name: user.name, email: user.email, phone: user.phone ?? "" }
-              : null
-          }
+          startStep={0}
+          initialUser={{
+            name: user.name || "",
+            email: user.email || "",
+            phone: user.phone ?? "",
+            image: user.image ?? null,
+          }}
           signupPolicy={signupPolicy}
         />
       </div>

@@ -4,17 +4,14 @@ import { Role } from "@/generated/prisma/enums"
 import type { LocalizedText } from "@/lib/i18n"
 import type { SelfAssignableRole } from "@/lib/roles"
 
-export const MIN_PASSWORD_LENGTH = 8
-
 /** The signup timeline, in order. */
-export const SIGNUP_STEPS = ["account", "profile", "role", "details"] as const
+export const SIGNUP_STEPS = ["profile", "role", "details"] as const
 
 export type SignupStep = (typeof SIGNUP_STEPS)[number]
 
 export const LAST_STEP = SIGNUP_STEPS.length - 1
 
 const STEP_LABELS: Record<SignupStep, LocalizedText> = {
-  account: { en: "Account", bn: "অ্যাকাউন্ট" },
   profile: { en: "Basic info", bn: "মৌলিক তথ্য" },
   role: { en: "Role", bn: "ভূমিকা" },
   details: { en: "Details", bn: "বিবরণ" },

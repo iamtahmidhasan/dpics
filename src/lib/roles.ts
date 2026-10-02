@@ -47,6 +47,11 @@ export function isOnboarded(user: { roles?: unknown } | null | undefined): boole
   return getUserRoles(user).some((role) => role === Role.MEMBER || role === Role.INSTRUCTOR)
 }
 
+/** True if user has finished setup (holds a society role or is an administrator). */
+export function isSetupComplete(user: { roles?: unknown } | null | undefined): boolean {
+  return isAdmin(user) || isOnboarded(user)
+}
+
 /**
  * Roles allowed to write posts. `ADMIN` is included because admins moderate
  * posts from the admin panel and can publish without going through review.

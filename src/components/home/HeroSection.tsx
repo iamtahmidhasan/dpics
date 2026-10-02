@@ -76,7 +76,7 @@ export function HeroSection() {
             <Button
               size="lg"
               nativeButton={false}
-              render={<Link href="/sign-up" />}
+              render={<Link href="/join" />}
               className="group gap-2"
             >
               Join the Society

@@ -14,29 +14,36 @@ import {
   FieldError,
   FieldGroup,
 } from "@/components/ui/field"
+import { useLanguage } from "@/components/language-provider"
 
-export function LoginForm({
+export function JoinForm({
+  initialError,
   className,
   ...props
-}: React.ComponentProps<"div">) {
-  const [error, setError] = useState<string | null>(null)
+}: {
+  initialError?: string | null
+} & React.ComponentProps<"div">) {
+  const { t } = useLanguage()
+  const [error, setError] = useState<string | null>(initialError ?? null)
   const [pendingAction, setPendingAction] = useState<"google" | "github" | null>(null)
   const isPending = pendingAction !== null
 
-  async function handleOAuthSignIn(provider: "google" | "github") {
+  async function handleOAuth(provider: "google" | "github") {
     setError(null)
     setPendingAction(provider)
 
     const res = await signIn.social({
       provider,
-      callbackURL: "/dashboard",
-      errorCallbackURL: "/sign-in",
+      callbackURL: "/join/callback",
+      errorCallbackURL: "/join",
     })
 
     if (res?.error) {
       setError(
         res.error.message ||
-          `${provider === "google" ? "Google" : "GitHub"} sign-in failed. Please try again.`
+          (provider === "google"
+            ? t("Google sign-in failed. Please try again.", "গুগল সাইন-ইন ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।")
+            : t("GitHub sign-in failed. Please try again.", "গিটহাব সাইন-ইন ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।"))
       )
       setPendingAction(null)
     }
@@ -49,9 +56,14 @@ export function LoginForm({
           <div className="flex flex-col justify-center p-6 md:p-8">
             <FieldGroup className="space-y-4">
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
+                <h1 className="text-2xl font-bold">
+                  {t("Join DPI Computing Society", "ডিপিআই কম্পিউটিং সোসাইটিতে যোগ দিন")}
+                </h1>
                 <p className="text-balance text-muted-foreground text-sm">
-                  Sign in with your Google or GitHub account
+                  {t(
+                    "Sign in or get started with your Google or GitHub account",
+                    "আপনার গুগল বা গিটহাব অ্যাকাউন্ট দিয়ে সাইন ইন করুন বা শুরু করুন"
+                  )}
                 </p>
               </div>
 
@@ -63,7 +75,7 @@ export function LoginForm({
                   type="button"
                   size="lg"
                   className="w-full flex items-center justify-center gap-2.5 h-11"
-                  onClick={() => handleOAuthSignIn("google")}
+                  onClick={() => handleOAuth("google")}
                   disabled={isPending}
                 >
                   {pendingAction === "google" ? (
@@ -88,7 +100,7 @@ export function LoginForm({
                       />
                     </svg>
                   )}
-                  Continue with Google
+                  {t("Continue with Google", "গুগল দিয়ে এগিয়ে যান")}
                 </Button>
 
                 <Button
@@ -96,7 +108,7 @@ export function LoginForm({
                   type="button"
                   size="lg"
                   className="w-full flex items-center justify-center gap-2.5 h-11"
-                  onClick={() => handleOAuthSignIn("github")}
+                  onClick={() => handleOAuth("github")}
                   disabled={isPending}
                 >
                   {pendingAction === "github" ? (
@@ -110,13 +122,15 @@ export function LoginForm({
                       />
                     </svg>
                   )}
-                  Continue with GitHub
+                  {t("Continue with GitHub", "গিটহাব দিয়ে এগিয়ে যান")}
                 </Button>
               </div>
 
-              <FieldDescription className="text-center pt-2">
-                Don&apos;t have an account?{" "}
-                <Link href="/sign-up">Sign up</Link>
+              <FieldDescription className="text-center text-xs text-muted-foreground pt-1">
+                {t(
+                  "New to the society? After signing in, you will be guided to set up your profile and role.",
+                  "সোসাইটিতে নতুন? সাইন ইন করার পর আপনাকে প্রোফাইল ও ভূমিকা সেটআপ করতে নির্দেশ করা হবে।"
+                )}
               </FieldDescription>
             </FieldGroup>
           </div>
@@ -132,9 +146,10 @@ export function LoginForm({
         </CardContent>
       </Card>
       <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our{" "}
-        <Link href="/">Terms of Service</Link> and{" "}
-        <Link href="/">Privacy Policy</Link>.
+        {t("By clicking continue, you agree to our", "চালিয়ে গেলে আপনি আমাদের")}{" "}
+        <Link href="/">{t("Terms of Service", "পরিষেবার শর্তাবলিতে")}</Link>{" "}
+        {t("and", "এবং")} <Link href="/">{t("Privacy Policy", "গোপনীয়তা নীতিতে")}</Link>{" "}
+        {t("agree.", "সম্মতি জানান।")}
       </FieldDescription>
     </div>
   )

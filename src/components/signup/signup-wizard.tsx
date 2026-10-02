@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
-import { AccountStep } from "@/components/signup/account-step"
 import { DetailsStep, type OnboardingDetails } from "@/components/signup/details-step"
 import { ProfileStep, type UserDetails, type UserSeed } from "@/components/signup/profile-step"
 import { RoleStep } from "@/components/signup/role-step"
@@ -29,14 +28,9 @@ const panelVariants = {
 type StepState = "done" | "current" | "todo"
 
 /**
- * Which stepper nodes act as jump targets. The account form is never a target:
- * the credentials it collects only exist once Better Auth has created the
- * account, so re-entering it cannot work. Neither is the step you are on.
- *
- * Everything already reached can be revisited. The one forward jump worth
- * offering is straight to the details step once a role has been picked — the
- * other steps have to be submitted, because skipping them would lose what they
- * collect.
+ * Which stepper nodes act as jump targets.
+ * Visited steps can be revisited. Forward jump is allowed straight to details
+ * once a role has been picked.
  */
 function canJumpTo(
   index: number,
@@ -44,7 +38,7 @@ function canJumpTo(
   furthest: number,
   role: SelfAssignableRole | null
 ): boolean {
-  if (index === 0 || index === step) return false
+  if (index === step) return false
 
   if (index <= furthest) return true
 
@@ -147,14 +141,9 @@ export function SignupWizard({
     setFurthest((current) => Math.max(current, target))
   }
 
-  function handleAccountCreated(account: { name: string; email: string }) {
-    setSeed({ name: account.name, email: account.email, phone: "" })
-    goTo(1)
-  }
-
   function handleProfileContinued(details: UserDetails) {
     setUser(details)
-    goTo(2)
+    goTo(1)
   }
 
   async function handleComplete(details: OnboardingDetails) {
@@ -249,14 +238,6 @@ export function SignupWizard({
                 transition={{ duration: 0.28, ease: EASE }}
               >
                 {step === 0 ? (
-                  <AccountStep
-                    error={error}
-                    onError={setError}
-                    onCreated={handleAccountCreated}
-                  />
-                ) : null}
-
-                {step === 1 ? (
                   // Remounting on the seed change keeps the fields in step with
                   // whichever account path got the wizard here.
                   <ProfileStep
@@ -268,16 +249,16 @@ export function SignupWizard({
                   />
                 ) : null}
 
-                {step === 2 ? (
+                {step === 1 ? (
                   <RoleStep
                     role={role}
                     availableRoles={signupPolicy?.availableRoles}
                     onSelect={setRole}
-                    onContinue={() => role && goTo(3)}
+                    onContinue={() => role && goTo(2)}
                   />
                 ) : null}
 
-                {step === 3 && role ? (
+                {step === 2 && role ? (
                   <DetailsStep
                     // Remounting on role change resets the form fields.
                     key={role}
@@ -287,7 +268,7 @@ export function SignupWizard({
                     error={error}
                     isPending={isPending}
                     onError={setError}
-                    onBack={() => goTo(2)}
+                    onBack={() => goTo(1)}
                     onComplete={handleComplete}
                   />
                 ) : null}

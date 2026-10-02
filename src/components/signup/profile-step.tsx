@@ -22,6 +22,7 @@ export type UserSeed = {
   name: string
   email: string
   phone: string
+  image?: string | null
 }
 
 export type UserDetails = {
@@ -48,7 +49,7 @@ export function ProfileStep({
   const [name, setName] = useState(seed.name)
   const [email, setEmail] = useState(seed.email)
   const [phone, setPhone] = useState(seed.phone)
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<string[]>(seed.image ? [seed.image] : [])
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [imageUrl, setImageUrl] = useState("")
   const [imageError, setImageError] = useState<string | null>(null)
