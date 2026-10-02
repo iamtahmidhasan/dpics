@@ -200,10 +200,13 @@ export function AdminCourseList({ initialCourses }: AdminCourseListProps) {
             <Users className="size-3.5" />
             <span>{t("Enrollment Queue", "পেমেন্ট ভেরিফিকেশন")}</span>
           </Link>
-          <Button size="sm" onClick={openCreateModal} className="text-xs gap-1.5 font-semibold">
+          <Link
+            href="/admin/courses/new"
+            className={cn(buttonVariants({ size: "sm" }), "text-xs gap-1.5 font-semibold")}
+          >
             <Plus className="size-4" />
             <span>{t("New Course", "নতুন কোর্স")}</span>
-          </Button>
+          </Link>
         </div>
       </div>
 
@@ -296,14 +299,13 @@ export function AdminCourseList({ initialCourses }: AdminCourseListProps) {
                             <span>{t("Curriculum", "সিলেবাস")}</span>
                           </Link>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7"
-                            onClick={() => openEditModal(course)}
+                          <Link
+                            href={`/admin/courses/${course.id}`}
+                            className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-7")}
+                            title={t("Edit Course", "কোর্স সম্পাদনা")}
                           >
                             <Edit2 className="size-3.5" />
-                          </Button>
+                          </Link>
 
                           <Link
                             href={`/courses/${course.slug}`}

@@ -32,6 +32,7 @@ import { CourseCard } from "@/components/courses/course-card"
 import { CourseCurriculum } from "@/components/courses/course-curriculum"
 import { CourseEnrollCta } from "@/components/courses/course-enroll-cta"
 import { CoursePreviewTrigger } from "@/components/courses/course-preview-trigger"
+import { MarkdownContent } from "@/components/posts/markdown-content"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -95,15 +96,47 @@ export default async function CourseDetailPage({
   const instructorsMap = new Map<string, any>()
   for (const sec of course.sections) {
     for (const les of sec.lessons) {
-      for (const inst of les.instructors) {
-        if (!instructorsMap.has(inst.instructorId)) {
-          instructorsMap.set(inst.instructorId, inst)
+      for (const inst of les.instructors || []) {
+        const key = inst.instructorId || inst.id || inst.name
+        if (key && !instructorsMap.has(key)) {
+          instructorsMap.set(key, inst)
         }
       }
     }
   }
-  const courseInstructors = Array.from(instructorsMap.values())
-  const leadInstructor = courseInstructors[0]?.instructor?.user
+
+  let courseInstructors = Array.from(instructorsMap.values())
+
+  // If no instructors are explicitly linked to lessons yet, fallback to active instructors
+  if (courseInstructors.length === 0) {
+    const fallbackInstructors = await prisma.instructor.findMany({
+      where: { status: "ACTIVE" },
+      take: 2,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            selactedImg: true,
+          },
+        },
+      },
+    })
+    courseInstructors = fallbackInstructors.map((fi) => ({
+      id: fi.id,
+      instructorId: fi.instructorId,
+      role: "Instructor",
+      name: fi.user.name,
+      email: fi.user.email,
+      image: Array.isArray(fi.user.image) ? fi.user.image[0] : fi.user.image,
+      expertise: fi.expertise || "Software Engineering Mentor",
+      bio: fi.bio || "Senior Instructor at DPI Computing Society.",
+    }))
+  }
+
+  const leadInstructor = courseInstructors[0]
 
   // Calculate total duration from lessons
   let totalSeconds = 0
@@ -172,33 +205,6 @@ export default async function CourseDetailPage({
       ? Math.round(((course.price - course.discountPrice) / course.price) * 100)
       : 0
 
-  // Derived learning outcomes based on course topic and tags
-  const learningOutcomes = [
-    t(
-      "Master practical engineering concepts with structured step-by-step guidance",
-      "হাতে-কলমে আধুনিক সফটওয়্যার ইঞ্জিনিয়ারিং কনসেপ্ট সম্পূর্ণ আয়ত্ত করুন"
-    ),
-    t(
-      "Build real-world production projects to showcase on your portfolio and GitHub",
-      "বাস্তবমুখী প্রজেক্ট তৈরি করে আপনার গিটহাব ও সিভিকে সমৃদ্ধ করুন"
-    ),
-    t(
-      "Solve practical problem-solving challenges, coding assignments, and quizzes",
-      "সমস্যা সমাধান দক্ষতা বৃদ্ধিতে কুইজ ও ব্যবহারিক কোডিং অ্যাসাইনমেন্ট সমাধান করুন"
-    ),
-    t(
-      "Learn industry-standard clean coding practices and modern design architectures",
-      "ইন্ডাস্ট্রি স্ট্যান্ডার্ড ক্লিন কোড ও আর্কিটেকচারাল প্যাটার্ন শিখুন"
-    ),
-    t(
-      "Direct code review, peer discussions, and senior mentor Q&A support",
-      "মেন্টরদের কাছ থেকে সরাসরি কোড রিভিউ এবং সমস্যা সমাধানের সহায়তা"
-    ),
-    t(
-      "Earn a verifiable Certificate of Completion to boost your career prospects",
-      "কোর্স সম্পন্ন করে ক্যারিয়ার সমৃদ্ধ করার জন্য ভেরিফায়েড সার্টিফিকেট অর্জন করুন"
-    ),
-  ]
 
   // Default course requirements
   const prerequisites = [
@@ -342,24 +348,7 @@ export default async function CourseDetailPage({
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] items-start">
         {/* Left Column: Academic Syllabus & Details */}
         <div className="space-y-8 min-w-0">
-          {/* 1. What You Will Learn Card */}
-          <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 sm:p-6 space-y-4">
-            <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="size-5 text-primary" />
-              <span>{t("What you'll learn in this course", "এই কোর্স থেকে আপনি যা যা শিখবেন")}</span>
-            </h2>
-
-            <div className="grid gap-3 sm:grid-cols-2 text-xs leading-relaxed text-muted-foreground">
-              {learningOutcomes.map((outcome, idx) => (
-                <div key={idx} className="flex items-start gap-2.5">
-                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <span className="text-foreground/90">{outcome}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 2. Interactive Course Curriculum Accordion */}
+          {/* 1. Interactive Course Curriculum Accordion */}
           <CourseCurriculum
             courseTitle={course.title}
             courseSlug={course.slug}
@@ -372,7 +361,7 @@ export default async function CourseDetailPage({
             hasAccess={course.hasAccess}
           />
 
-          {/* 3. Course Requirements / Prerequisites */}
+          {/* 2. Course Requirements / Prerequisites */}
           <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-3">
             <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
               <Compass className="size-4 text-primary" />
@@ -388,76 +377,20 @@ export default async function CourseDetailPage({
             </ul>
           </section>
 
-          {/* 4. Detailed Description / Overview */}
+          {/* 3. Detailed Description / Overview with Markdown HTML Rendering */}
           {course.description ? (
             <section className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-3">
               <h2 className="font-heading text-base font-bold text-foreground flex items-center gap-2">
                 <FileText className="size-4 text-primary" />
                 <span>{t("Course Description", "কোর্সের বিস্তারিত বিবরণ")}</span>
               </h2>
-              <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {course.description}
+              <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                <MarkdownContent>{course.description}</MarkdownContent>
               </div>
             </section>
           ) : null}
 
-          {/* 5. Course Features / Inclusions Grid */}
-          <section className="space-y-3">
-            <h2 className="font-heading text-base font-bold text-foreground">
-              {t("This course includes", "এই কোর্সের সাথে থাকছে")}
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                <PlayCircle className="size-5 text-primary shrink-0" />
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground block">
-                    {course.stats?.totalLessons || 0} {t("On-demand Video Lessons", "ভিডিও লেকচার")}
-                  </span>
-                  <span className="text-muted-foreground text-[11px]">
-                    {t("High quality step-by-step videos", "এইচডি কোয়ালিটি লেকচার")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                <HelpCircle className="size-5 text-amber-500 shrink-0" />
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground block">
-                    {t("Quizzes & Practice Tasks", "কুইজ ও অনুশীলন")}
-                  </span>
-                  <span className="text-muted-foreground text-[11px]">
-                    {t("Test and reinforce your understanding", "জ্ঞান যাচাইয়ের সুযোগ")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                <FileCode className="size-5 text-blue-500 shrink-0" />
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground block">
-                    {t("Project Source Code", "প্রজেক্টের সোর্স কোড")}
-                  </span>
-                  <span className="text-muted-foreground text-[11px]">
-                    {t("Full GitHub repositories & assets", "সম্পূর্ণ গিটহাব রিপো")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                <Award className="size-5 text-emerald-500 shrink-0" />
-                <div className="text-xs">
-                  <span className="font-semibold text-foreground block">
-                    {t("Certificate of Completion", "কোর্স সমাপন সনদ")}
-                  </span>
-                  <span className="text-muted-foreground text-[11px]">
-                    {t("Verified credential upon completion", "যাচাইকৃত সনদ")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 6. Instructors Section */}
+          {/* 4. Meet Your Instructors Section */}
           {courseInstructors.length > 0 ? (
             <section className="space-y-4 border-t border-border pt-6">
               <h2 className="font-heading text-lg font-bold text-foreground flex items-center gap-2">
@@ -467,8 +400,10 @@ export default async function CourseDetailPage({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {courseInstructors.map((item: any, idx: number) => {
-                  const instUser = item.instructor?.user
-                  const initials = (instUser?.name || "?").trim().charAt(0).toUpperCase()
+                  const name = item.name || "Instructor"
+                  const initials = name.trim().charAt(0).toUpperCase()
+                  const image = item.image
+                  const role = item.role || t("Instructor", "শিক্ষক")
 
                   return (
                     <div
@@ -476,8 +411,8 @@ export default async function CourseDetailPage({
                       className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-xs"
                     >
                       <Avatar className="size-12 shrink-0 border border-border">
-                        {instUser?.image ? (
-                          <AvatarImage src={instUser.image} alt={instUser?.name} />
+                        {image ? (
+                          <AvatarImage src={image} alt={name} />
                         ) : null}
                         <AvatarFallback className="font-semibold">{initials}</AvatarFallback>
                       </Avatar>
@@ -485,22 +420,22 @@ export default async function CourseDetailPage({
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-sm font-bold text-foreground truncate">
-                            {instUser?.name}
+                            {name}
                           </h3>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-                            {item.role || t("Instructor", "শিক্ষক")}
+                            {role}
                           </Badge>
                         </div>
 
-                        {item.instructor?.expertise ? (
+                        {item.expertise ? (
                           <p className="text-[11px] text-primary font-medium line-clamp-1">
-                            {item.instructor.expertise}
+                            {item.expertise}
                           </p>
                         ) : null}
 
-                        {item.instructor?.bio ? (
+                        {item.bio ? (
                           <p className="text-[11px] text-muted-foreground line-clamp-3 leading-relaxed">
-                            {item.instructor.bio}
+                            {item.bio}
                           </p>
                         ) : null}
                       </div>

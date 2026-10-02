@@ -258,8 +258,12 @@ export class CourseService {
             role: li.role,
             name: li.instructor.user.name,
             email: li.instructor.user.email,
-            image: li.instructor.user.image,
+            image: Array.isArray(li.instructor.user.image)
+              ? li.instructor.user.image[0]
+              : li.instructor.user.image,
             selactedImg: li.instructor.user.selactedImg,
+            expertise: li.instructor.expertise || null,
+            bio: li.instructor.bio || null,
           })),
           isCompleted: Array.isArray(lesson.progress) && lesson.progress.length > 0 ? lesson.progress[0].completed : false,
         }
