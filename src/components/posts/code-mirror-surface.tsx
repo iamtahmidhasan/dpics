@@ -62,7 +62,7 @@ export default function CodeMirrorSurface({
         closeBrackets: true,
       }}
       theme={resolvedTheme === "dark" ? "dark" : "light"}
-      className="h-full"
+      className="h-full flex-1 min-h-72 [&_.cm-editor]:min-h-72 [&_.cm-scroller]:min-h-72"
       height="100%"
     />
   )

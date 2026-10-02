@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
@@ -9,6 +9,7 @@ import { useLanguage } from "@/components/language-provider"
 import { MAX_IMAGES, PicturePicker, isImageSource } from "@/components/picture-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Field,
@@ -548,7 +549,7 @@ export function ProfileForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isPending}>
-          {isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
+          {isPending ? <Spinner className="size-3.5" data-icon="inline-start" /> : null}
           {isPending ? t("Saving...", "সংরক্ষণ হচ্ছে...") : t("Save changes", "পরিবর্তন সংরক্ষণ")}
         </Button>
       </div>

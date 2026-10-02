@@ -1,11 +1,12 @@
 "use client"
 
-import { Check, Loader2 } from "lucide-react"
+import { Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -94,7 +95,7 @@ export function AdminPostStatusSelect({
             aria-label={t("Change post status", "পোস্টের অবস্থা পরিবর্তন")}
           >
             {isUpdating ? (
-              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+              <Spinner className="size-3.5 text-muted-foreground" />
             ) : (
               <Badge
                 variant={postStatusBadgeVariant(status)}

@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2, PenSquare, Search } from "lucide-react"
+import { PenSquare, Search } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
@@ -9,6 +9,7 @@ import { useAdminPosts, type AdminPostsPayload } from "@/components/admin/use-ad
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
@@ -165,7 +166,7 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
             aria-label={t("Refresh", "রিফ্রেশ")}
           >
             {isLoading ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <Spinner className="size-3.5" />
             ) : (
               <PenSquare className="size-3.5" />
             )}

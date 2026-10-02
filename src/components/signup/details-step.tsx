@@ -1,13 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { useState } from "react"
 
 import { EnumSelect, TextAreaField, TextField } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
 import { roleOption } from "@/components/signup/signup-steps"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { FieldError, FieldGroup } from "@/components/ui/field"
 import { Department, PaymentMethod, Role, Semester, Shift } from "@/generated/prisma/enums"
 import { formatTaka } from "@/lib/format"
@@ -521,7 +522,7 @@ export function DetailsStep({
           {t("Back", "পিছনে")}
         </Button>
         <Button type="submit" size="lg" disabled={isPending}>
-          {isPending ? <Loader2 className="animate-spin" data-icon="inline-start" /> : null}
+          {isPending ? <Spinner className="size-3.5" data-icon="inline-start" /> : null}
           {isPending ? t("Submitting...", "জমা হচ্ছে...") : t("Finish sign up", "সাইন আপ শেষ করুন")}
         </Button>
       </div>

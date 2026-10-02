@@ -4,7 +4,6 @@ import {
   Clock3,
   ExternalLink,
   FileText,
-  Loader2,
   PenSquare,
   Plus,
   Search,
@@ -15,6 +14,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
@@ -283,7 +283,7 @@ export function AdminUserPosts({
               </SelectContent>
             </Select>
 
-            {isLoading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+            {isLoading && <Spinner className="size-4 text-muted-foreground" />}
           </div>
 
           {error && <p className="text-destructive text-xs">{error}</p>}

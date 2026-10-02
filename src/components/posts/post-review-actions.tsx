@@ -1,11 +1,12 @@
 "use client"
 
-import { AlertCircle, Check, Loader2 } from "lucide-react"
+import { AlertCircle, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -186,7 +187,7 @@ export function PostReviewActions({
               className="text-xs"
             >
               {isUpdating ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner className="size-3.5" />
               ) : (
                 <Check className="size-3.5" />
               )}

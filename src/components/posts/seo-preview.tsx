@@ -1,4 +1,4 @@
-import { Globe } from "lucide-react"
+import { Globe, ImageIcon } from "lucide-react"
 
 import { deriveExcerpt } from "@/lib/markdown"
 import { MAX_POST_SEO_DESCRIPTION_LENGTH } from "@/lib/post-constants"
@@ -10,6 +10,7 @@ export type SeoPreviewProps = {
   slug: string
   description: string | null
   content?: string
+  image?: string | null
   path?: string
   className?: string
 }
@@ -28,6 +29,7 @@ export function SeoPreview({
   slug,
   description,
   content = "",
+  image,
   path,
   className,
 }: SeoPreviewProps) {
@@ -38,6 +40,7 @@ export function SeoPreview({
     ""
   ).trim()
   const href = path ?? postPath(slug || "untitled-post")
+  const resolvedImage = image?.trim() || null
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -64,9 +67,34 @@ export function SeoPreview({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-md border bg-card">
-        <div className="bg-muted flex h-24 items-center justify-center border-b text-[0.625rem] text-muted-foreground">
-          Social card image
+      <div className="overflow-hidden rounded-md border bg-card shadow-xs">
+        <div className="relative aspect-[1.91/1] w-full overflow-hidden border-b bg-muted">
+          {resolvedImage ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={resolvedImage}
+              alt={resolvedTitle || "Social card preview"}
+              className="size-full object-cover"
+              onError={(e) => {
+                const target = e.currentTarget
+                target.style.display = "none"
+                const fallback = target.nextElementSibling as HTMLElement | null
+                if (fallback) fallback.style.display = "flex"
+              }}
+            />
+          ) : null}
+          <div
+            className={cn(
+              "size-full flex-col items-center justify-center gap-1.5 p-3 text-center text-[0.6875rem] text-muted-foreground",
+              resolvedImage ? "hidden" : "flex"
+            )}
+          >
+            <ImageIcon className="size-5 opacity-60" />
+            <span className="font-medium">Social card image preview</span>
+            <span className="text-[0.625rem] opacity-75">
+              (Uses cover image if provided)
+            </span>
+          </div>
         </div>
         <div className="space-y-1 p-3">
           <p className="text-[0.625rem] tracking-wide text-muted-foreground uppercase">

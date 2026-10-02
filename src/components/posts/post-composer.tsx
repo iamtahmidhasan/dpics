@@ -7,7 +7,6 @@ import {
   ExternalLink,
   Globe,
   ImageOff,
-  Loader2,
   Lock,
   MessageSquare,
   Send,
@@ -22,6 +21,7 @@ import { SeoPreview } from "@/components/posts/seo-preview"
 import { TagInput } from "@/components/posts/tag-input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -403,7 +403,7 @@ export function PostComposer({
               className="text-xs"
             >
               {pending === "delete" ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner className="size-3.5" />
               ) : (
                 <Trash2 className="size-3.5" />
               )}
@@ -421,7 +421,7 @@ export function PostComposer({
               className="text-xs"
             >
               {pending === "withdraw" ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner className="size-3.5" />
               ) : (
                 <ArrowLeft className="size-3.5" />
               )}
@@ -439,7 +439,7 @@ export function PostComposer({
               className="text-xs"
             >
               {pending === "save" ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner className="size-3.5" />
               ) : (
                 <Check className="size-3.5" />
               )}
@@ -460,7 +460,7 @@ export function PostComposer({
               className="text-xs"
             >
               {pending === "submit" ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Spinner className="size-3.5" />
               ) : (
                 <Send className="size-3.5" />
               )}
@@ -525,12 +525,12 @@ export function PostComposer({
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="flex flex-col xl:flex-row gap-4">
         {/* Main Column */}
-        <div className="min-w-0 space-y-4">
+        <div className=" min-w-0 space-y-4 w-full">
           {/* Cover Image Hero Preview */}
           {values.coverImage ? (
-            <div className="group relative aspect-[21/9] w-full overflow-hidden rounded-lg border bg-muted shadow-xs">
+            <div className="group relative aspect-[16/9] w-full overflow-hidden rounded-lg border bg-muted shadow-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={values.coverImage}
@@ -681,7 +681,7 @@ export function PostComposer({
         </div>
 
         {/* Aside Sidebar */}
-        <aside className="space-y-4">
+        <aside className="space-y-4 xl:max-w-[19rem]">
           <div className="space-y-1.5">
             <Label htmlFor="post-slug">
               {t("Slug", "স্লাগ")}{" "}
@@ -805,75 +805,7 @@ export function PostComposer({
               placeholder="https://… or /hero-tech.jpg"
             />
 
-            {/* Sidebar live preview or quick presets */}
-            {values.coverImage ? (
-              <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-md border bg-muted shadow-xs">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={values.coverImage}
-                  alt="Cover preview"
-                  className="size-full object-cover"
-                  onError={(e) => {
-                    const target = e.currentTarget
-                    target.src = "/placeholder.svg"
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="rounded-md border border-dashed p-2 text-[0.6875rem] text-muted-foreground">
-                <span className="font-medium text-foreground">{t("Quick Presets:", "প্রিসেট ছবি:")}</span>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => patch("coverImage", "/hero-tech.jpg")}
-                    className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.625rem] text-foreground hover:bg-muted/80"
-                  >
-                    /hero-tech.jpg
-                  </button>
-                  <button
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => patch("coverImage", "/hackathon.jpg")}
-                    className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.625rem] text-foreground hover:bg-muted/80"
-                  >
-                    /hackathon.jpg
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-
-          {scope === "admin" ? (
-            <div className="space-y-1.5 rounded-md border p-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="post-admin-status" className="text-xs font-medium">
-                  {t("Workflow Status", "কাজের অবস্থা")}
-                </Label>
-                <Badge variant={postStatusBadgeVariant(statusValue)} className="text-[0.625rem] px-1.5 py-0">
-                  {postStatusLabel(t)(statusValue)}
-                </Badge>
-              </div>
-              <Select
-                value={statusValue}
-                disabled={readOnly}
-                onValueChange={(val) => {
-                  if (val) setStatusValue(val as PostStatus)
-                }}
-              >
-                <SelectTrigger id="post-admin-status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={PostStatus.PUBLISHED}>{t("Published", "প্রকাশিত")}</SelectItem>
-                  <SelectItem value={PostStatus.PENDING}>{t("In review", "পর্যালোচনায়")}</SelectItem>
-                  <SelectItem value={PostStatus.DRAFT}>{t("Draft", "খসড়া")}</SelectItem>
-                  <SelectItem value={PostStatus.REJECTED}>{t("Rejected", "ফেরত")}</SelectItem>
-                  <SelectItem value={PostStatus.ARCHIVED}>{t("Archived", "আর্কাইভ")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
 
           {scope === "admin" ? (
             <div className="flex items-center justify-between rounded-md border px-3 py-2">
@@ -896,6 +828,7 @@ export function PostComposer({
               title={values.seoTitle || values.title}
               description={values.seoDescription || values.excerpt}
               slug={values.slug}
+              image={values.ogImage || values.coverImage}
             />
           </div>
         </aside>

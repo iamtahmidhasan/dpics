@@ -285,3 +285,12 @@
 .cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
   background-color: var(--accent);
 }
+
+@keyframes loading-ui-classic-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.15;
+  }
+}

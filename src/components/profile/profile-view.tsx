@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -9,6 +9,7 @@ import { ProfileForm, type ProfileSection } from "@/components/profile/profile-f
 import { ProfileOverview } from "@/components/profile/profile-overview"
 import { useProfile } from "@/components/profile/use-profile"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import type { Profile, ProfileInput } from "@/lib/services/profile.service"
 
 export function ProfileView({
@@ -95,7 +96,7 @@ export function ProfileView({
               disabled={isLoading || isSaving}
               aria-label={t("Refresh", "রিফ্রেশ")}
             >
-              {isLoading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              {isLoading ? <Spinner className="size-3.5" /> : <RefreshCw />}
             </Button>
           </div>
 

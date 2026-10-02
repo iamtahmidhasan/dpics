@@ -48,7 +48,7 @@ import { cn } from "cn"
 const CodeMirrorSurface = dynamic(() => import("@/components/posts/code-mirror-surface"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full min-h-64 items-center justify-center text-muted-foreground text-xs">
+    <div className="flex h-full min-h-72 items-center justify-center text-muted-foreground text-xs">
       Loading editor…
     </div>
   ),
@@ -287,8 +287,19 @@ export function MarkdownEditor({ value, onChange, id, disabled }: MarkdownEditor
           </Button>
         </div>
 
-        <div className="grid lg:grid-cols-2">
-          <div className={cn("min-h-72", mode === "preview" && "hidden", mode === "split" && "lg:border-r")}>
+        <div
+          className={cn(
+            "grid",
+            mode === "split" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
+          )}
+        >
+          <div
+            className={cn(
+              "flex flex-col min-h-72",
+              mode === "preview" && "hidden",
+              mode === "split" && "border-b lg:border-b-0 lg:border-r"
+            )}
+          >
             <CodeMirrorSurface
               value={value}
               onChange={onChange}
@@ -300,16 +311,17 @@ export function MarkdownEditor({ value, onChange, id, disabled }: MarkdownEditor
 
           <div
             className={cn(
-              "max-h-[32rem] min-h-72 overflow-y-auto p-3",
-              mode === "write" && "hidden",
-              mode === "split" && "hidden lg:block"
+              "min-h-72 p-3 sm:p-4",
+              mode === "write" && "hidden"
             )}
           >
             {value.trim() ? (
               <MarkdownContent>{value}</MarkdownContent>
             ) : (
               <p className="text-muted-foreground text-xs italic">
-                Nothing to preview yet — start writing on the left.
+                {mode === "split"
+                  ? "Nothing to preview yet — start writing on the left."
+                  : "Nothing to preview yet — start writing in Write mode."}
               </p>
             )}
           </div>
