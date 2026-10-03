@@ -633,55 +633,126 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
             </CardHeader>
             <CardContent className="p-3.5 sm:p-5 pt-0">
               {profile.enrolledCourses.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {profile.enrolledCourses.map((e) => {
                     const percent = e.totalLessonsCount > 0
                       ? Math.round((e.completedLessonsCount / e.totalLessonsCount) * 100)
                       : 0
 
+                    const enrolledDateFormatted = e.enrolledAt
+                      ? new Date(e.enrolledAt).toLocaleDateString(isBn ? "bn-BD" : "en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : null
+
+                    const courseTitle = (isBn && e.courseTitleBn) ? e.courseTitleBn : e.courseTitle
+
                     return (
                       <div
                         key={e.id}
-                        className="rounded-xl border border-border p-3 sm:p-3.5 bg-card flex flex-col justify-between gap-3 shadow-xs"
+                        className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs hover:border-primary/50 transition-all hover:shadow-sm"
                       >
-                        <div className="flex items-start justify-between gap-2.5">
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-heading text-xs font-semibold text-foreground truncate">
-                              {(isBn && e.courseTitleBn) ? e.courseTitleBn : e.courseTitle}
-                            </h4>
-                            <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                              {e.completedLessonsCount} / {e.totalLessonsCount} {t("lessons completed", "টি পাঠ সম্পন্ন")}
-                            </p>
+                        {/* Course Thumbnail or Styled Banner */}
+                        <div className="relative aspect-video w-full bg-muted overflow-hidden">
+                          {e.courseThumbnail ? (
+                            <Image
+                              src={e.courseThumbnail}
+                              alt={courseTitle}
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/10 via-primary/5 to-muted">
+                              <BookOpen className="size-8 text-primary/40" />
+                            </div>
+                          )}
+
+                          {/* Level badge */}
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            {e.level && (
+                              <Badge variant="outline" className="text-[10px] bg-background/85 backdrop-blur-xs font-mono">
+                                {e.level}
+                              </Badge>
+                            )}
                           </div>
 
-                          {e.isCompleted ? (
-                            <Badge variant="success" className="text-[10px] shrink-0 gap-1">
-                              <CheckCircle2 className="size-3" />
-                              {t("Completed", "সম্পন্ন")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] shrink-0 font-mono">
-                              {percent}%
-                            </Badge>
-                          )}
+                          {/* Completed / Progress badge */}
+                          <div className="absolute top-2 right-2">
+                            {e.isCompleted ? (
+                              <Badge variant="success" className="text-[10px] gap-1 shadow-xs bg-emerald-500 text-white">
+                                <CheckCircle2 className="size-3" />
+                                <span>{t("Completed", "সম্পন্ন")}</span>
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px] font-mono shadow-xs bg-background/85 backdrop-blur-xs font-semibold">
+                                {percent}%
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Progress Bar */}
-                        <div className="space-y-1.5">
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full bg-primary transition-all duration-300"
-                              style={{ width: `${percent}%` }}
-                            />
+                        {/* Card Content */}
+                        <div className="flex flex-1 flex-col p-3.5 sm:p-4 space-y-3">
+                          <div className="space-y-1">
+                            <h4 className="font-heading text-xs sm:text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                              {courseTitle}
+                            </h4>
+                            {enrolledDateFormatted && (
+                              <p className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
+                                <Calendar className="size-3 text-muted-foreground/70 shrink-0" />
+                                <span>{t("Enrolled", "যুক্ত")} {enrolledDateFormatted}</span>
+                              </p>
+                            )}
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] pt-1">
+                          {/* Progress Bar & Milestone */}
+                          <div className="space-y-1.5 mt-auto pt-2">
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                              <span className="font-medium text-foreground">
+                                {e.completedLessonsCount} / {e.totalLessonsCount} {t("lessons", "টি পাঠ")}
+                              </span>
+                              <span className="font-mono text-[10px] font-semibold text-foreground">
+                                {percent}% {t("completed", "সম্পন্ন")}
+                              </span>
+                            </div>
+
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  "h-full transition-all duration-500 rounded-full",
+                                  e.isCompleted ? "bg-emerald-500" : "bg-primary"
+                                )}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="pt-2 border-t border-border/50">
                             <Link
                               href={`/courses/${e.courseSlug}`}
-                              className="text-primary hover:underline font-medium text-[11px] inline-flex items-center gap-1"
+                              className={cn(
+                                buttonVariants({
+                                  variant: e.isCompleted ? "outline" : "default",
+                                  size: "sm",
+                                }),
+                                "w-full text-xs h-8 gap-1.5 font-medium shadow-xs"
+                              )}
                             >
-                              <span>{t("Go to course", "কোর্সে যান")}</span>
-                              <ExternalLink className="size-3" />
+                              {e.isCompleted ? (
+                                <>
+                                  <Award className="size-3.5 text-amber-500" />
+                                  <span>{t("Review Course", "কোর্স দেখুন")}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <BookOpen className="size-3.5" />
+                                  <span>{t("Continue Learning", "পড়া চালিয়ে যান")}</span>
+                                </>
+                              )}
                             </Link>
                           </div>
                         </div>
@@ -690,8 +761,30 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                   })}
                 </div>
               ) : (
-                <div className="p-8 text-center text-xs text-muted-foreground">
-                  {t("No course enrollments found.", "কোনো কোর্স এনরোলমেন্ট পাওয়া যায়নি।")}
+                <div className="p-8 sm:p-12 text-center space-y-3">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                    <BookOpen className="size-6 opacity-60" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-foreground">
+                      {t("No enrolled courses yet", "এখনো কোনো কোর্সে যুক্ত হননি")}
+                    </h4>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      {t(
+                        "Courses and learning tracks you enroll in will appear here with progress tracking.",
+                        "যেসব কোর্সে আপনি যুক্ত হবেন তা এখানে অগ্রগতি সহ প্রদর্শিত হবে।"
+                      )}
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link
+                      href="/courses"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-xs h-8 gap-1.5")}
+                    >
+                      <GraduationCap className="size-3.5 text-primary" />
+                      <span>{t("Browse Courses", "কোর্সসমূহ দেখুন")}</span>
+                    </Link>
+                  </div>
                 </div>
               )}
             </CardContent>

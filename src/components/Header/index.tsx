@@ -77,21 +77,34 @@ const NAV_ITEMS: NavItem[] = [
             },
           },
           {
+            label: { en: 'Executive Committee', bn: 'কার্যনির্বাহী কমিটি' },
+            href: '/committee',
+            description: {
+              en: 'Leadership, technical and wing panels',
+              bn: 'নেতৃত্ব, টেকনিক্যাল ও উইং প্যানেল',
+            },
+          },
+          {
             label: { en: 'Our Team', bn: 'আমাদের টিম' },
             href: '/about#team',
             description: {
-              en: 'Meet the executive panel',
-              bn: 'কার্যনির্বাহী কমিটির সাথে পরিচিত হন',
+              en: 'Advisors and executive panel',
+              bn: 'উপদেষ্টা ও কার্যকরী পরিষদ',
             },
           },
           {
             label: { en: 'Membership', bn: 'সদস্যপদ' },
             href: '/about#membership',
             description: {
-              en: 'How to join the society',
-              bn: 'সোসাইটিতে যোগদানের নিয়ম',
+              en: 'Benefits, rules and how to join',
+              bn: 'সুবিধাসমূহ ও যোগদানের নিয়মাবলী',
             },
           },
+        ],
+      },
+      {
+        title: { en: 'Community', bn: 'কমিউনিটি' },
+        links: [
           {
             label: { en: 'Members Directory', bn: 'সদস্য তালিকা' },
             href: '/members',
@@ -108,11 +121,6 @@ const NAV_ITEMS: NavItem[] = [
               bn: 'আমাদের শিক্ষক ও মেন্টরদের সাথে পরিচিত হন',
             },
           },
-        ],
-      },
-      {
-        title: { en: 'Get Involved', bn: 'যুক্ত হোন' },
-        links: [
           {
             label: { en: 'Join Us', bn: 'যোগ দিন' },
             href: '/join',
@@ -125,8 +133,72 @@ const NAV_ITEMS: NavItem[] = [
             label: { en: 'Contact', bn: 'যোগাযোগ' },
             href: '/contact',
             description: {
-              en: 'Reach the society',
+              en: 'Reach the society executives',
               bn: 'সোসাইটির সাথে যোগাযোগ করুন',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: { en: 'Courses', bn: 'কোর্স' },
+    href: '/courses',
+    columns: [
+      {
+        title: { en: 'Online Courses', bn: 'অনলাইন কোর্স' },
+        links: [
+          {
+            label: { en: 'All Courses', bn: 'সকল কোর্স' },
+            href: '/courses',
+            description: {
+              en: 'Interactive lessons and video lectures',
+              bn: 'ইন্টারেক্টিভ পাঠ ও ভিডিও লেকচার',
+            },
+          },
+          {
+            label: { en: 'Instructors', bn: 'ইনস্ট্রাক্টরবৃন্দ' },
+            href: '/instructors',
+            description: {
+              en: 'Learn from skilled tech instructors',
+              bn: 'দক্ষ ইনস্ট্রাক্টরদের কাছ থেকে শিখুন',
+            },
+          },
+          {
+            label: { en: 'Enrolled Classroom', bn: 'আমার ক্লাসরুম' },
+            href: '/profile/enrolled',
+            description: {
+              en: 'Continue your learning progress',
+              bn: 'আপনার চলমান কোর্স ও অগ্রগতি দেখুন',
+            },
+          },
+        ],
+      },
+      {
+        title: { en: 'Learning Resources', bn: 'শিক্ষণ রিসোর্স' },
+        links: [
+          {
+            label: { en: 'Curated Roadmaps', bn: 'লার্নিং রোডম্যাপ' },
+            href: '/resources#roadmaps',
+            description: {
+              en: 'Step-by-step career and skill paths',
+              bn: 'ধাপে ধাপে প্রযুক্তি শেখার গাইডলাইন',
+            },
+          },
+          {
+            label: { en: 'Notes & Slides', bn: 'নোট ও স্লাইড' },
+            href: '/resources#notes',
+            description: {
+              en: 'Materials from past sessions',
+              bn: 'অতীতের সেশন ও ক্লাসের উপকরণ',
+            },
+          },
+          {
+            label: { en: 'Problem Sets', bn: 'প্রব্লেম সেট' },
+            href: '/resources#problems',
+            description: {
+              en: 'Coding contest practice and problems',
+              bn: 'প্রোগ্রামিং অনুশীলন ও কনটেস্ট আর্কাইভ',
             },
           },
         ],
@@ -144,8 +216,8 @@ const NAV_ITEMS: NavItem[] = [
             label: { en: 'Upcoming Events', bn: 'আসন্ন ইভেন্ট' },
             href: '/events',
             description: {
-              en: 'Workshops, sessions and contests',
-              bn: 'ওয়ার্কশপ, সেশন ও প্রতিযোগিতা',
+              en: 'Workshops, sessions and bootcamps',
+              bn: 'ওয়ার্কশপ, সেমিনার ও বুটক্যাম্প',
             },
           },
           {
@@ -160,106 +232,40 @@ const NAV_ITEMS: NavItem[] = [
             label: { en: 'Competitions', bn: 'প্রতিযোগিতা' },
             href: '/events#competitions',
             description: {
-              en: 'Inter-department programming contests',
-              bn: 'বিভাগীয় প্রোগ্রামিং প্রতিযোগিতা',
+              en: 'Programming contests and hackathons',
+              bn: 'প্রোগ্রামিং প্রতিযোগিতা ও হ্যাকাথন',
             },
           },
         ],
       },
     ],
-  },
-  {
-    label: { en: 'Committee', bn: 'কমিটি' },
-    href: '/committee',
-    columns: [
-      {
-        title: { en: 'Committees', bn: 'কমিটিসমূহ' },
-        links: [
-          {
-            label: { en: 'Executive', bn: 'কার্যনির্বাহী' },
-            href: '/committee#executive',
-            description: {
-              en: 'Leadership and coordination',
-              bn: 'নেতৃত্ব ও সমন্বয়',
-            },
-          },
-          {
-            label: { en: 'Technical', bn: 'টেকনিক্যাল' },
-            href: '/committee#technical',
-            description: {
-              en: 'Workshops and technical sessions',
-              bn: 'ওয়ার্কশপ ও টেকনিক্যাল সেশন',
-            },
-          },
-          {
-            label: { en: 'Events', bn: 'ইভেন্ট' },
-            href: '/committee#events',
-            description: {
-              en: 'Event planning and logistics',
-              bn: 'ইভেন্ট পরিকল্পনা ও ব্যবস্থাপনা',
-            },
-          },
-          {
-            label: { en: 'Outreach', bn: 'প্রচার' },
-            href: '/committee#outreach',
-            description: {
-              en: 'Campus and community engagement',
-              bn: 'ক্যাম্পাস ও কমিউনিটি সংগঠন',
-            },
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: { en: 'Resources', bn: 'রিসোর্স' },
-    href: '/resources',
-    columns: [
-      {
-        title: { en: 'Learning', bn: 'শেখা' },
-        links: [
-          {
-            label: { en: 'Roadmaps', bn: 'রোডম্যাপ' },
-            href: '/resources#roadmaps',
-            description: {
-              en: 'Curated learning paths',
-              bn: 'বাছাই করা শেখার পথ',
-            },
-          },
-          {
-            label: { en: 'Notes & Slides', bn: 'নোট ও স্লাইড' },
-            href: '/resources#notes',
-            description: {
-              en: 'Materials from past sessions',
-              bn: 'অতীতের সেশনের উপকরণ',
-            },
-          },
-          {
-            label: { en: 'Problem Sets', bn: 'প্রব্লেম সেট' },
-            href: '/resources#problems',
-            description: {
-              en: 'Practice and contests archive',
-              bn: 'অনুশীলনী ও প্রতিযোগিতার ভাণ্ডার',
-            },
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: { en: 'Courses', bn: 'কোর্স' },
-    href: '/courses',
-    columns: [],
   },
   {
     label: { en: 'Blog', bn: 'ব্লগ' },
     href: '/posts',
-    columns: [],
-  },
-  {
-    label: { en: 'Contact', bn: 'যোগাযোগ' },
-    href: '/contact',
-    columns: [],
+    columns: [
+      {
+        title: { en: 'Publications', bn: 'প্রকাশনা' },
+        links: [
+          {
+            label: { en: 'All Articles', bn: 'সকল নিবন্ধ' },
+            href: '/posts',
+            description: {
+              en: 'Tech articles, tutorials and guides',
+              bn: 'প্রযুক্তি নিবন্ধ, টিউটোরিয়াল ও গাইড',
+            },
+          },
+          {
+            label: { en: 'Write an Article', bn: 'নিবন্ধ লিখুন' },
+            href: '/profile/write',
+            description: {
+              en: 'Publish insights for the community',
+              bn: 'কমিউনিটির জন্য আপনার লেখা প্রকাশ করুন',
+            },
+          },
+        ],
+      },
+    ],
   },
 ]
 
