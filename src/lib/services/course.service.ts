@@ -280,6 +280,7 @@ export class CourseService {
             )
             return {
               id: li.id,
+              userId: li.instructor.user.id,
               instructorId: li.instructorId,
               role: li.role,
               name: li.instructor.user.name,

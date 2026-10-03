@@ -587,21 +587,23 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                                 const imgSrc = getInstructorAvatar(inst)
                                 const initials = (inst.name || "?").trim().charAt(0).toUpperCase()
                                 return (
-                                  <div
+                                  <Link
                                     key={idx}
-                                    className="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 bg-muted/20 text-xs"
+                                    href={`/profile/${inst.userId || inst.instructorId || inst.id}`}
+                                    target="_blank"
+                                    className="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/40 transition-colors text-xs"
                                   >
                                     <Avatar className="size-7 shrink-0">
                                       {imgSrc ? <AvatarImage src={imgSrc} alt={inst.name || ""} /> : null}
                                       <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <span className="font-medium text-foreground block">{inst.name}</span>
+                                      <span className="font-medium text-foreground block hover:text-primary transition-colors">{inst.name}</span>
                                       <span className="text-[10px] text-muted-foreground block">
                                         {inst.role || t("Instructor", "শিক্ষক")}
                                       </span>
                                     </div>
-                                  </div>
+                                  </Link>
                                 )
                               })}
                             </div>
@@ -969,9 +971,11 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                       const initials = (inst.name || "?").trim().charAt(0).toUpperCase()
 
                       return (
-                        <div
+                        <Link
                           key={idx}
-                          className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/20"
+                          href={`/profile/${inst.userId || inst.instructorId || inst.id}`}
+                          target="_blank"
+                          className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/20 hover:border-primary/50 transition-colors group"
                         >
                           <Avatar className="size-11 shrink-0 mt-0.5">
                             {imgSrc ? (
@@ -980,7 +984,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                             <AvatarFallback>{initials}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-xs font-semibold text-foreground truncate">{inst.name}</h4>
+                            <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">{inst.name}</h4>
                             <Badge variant="outline" className="text-[10px] mt-0.5">
                               {inst.role || t("Instructor", "শিক্ষক")}
                             </Badge>
@@ -994,7 +998,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                               <p className="text-[10px] text-muted-foreground truncate mt-1">{inst.email}</p>
                             ) : null}
                           </div>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>

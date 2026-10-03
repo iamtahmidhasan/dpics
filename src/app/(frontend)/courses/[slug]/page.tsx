@@ -414,10 +414,13 @@ export default async function CourseDetailPage({
                   const image = item.image
                   const role = item.role || t("Instructor", "শিক্ষক")
 
+                  const profileLink = `/profile/${item.userId || item.instructorId || item.id}`
+
                   return (
-                    <div
+                    <Link
                       key={idx}
-                      className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-xs"
+                      href={profileLink}
+                      className="group flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 shadow-xs hover:border-primary/50 transition-colors"
                     >
                       <Avatar className="size-12 shrink-0 border border-border">
                         {image ? (
@@ -428,7 +431,7 @@ export default async function CourseDetailPage({
 
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-bold text-foreground truncate">
+                          <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
                             {name}
                           </h3>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
@@ -448,7 +451,7 @@ export default async function CourseDetailPage({
                           </p>
                         ) : null}
                       </div>
-                    </div>
+                    </Link>
                   )
                 })}
               </div>

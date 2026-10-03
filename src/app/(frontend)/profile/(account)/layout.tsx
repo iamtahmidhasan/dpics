@@ -1,7 +1,11 @@
 import { ProfileSidebar } from "@/components/profile/profile-sidebar"
 import { getUserRoles, requireUser } from "@/lib/session"
 
-export default async function ProfileLayout({ children }: LayoutProps<"/profile">) {
+export default async function ProfileLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const session = await requireUser()
   const roles = getUserRoles(session.user)
 

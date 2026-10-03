@@ -196,15 +196,18 @@ export default async function PostDetailPage({ params }: PostPageProps) {
             />
 
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-              <div className="flex items-center gap-1.5">
+              <Link
+                href={`/profile/${post.author.id}`}
+                className="flex items-center gap-1.5 hover:text-primary transition-colors group"
+              >
                 <Avatar className="size-6">
                   {post.author.avatar ? (
                     <AvatarImage src={post.author.avatar} alt={post.author.name} />
                   ) : null}
                   <AvatarFallback>{post.author.name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="text-foreground font-medium">{post.author.name}</span>
-              </div>
+                <span className="text-foreground font-medium group-hover:text-primary transition-colors">{post.author.name}</span>
+              </Link>
 
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="size-3.5" />

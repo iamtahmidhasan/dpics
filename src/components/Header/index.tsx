@@ -92,6 +92,22 @@ const NAV_ITEMS: NavItem[] = [
               bn: 'সোসাইটিতে যোগদানের নিয়ম',
             },
           },
+          {
+            label: { en: 'Members Directory', bn: 'সদস্য তালিকা' },
+            href: '/members',
+            description: {
+              en: 'Explore registered society members',
+              bn: 'সোসাইটির সক্রিয় সদস্যবৃন্দের তালিকা',
+            },
+          },
+          {
+            label: { en: 'Instructors & Mentors', bn: 'ইনস্ট্রাক্টর ও মেন্টর' },
+            href: '/instructors',
+            description: {
+              en: 'Meet our course teachers and mentors',
+              bn: 'আমাদের শিক্ষক ও মেন্টরদের সাথে পরিচিত হন',
+            },
+          },
         ],
       },
       {
@@ -372,7 +388,8 @@ export function Header() {
               className="size-8 rounded-lg"
             />
             <span className="flex flex-col leading-tight">
-              <span className="text-sm">{SITE.title}</span>
+              <span className="text-sm hidden sm:block">{SITE.title}</span>
+              <span className="text-sm sm:hidden">DPICS</span>
               <span className="text-[10px] font-normal text-muted-foreground">
                 {t(SITE.tagline)}
               </span>
