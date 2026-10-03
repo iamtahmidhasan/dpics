@@ -251,7 +251,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
 
         {headings.length > 1 ? (
           <aside className="hidden lg:block">
-            <nav aria-label={t("On this page", "এই পাতায়")} className="sticky top-6">
+            <nav aria-label={t("On this page", "এই পাতায়")} className="sticky top-25">
               <p className="mb-2 text-[0.6875rem] font-medium tracking-wide uppercase">
                 {t("On this page", "এই পাতায়")}
               </p>

@@ -46,15 +46,65 @@ function extractYouTubeId(urlOrId?: string | null): string | null {
   return trimmed
 }
 
+const PLYR_OPTIONS: PlyrOptions = {
+  controls: [
+    "play-large",
+    "restart",
+    "rewind",
+    "play",
+    "fast-forward",
+    "progress",
+    "current-time",
+    "duration",
+    "mute",
+    "volume",
+    "captions",
+    "settings",
+    "pip",
+    "airplay",
+    "fullscreen",
+  ],
+  seekTime: 10,
+  settings: ["captions", "quality", "speed", "loop"],
+  speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] },
+  keyboard: { focused: true, global: false },
+  tooltips: { controls: true, seek: true },
+  clickToPlay: true,
+  invertTime: false,
+  toggleInvert: true,
+  resetOnEnd: false,
+  ratio: "16:9",
+  youtube: {
+    noCookie: true,
+    rel: 0,
+    showinfo: 0,
+    iv_load_policy: 3,
+    modestbranding: 1,
+  },
+}
+
 interface VideoPlayerProps {
   videoUrl?: string | null
   title?: string
 }
 
-export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
+function VideoPlayerComponent({ videoUrl }: VideoPlayerProps) {
   const videoId = extractYouTubeId(videoUrl)
 
-  if (!videoId) {
+  const plyrSource = React.useMemo<PlyrSource | null>(() => {
+    if (!videoId) return null
+    return {
+      type: "video",
+      sources: [
+        {
+          src: videoId,
+          provider: "youtube",
+        },
+      ],
+    }
+  }, [videoId])
+
+  if (!videoId || !plyrSource) {
     return (
       <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-6 text-center text-muted-foreground">
         <div className="flex flex-col items-center gap-2">
@@ -68,44 +118,12 @@ export function VideoPlayer({ videoUrl, title }: VideoPlayerProps) {
     )
   }
 
-  const plyrSource: PlyrSource = {
-    type: "video",
-    sources: [
-      {
-        src: videoId,
-        provider: "youtube",
-      },
-    ],
-  }
-
-  const plyrOptions: any = {
-    controls: [
-      "play-large",
-      "play",
-      "progress",
-      "current-time",
-      "duration",
-      "mute",
-      "volume",
-      "captions",
-      "settings",
-      "pip",
-      "fullscreen",
-    ],
-    settings: ["speed", "quality"],
-    speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] },
-    youtube: {
-      noCookie: true,
-      rel: 0,
-      showinfo: 0,
-      iv_load_policy: 3,
-      modestbranding: 1,
-    },
-  }
-
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black shadow-lg">
-      <Plyr source={plyrSource} options={plyrOptions} />
+    <div className="relative aspect-video w-full overflow-hidden bg-black shadow-lg [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr]:[--plyr-color-main:var(--primary)]">
+      <Plyr source={plyrSource} options={PLYR_OPTIONS} />
     </div>
   )
 }
+
+export const VideoPlayer = React.memo(VideoPlayerComponent)
+

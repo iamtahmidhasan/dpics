@@ -373,22 +373,6 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
               <span>
                 {completedCount} / {allLessons.length} {t("lessons completed", "টি পাঠ সম্পন্ন")} • {progressPercent}%
               </span>
-              {leadInstructor ? (
-                <>
-                  <span>•</span>
-                  <div className="flex items-center gap-1.5 font-medium text-foreground">
-                    <Avatar className="size-4 shrink-0">
-                      {getInstructorAvatar(leadInstructor) ? (
-                        <AvatarImage src={getInstructorAvatar(leadInstructor)!} alt={leadInstructor.name || ""} />
-                      ) : null}
-                      <AvatarFallback className="text-[8px]">
-                        {(leadInstructor.name || "?").charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{leadInstructor.name}</span>
-                  </div>
-                </>
-              ) : null}
             </div>
             <div className="flex flex-wrap gap-1">
               <Badge variant="outline" className="text-[10px] font-mono">
@@ -453,6 +437,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
           {/* Video Player Card */}
           <Card size="sm" className="gap-0 overflow-hidden border-border bg-black shadow-xs">
             <VideoPlayer
+              key={currentLesson?.id}
               videoUrl={currentLesson?.videoUrl}
               title={currentLesson?.title}
             />
