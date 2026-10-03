@@ -414,7 +414,7 @@ export default async function CourseDetailPage({
                   const image = item.image
                   const role = item.role || t("Instructor", "শিক্ষক")
 
-                  const profileLink = `/profile/${item.userId || item.instructorId || item.id}`
+                  const profileLink = `/profile/${item.studentId || item.instructorId || item.userId || item.id}`
 
                   return (
                     <Link

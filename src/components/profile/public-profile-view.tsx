@@ -51,7 +51,9 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href)
+      const canonicalSlug = profile.slug || profile.member?.studentId || profile.instructor?.instructorId || profile.id
+      const shareUrl = `${window.location.origin}/profile/${canonicalSlug}`
+      navigator.clipboard.writeText(shareUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }

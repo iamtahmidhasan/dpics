@@ -96,6 +96,7 @@ export type ActivityItem = {
 
 export type PublicProfile = {
   id: string
+  slug: string
   name: string
   avatar: string | null
   roles: Role[]
@@ -121,9 +122,11 @@ export type PublicProfile = {
 export type MemberListItem = {
   id: string
   userId: string
+  slug: string
   name: string
   avatar: string | null
   studentId: string | null
+  instructorId: string | null
   department: Department
   session: string
   semester: Semester
@@ -138,9 +141,11 @@ export type MemberListItem = {
 export type InstructorListItem = {
   id: string
   userId: string
+  slug: string
   name: string
   avatar: string | null
   instructorId: string | null
+  studentId: string | null
   expertise: string | null
   bio: string | null
   coursesCount: number
@@ -148,10 +153,36 @@ export type InstructorListItem = {
   isMember: boolean
 }
 
+/**
+ * Resolves the canonical public profile slug/identifier for any user/member/instructor.
+ * Rule:
+ * 1. If user has a studentId (from Member), use studentId.
+ * 2. Else if user has an instructorId (from Instructor), use instructorId.
+ * 3. Fallback to userId or id.
+ */
+export function getPublicProfileSlug(target?: {
+  studentId?: string | null
+  instructorId?: string | null
+  userId?: string | null
+  id?: string | null
+} | null): string {
+  if (!target) return ""
+  if (target.studentId && target.studentId.trim().length > 0) {
+    return target.studentId.trim()
+  }
+  if (target.instructorId && target.instructorId.trim().length > 0) {
+    return target.instructorId.trim()
+  }
+  if (target.userId && target.userId.trim().length > 0) {
+    return target.userId.trim()
+  }
+  return target.id ? target.id.trim() : ""
+}
+
 export const PublicProfileService = {
   /**
    * Resolves a public profile by any identifier:
-   * User ID, Member ID, Instructor ID, Student ID, or Instructor ID code.
+   * Student ID, Instructor ID, User ID, Member ID, or Instructor ID code.
    */
   async getProfileByIdentifier(identifier: string): Promise<PublicProfile | null> {
     if (!identifier || typeof identifier !== "string") return null
@@ -161,11 +192,11 @@ export const PublicProfileService = {
       where: {
         isActive: true,
         OR: [
+          { member: { is: { studentId: trimmed } } },
+          { instructor: { is: { instructorId: trimmed } } },
           { id: trimmed },
           { member: { is: { id: trimmed } } },
-          { member: { is: { studentId: trimmed } } },
           { instructor: { is: { id: trimmed } } },
-          { instructor: { is: { instructorId: trimmed } } },
         ],
       },
       include: {
@@ -430,8 +461,15 @@ export const PublicProfileService = {
     // Sort activities descending by timestamp
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+    const slug = getPublicProfileSlug({
+      studentId: member?.studentId,
+      instructorId: instructor?.instructorId,
+      userId: user.id,
+    })
+
     return {
       id: user.id,
+      slug,
       name: user.name,
       avatar,
       roles: user.roles,
@@ -514,7 +552,7 @@ export const PublicProfileService = {
         include: {
           member: true,
           instructor: {
-            select: { id: true, status: true },
+            select: { id: true, status: true, instructorId: true },
           },
           _count: {
             select: {
@@ -533,12 +571,20 @@ export const PublicProfileService = {
         u.selactedImg
       )
 
+      const slug = getPublicProfileSlug({
+        studentId: u.member!.studentId,
+        instructorId: u.instructor?.instructorId,
+        userId: u.id,
+      })
+
       return {
         id: u.member!.id,
         userId: u.id,
+        slug,
         name: u.name,
         avatar,
         studentId: u.member!.studentId,
+        instructorId: u.instructor?.instructorId || null,
         department: u.member!.department,
         session: u.member!.session,
         semester: u.member!.semester,
@@ -616,7 +662,7 @@ export const PublicProfileService = {
             },
           },
           member: {
-            select: { id: true, status: true },
+            select: { id: true, status: true, studentId: true },
           },
           _count: {
             select: {
@@ -644,12 +690,20 @@ export const PublicProfileService = {
         }
       }
 
+      const slug = getPublicProfileSlug({
+        studentId: u.member?.studentId,
+        instructorId: u.instructor!.instructorId,
+        userId: u.id,
+      })
+
       return {
         id: u.instructor!.id,
         userId: u.id,
+        slug,
         name: u.name,
         avatar,
         instructorId: u.instructor!.instructorId,
+        studentId: u.member?.studentId || null,
         expertise: u.instructor!.expertise,
         bio: u.instructor!.bio,
         coursesCount: uniqueCourseIds.size,

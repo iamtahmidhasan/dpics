@@ -172,7 +172,7 @@ export function MembersDirectory({
             return (
               <Link
                 key={m.id}
-                href={`/profile/${m.userId || m.id}`}
+                href={`/profile/${m.slug || m.studentId || m.userId || m.id}`}
                 className="group flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs hover:border-primary/50 transition-all hover:shadow-sm"
               >
                 <div className="space-y-3">

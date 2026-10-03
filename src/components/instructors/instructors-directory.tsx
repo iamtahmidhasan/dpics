@@ -127,7 +127,7 @@ export function InstructorsDirectory({
             return (
               <Link
                 key={inst.id}
-                href={`/profile/${inst.userId || inst.id}`}
+                href={`/profile/${inst.slug || inst.studentId || inst.instructorId || inst.userId || inst.id}`}
                 className="group flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs hover:border-primary/50 transition-all hover:shadow-sm space-y-4"
               >
                 <div className="space-y-3">

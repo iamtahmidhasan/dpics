@@ -34,7 +34,8 @@ export async function generateMetadata({
     profile.instructor?.bio ||
     profile.instructor?.expertise ||
     `${profile.name}'s public profile and activity timeline at ${SITE_NAME}.`
-  const profileUrl = `${SITE_URL}/profile/${id}`
+  const canonicalSlug = profile.slug || profile.member?.studentId || profile.instructor?.instructorId || id
+  const profileUrl = `${SITE_URL}/profile/${canonicalSlug}`
 
   return {
     title,

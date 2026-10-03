@@ -124,6 +124,11 @@ export class CourseService {
                             email: true,
                             image: true,
                             selactedImg: true,
+                            member: {
+                              select: {
+                                studentId: true,
+                              },
+                            },
                           },
                         },
                       },
@@ -158,6 +163,8 @@ export class CourseService {
               )
               instructorsMap.set(li.instructor.id, {
                 id: li.instructor.id,
+                userId: li.instructor.user.id,
+                studentId: li.instructor.user.member?.studentId || null,
                 instructorId: li.instructor.instructorId,
                 name: li.instructor.user.name,
                 email: li.instructor.user.email,
@@ -204,6 +211,11 @@ export class CourseService {
                             email: true,
                             image: true,
                             selactedImg: true,
+                            member: {
+                              select: {
+                                studentId: true,
+                              },
+                            },
                           },
                         },
                       },
@@ -281,6 +293,7 @@ export class CourseService {
             return {
               id: li.id,
               userId: li.instructor.user.id,
+              studentId: li.instructor.user.member?.studentId || null,
               instructorId: li.instructorId,
               role: li.role,
               name: li.instructor.user.name,
@@ -336,6 +349,11 @@ export class CourseService {
               email: true,
               image: true,
               selactedImg: true,
+              member: {
+                select: {
+                  studentId: true,
+                },
+              },
             },
           },
         },
@@ -348,6 +366,8 @@ export class CourseService {
         )
         return {
           id: fi.id,
+          userId: fi.user.id,
+          studentId: fi.user.member?.studentId || null,
           instructorId: fi.instructorId,
           role: "Instructor",
           name: fi.user.name,

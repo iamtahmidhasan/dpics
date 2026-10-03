@@ -51,6 +51,8 @@ export type PostAuthor = {
   id: string
   name: string
   avatar: string | null
+  studentId?: string | null
+  instructorId?: string | null
 }
 
 export type PostCategoryInfo = {
@@ -168,6 +170,8 @@ type AuthorRow = {
   email: string
   image: string[]
   selactedImg: string | null
+  member?: { studentId: string | null } | null
+  instructor?: { instructorId: string | null } | null
 }
 
 type CategoryRow = {
@@ -214,6 +218,12 @@ const AUTHOR_SELECT = {
   email: true,
   image: true,
   selactedImg: true,
+  member: {
+    select: { studentId: true },
+  },
+  instructor: {
+    select: { instructorId: true },
+  },
 } satisfies Prisma.UserSelect
 
 const CATEGORY_SELECT = {
@@ -282,7 +292,13 @@ function buildPage<T>(rows: T[], total: number, page: number, pageSize: number):
 function mapAuthor(user: AuthorRow): PostAuthor {
   const { avatar } = resolveUserImage(user.image, user.selactedImg)
 
-  return { id: user.id, name: user.name, avatar }
+  return {
+    id: user.id,
+    name: user.name,
+    avatar,
+    studentId: user.member?.studentId ?? null,
+    instructorId: user.instructor?.instructorId ?? null,
+  }
 }
 
 function mapSummary(row: PostRowWithAuthor): PostSummary {

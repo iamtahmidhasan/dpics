@@ -307,6 +307,9 @@ model Setting {
   studentIdBatch         String  @default("26")
   batchMemberLimit       Int     @default(0)
 
+  isAutoInstructorIdEnabled Boolean @default(true)
+  instructorIdPrefix        String  @default("INS")
+
   updatedAt   DateTime @updatedAt
   updatedById String?
 

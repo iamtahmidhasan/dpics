@@ -589,7 +589,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                                 return (
                                   <Link
                                     key={idx}
-                                    href={`/profile/${inst.userId || inst.instructorId || inst.id}`}
+                                    href={`/profile/${inst.studentId || inst.instructorId || inst.userId || inst.id}`}
                                     target="_blank"
                                     className="flex items-center gap-2.5 rounded-md border border-border px-3 py-1.5 bg-muted/20 hover:bg-muted/50 hover:border-primary/40 transition-colors text-xs"
                                   >
@@ -973,7 +973,7 @@ export function ClassroomView({ course, initialLessonId }: ClassroomViewProps) {
                       return (
                         <Link
                           key={idx}
-                          href={`/profile/${inst.userId || inst.instructorId || inst.id}`}
+                          href={`/profile/${inst.studentId || inst.instructorId || inst.userId || inst.id}`}
                           target="_blank"
                           className="flex items-start gap-3 rounded-md border border-border p-3 bg-muted/20 hover:border-primary/50 transition-colors group"
                         >

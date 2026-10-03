@@ -30,6 +30,8 @@ export type Settings = {
   studentIdPrefix: string
   studentIdBatch: string
   batchMemberLimit: number
+  isAutoInstructorIdEnabled: boolean
+  instructorIdPrefix: string
   updatedAt: string
   updatedById: string | null
 }
@@ -53,6 +55,8 @@ export const DEFAULT_SETTINGS: Settings = {
   studentIdPrefix: "DPICS",
   studentIdBatch: "24",
   batchMemberLimit: 0,
+  isAutoInstructorIdEnabled: true,
+  instructorIdPrefix: "INS",
   updatedAt: new Date(0).toISOString(),
   updatedById: null,
 }
@@ -74,6 +78,8 @@ const settingSelect = {
   studentIdPrefix: true,
   studentIdBatch: true,
   batchMemberLimit: true,
+  isAutoInstructorIdEnabled: true,
+  instructorIdPrefix: true,
   updatedAt: true,
   updatedById: true,
 } as const
@@ -96,6 +102,8 @@ function toMap(row: Prisma.SettingGetPayload<{ select: typeof settingSelect }>):
     studentIdPrefix: row.studentIdPrefix,
     studentIdBatch: row.studentIdBatch,
     batchMemberLimit: row.batchMemberLimit,
+    isAutoInstructorIdEnabled: row.isAutoInstructorIdEnabled,
+    instructorIdPrefix: row.instructorIdPrefix,
     updatedAt: row.updatedAt.toISOString(),
     updatedById: row.updatedById,
   }
@@ -200,6 +208,14 @@ export function parseSettingsInput(body: unknown): SettingsInput {
     studentIdBatch:
       (toOptionalText(body.studentIdBatch, "Student ID batch", 20) ?? "24")
         .replace(/[^A-Za-z0-9_-]/g, "") || "24",
+    isAutoInstructorIdEnabled:
+      body.isAutoInstructorIdEnabled !== undefined
+        ? toBoolean(body.isAutoInstructorIdEnabled, "Auto instructor ID enabled")
+        : true,
+    instructorIdPrefix:
+      (toOptionalText(body.instructorIdPrefix, "Instructor ID prefix", 20) ?? "INS")
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, "") || "INS",
     batchMemberLimit: (() => {
       if (typeof body.batchMemberLimit === "number") {
         if (!Number.isInteger(body.batchMemberLimit) || body.batchMemberLimit < 0) {

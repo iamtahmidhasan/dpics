@@ -197,7 +197,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
 
             <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
               <Link
-                href={`/profile/${post.author.id}`}
+                href={`/profile/${post.author.studentId || post.author.instructorId || post.author.id}`}
                 className="flex items-center gap-1.5 hover:text-primary transition-colors group"
               >
                 <Avatar className="size-6">

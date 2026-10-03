@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, Calendar, Check, Loader2, Plus, Star, Trash2, X } from "lucide-react"
+import { Award, Calendar, Check, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -9,7 +9,7 @@ import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldGroup } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { formatDate } from "@/lib/format"
@@ -377,6 +377,27 @@ export function AdminMemberForm({
   )
   const [senderNumber, setSenderNumber] = useState(member?.senderNumber ?? "")
   const [transactionId, setTransactionId] = useState(member?.transactionId ?? "")
+  const [generatingStudentId, setGeneratingStudentId] = useState(false)
+
+  async function handleGenerateStudentId() {
+    try {
+      setGeneratingStudentId(true)
+      setErrors((prev) => ({ ...prev, studentId: undefined }))
+      const res = await fetch("/api/admin/members/generate-id")
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.message || "Failed to generate student ID")
+      }
+      const data = await res.json()
+      if (data.studentId) {
+        setStudentId(data.studentId)
+      }
+    } catch (err: any) {
+      setErrors((prev) => ({ ...prev, studentId: err.message || "Failed to generate ID" }))
+    } finally {
+      setGeneratingStudentId(false)
+    }
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -460,13 +481,47 @@ export function AdminMemberForm({
                 error={errors.whatsapp}
                 placeholder="+8801..."
               />
-              <TextField
-                id="member-student-id"
-                label={t("Student id", "শিক্ষা আইডি")}
-                value={studentId}
-                onChange={setStudentId}
-                hint={t("Must be unique across all members", "সব সদস্যের মধ্যে অনন্য হতে হবে")}
-              />
+              <Field data-invalid={!!errors.studentId}>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel htmlFor="member-student-id">
+                    {t("Student id", "শিক্ষা আইডি")}
+                  </FieldLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={handleGenerateStudentId}
+                    disabled={generatingStudentId}
+                    className="h-6 gap-1 text-[11px] font-medium text-primary hover:text-primary hover:bg-primary/10"
+                    title={t("Generate next sequential ID from settings", "সেটিংস অনুযায়ী পরবর্তী ক্রমিক আইডি তৈরি করুন")}
+                  >
+                    {generatingStudentId ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-3 text-primary" />
+                    )}
+                    {t("Generate", "জেনারেট")}
+                  </Button>
+                </div>
+                <Input
+                  id="member-student-id"
+                  name="studentId"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="e.g. DPICS240001"
+                  className="font-mono text-xs"
+                />
+                {errors.studentId ? (
+                  <FieldError>{errors.studentId}</FieldError>
+                ) : (
+                  <FieldDescription>
+                    {t(
+                      "Maintains sequence DPICS[BATCH][xxxx] from settings with gap filling.",
+                      "সেটিংস থেকে শূন্যস্থান পূরণসহ DPICS[BATCH][xxxx] ক্রম বজায় রাখে।"
+                    )}
+                  </FieldDescription>
+                )}
+              </Field>
             </div>
 
             <EnumSelect
@@ -610,6 +665,27 @@ export function AdminInstructorForm({
   const [status, setStatus] = useState<InstructorStatus>(
     instructor?.status ?? InstructorStatus.PENDING
   )
+  const [generatingInstructorId, setGeneratingInstructorId] = useState(false)
+
+  async function handleGenerateInstructorId() {
+    try {
+      setGeneratingInstructorId(true)
+      setErrors((prev) => ({ ...prev, instructorId: undefined }))
+      const res = await fetch("/api/admin/instructors/generate-id")
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        throw new Error(err?.message || "Failed to generate instructor ID")
+      }
+      const data = await res.json()
+      if (data.instructorId) {
+        setInstructorId(data.instructorId)
+      }
+    } catch (err: any) {
+      setErrors((prev) => ({ ...prev, instructorId: err.message || "Failed to generate ID" }))
+    } finally {
+      setGeneratingInstructorId(false)
+    }
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -642,14 +718,47 @@ export function AdminInstructorForm({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <FieldGroup>
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
-                id="instructor-id"
-                label={t("Instructor id", "শিক্ষক আইডি")}
-                value={instructorId}
-                onChange={setInstructorId}
-                error={errors.instructorId}
-                hint={t("Must be unique across all instructors", "সব শিক্ষকের মধ্যে অনন্য হতে হবে")}
-              />
+              <Field data-invalid={!!errors.instructorId}>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel htmlFor="instructor-id">
+                    {t("Instructor id", "শিক্ষক আইডি")}
+                  </FieldLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={handleGenerateInstructorId}
+                    disabled={generatingInstructorId}
+                    className="h-6 gap-1 text-[11px] font-medium text-primary hover:text-primary hover:bg-primary/10"
+                    title={t("Generate next sequential ID from settings", "সেটিংস অনুযায়ী পরবর্তী ক্রমিক আইডি তৈরি করুন")}
+                  >
+                    {generatingInstructorId ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-3 text-primary" />
+                    )}
+                    {t("Generate", "জেনারেট")}
+                  </Button>
+                </div>
+                <Input
+                  id="instructor-id"
+                  name="instructorId"
+                  value={instructorId}
+                  onChange={(e) => setInstructorId(e.target.value)}
+                  placeholder="e.g. INS0001"
+                  className="font-mono text-xs"
+                />
+                {errors.instructorId ? (
+                  <FieldError>{errors.instructorId}</FieldError>
+                ) : (
+                  <FieldDescription>
+                    {t(
+                      "Maintains sequence INS[xxxx] from settings with gap filling.",
+                      "সেটিংস থেকে শূন্যস্থান পূরণসহ INS[xxxx] ক্রম বজায় রাখে।"
+                    )}
+                  </FieldDescription>
+                )}
+              </Field>
               <EnumSelect
                 id="instructor-status"
                 label={t("Instructor status", "শিক্ষকের অবস্থা")}

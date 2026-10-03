@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
 import { SELF_ASSIGNABLE_ROLES, type SelfAssignableRole } from "@/lib/roles"
 import { generateNextStudentId } from "@/lib/services/member-id.service"
+import { generateNextInstructorId } from "@/lib/services/instructor-id.service"
 import {
   getProfile,
   parseProfileInput,
@@ -98,6 +99,8 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
                 studentIdPrefix: true,
                 studentIdBatch: true,
                 batchMemberLimit: true,
+                isAutoInstructorIdEnabled: true,
+                instructorIdPrefix: true,
               },
             })
           : null
@@ -164,7 +167,20 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
       }
 
       if (input.instructor) {
-        await tx.instructor.create({ data: { userId, ...input.instructor } })
+        let instructorId = input.instructor.instructorId
+        if (!instructorId && (settings?.isAutoInstructorIdEnabled ?? true)) {
+          instructorId = await generateNextInstructorId(
+            tx,
+            settings?.instructorIdPrefix
+          )
+        }
+        await tx.instructor.create({
+          data: {
+            userId,
+            ...input.instructor,
+            instructorId: instructorId || undefined,
+          },
+        })
       }
     })
   } catch (error) {
