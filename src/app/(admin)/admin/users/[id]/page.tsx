@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma"
 import { getAdminUserDetail } from "@/lib/services/admin-user.service"
 import { EnrollmentService } from "@/lib/services/enrollment.service"
 import { listPostsForAdmin } from "@/lib/services/post.service"
+import { listAchievementsForAdmin } from "@/lib/services/achievement.service"
 import { requireAdmin } from "@/lib/session"
 
 export const metadata: Metadata = {
@@ -19,12 +20,14 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
 
   let user
   let posts
+  let achievements
   let enrollments
   let courses
   try {
-    const [fetchedUser, fetchedPosts, fetchedEnrollments, availableCourses] = await Promise.all([
+    const [fetchedUser, fetchedPosts, fetchedAchievements, fetchedEnrollments, availableCourses] = await Promise.all([
       getAdminUserDetail(id),
       listPostsForAdmin({ authorId: id }),
+      listAchievementsForAdmin({ authorId: id }),
       EnrollmentService.listUserEnrollments(id),
       prisma.course.findMany({
         select: {
@@ -40,6 +43,7 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
     ])
     user = fetchedUser
     posts = fetchedPosts
+    achievements = fetchedAchievements
     enrollments = JSON.parse(JSON.stringify(fetchedEnrollments))
     courses = JSON.parse(JSON.stringify(availableCourses))
   } catch (error) {
@@ -53,6 +57,7 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
     <AdminUserDetailView
       initialUser={user}
       initialPosts={posts}
+      initialAchievements={achievements}
       initialEnrollments={enrollments}
       availableCourses={courses}
       isSelf={user.id === session.user.id}

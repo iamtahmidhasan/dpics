@@ -29,21 +29,25 @@ import {
 import { AdminUserCourses } from "./admin-user-courses"
 import { AdminUserOverview } from "./admin-user-overview"
 import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
+import { AdminUserAchievements } from "./admin-user-achievements"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
+import type { AchievementPage, AdminAchievementSummary } from "@/lib/services/achievement.service"
 
-const SECTIONS = ["overview", "account", "member", "instructor", "committee", "posts", "courses"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee", "achievements", "posts", "courses"] as const
 
 type Section = (typeof SECTIONS)[number]
 
 export function AdminUserDetailView({
   initialUser,
   initialPosts,
+  initialAchievements,
   initialEnrollments = [],
   availableCourses = [],
   isSelf,
 }: {
   initialUser: AdminUserDetail
   initialPosts?: UserPostsPayload
+  initialAchievements?: AchievementPage<AdminAchievementSummary>
   initialEnrollments?: any[]
   availableCourses?: any[]
   isSelf: boolean
@@ -66,6 +70,7 @@ export function AdminUserDetailView({
     member: { en: "Membership", bn: "সদস্যপদ" },
     instructor: { en: "Instructor", bn: "শিক্ষক" },
     committee: { en: "Committee", bn: "কমিটি" },
+    achievements: { en: "Achievements", bn: "অর্জনসমূহ" },
     posts: { en: "Posts", bn: "পোস্ট" },
     courses: { en: "Enrolled Courses", bn: "কোর্সসমূহ" },
   }
@@ -258,6 +263,14 @@ export function AdminUserDetailView({
           key={`committee-${user.updatedAt}`}
           user={user}
           onUserUpdated={setUser}
+        />
+      ) : null}
+
+      {section === "achievements" ? (
+        <AdminUserAchievements
+          userId={user.id}
+          userName={user.name || user.email}
+          initialAchievements={initialAchievements}
         />
       ) : null}
 

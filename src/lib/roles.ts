@@ -66,3 +66,18 @@ export function canWritePosts(user: { roles?: unknown } | null | undefined): boo
     (POST_WRITER_ROLES as readonly Role[]).includes(role)
   )
 }
+
+/**
+ * Roles allowed to create and submit achievements. Member, Instructor, and Admin.
+ */
+export const ACHIEVEMENT_CREATOR_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN] as const
+
+export type AchievementCreatorRole = (typeof ACHIEVEMENT_CREATOR_ROLES)[number]
+
+/** True when the account may open `/profile/achievements/add` and submit achievements. */
+export function canCreateAchievements(user: { roles?: unknown } | null | undefined): boolean {
+  return getUserRoles(user).some((role) =>
+    (ACHIEVEMENT_CREATOR_ROLES as readonly Role[]).includes(role)
+  )
+}
+

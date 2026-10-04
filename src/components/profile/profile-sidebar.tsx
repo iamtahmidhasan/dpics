@@ -1,11 +1,11 @@
 "use client"
 
-import { BadgeCheck, FileText, GraduationCap, PenSquare, UserCog, Wrench } from "lucide-react"
+import { Award, BadgeCheck, FileText, GraduationCap, PenSquare, UserCog, Wrench } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useLanguage } from "@/components/language-provider"
-import { POST_WRITER_ROLES } from "@/lib/roles"
+import { ACHIEVEMENT_CREATOR_ROLES, POST_WRITER_ROLES } from "@/lib/roles"
 import { cn } from "cn"
 
 import { Role, type Role as RoleType } from "@/generated/prisma/enums"
@@ -39,6 +39,12 @@ const NAV_ITEMS: {
     label: { en: "Instructor details", bn: "শিক্ষকের বিবরণ" },
     icon: Wrench,
     roles: [Role.INSTRUCTOR],
+  },
+  {
+    href: "/profile/achievements",
+    label: { en: "Achievements", bn: "অর্জনসমূহ" },
+    icon: Award,
+    roles: [...ACHIEVEMENT_CREATOR_ROLES],
   },
   {
     href: "/profile/posts",

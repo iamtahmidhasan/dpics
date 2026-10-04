@@ -267,6 +267,11 @@ const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  {
+    label: { en: 'Achievements', bn: 'অর্জন' },
+    href: '/achievements',
+    columns: [],
+  },
 ]
 
 const MOBILE_ITEMS: MobileNavItem[] = NAV_ITEMS.map(

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 
 import { auth, type AuthSession } from "@/lib/auth"
 import { ApiError } from "@/lib/api-error"
-import { canWritePosts, isAdmin, isRole, type Role } from "@/lib/roles"
+import { canCreateAchievements, canWritePosts, isAdmin, isRole, type Role } from "@/lib/roles"
 
 export { ADMIN_ROLE, ROLES, getUserRoles, hasRole, isAdmin } from "@/lib/roles"
 
@@ -78,3 +78,26 @@ export async function requirePostWriterApi(): Promise<AuthSession> {
 
   return session
 }
+
+/** Server component guard: signed in and allowed to add achievements. */
+export async function requireAchievementCreator(): Promise<AuthSession> {
+  const session = await requireUser()
+
+  if (!canCreateAchievements(session.user)) redirect("/dashboard")
+
+  return session
+}
+
+/** Route handler guard: signed in and allowed to add achievements. */
+export async function requireAchievementCreatorApi(): Promise<AuthSession> {
+  const session = await getSession()
+
+  if (!session?.user) throw ApiError.unauthorized()
+
+  if (!canCreateAchievements(session.user)) {
+    throw ApiError.forbidden("Only society members and instructors can create achievements")
+  }
+
+  return session
+}
+
