@@ -6,7 +6,7 @@ import { requireAdminApi } from "@/lib/session"
 import {
   deleteAchievement,
   getAchievementById,
-  parseAchievementUpdateInput,
+  parseAchievementAdminUpdateInput,
   updateAchievement,
   type AchievementAdminUpdateInput,
 } from "@/lib/services/achievement.service"
@@ -37,11 +37,7 @@ export async function PATCH(
     const session = await requireAdminApi()
     const { id } = await context.params
     const body = await request.json()
-    const input: AchievementAdminUpdateInput = {
-      ...parseAchievementUpdateInput(body),
-      status: body.status,
-      massageForAuthor: body.massageForAuthor,
-    }
+    const input: AchievementAdminUpdateInput = parseAchievementAdminUpdateInput(body)
 
     return NextResponse.json(
       await updateAchievement(id, input, {

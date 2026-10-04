@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Award,
   ArrowRight,
-  Calendar,
   Building2,
   ExternalLink,
   PlusCircle,
@@ -61,10 +60,9 @@ export function AchievementsSection({
   const sectionRef = useRef<HTMLElement>(null)
   const inView = useInView(sectionRef, { once: true, margin: '-80px' })
 
-  // Deduplicate items for latest if needed or take up to 6
   const displayItems = activeTab === 'featured' ? featured : latest
   const spotlightItem = displayItems[0]
-  const gridItems = displayItems.slice(1, 5)
+  const gridItems = displayItems.slice(1, 4)
 
   if (featured.length === 0 && latest.length === 0) {
     return null
@@ -74,20 +72,20 @@ export function AchievementsSection({
     <section
       ref={sectionRef}
       id="achievements"
-      className="relative overflow-hidden bg-background py-20 md:py-28"
+      className="relative overflow-hidden bg-background py-16 sm:py-20 md:py-24"
     >
       {/* Background ambient lighting */}
       <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center opacity-40 dark:opacity-25">
         <div className="size-[500px] rounded-full bg-gradient-to-tr from-amber-500/20 via-primary/20 to-transparent blur-3xl" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end"
+          className="mb-10 sm:mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end"
         >
           <div className="max-w-2xl space-y-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -95,7 +93,7 @@ export function AchievementsSection({
               <span>{t('Hall of Fame & Milestones', 'কৃতিত্ব ও গৌরবময় সাফল্য')}</span>
             </span>
 
-            <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-5xl">
               {t('Celebrating Member', 'আমাদের সদস্যদের')}{' '}
               <span className="bg-gradient-to-r from-amber-500 via-primary to-emerald-400 bg-clip-text text-transparent">
                 {t('Achievements', 'অর্জিত গৌরব')}
@@ -173,15 +171,15 @@ export function AchievementsSection({
             initial="hidden"
             animate={inView ? 'show' : 'hidden'}
             exit={{ opacity: 0, y: 10 }}
-            className="space-y-6"
+            className="space-y-6 sm:space-y-8"
           >
-            {/* Spotlight Showcase (If at least 1 item exists) */}
+            {/* Spotlight Showcase (Top milestone highlight) */}
             {spotlightItem && (
               <motion.div variants={itemVariants}>
                 <div className="group relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-card via-card to-amber-500/5 p-4 shadow-sm transition-all duration-300 hover:border-amber-500/60 hover:shadow-xl hover:shadow-amber-500/5 sm:p-6 lg:p-8">
-                  <div className="grid gap-6 lg:grid-cols-12 lg:items-center">
+                  <div className="grid gap-6 md:grid-cols-12 md:items-center">
                     {/* Media Thumbnail */}
-                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border/50 bg-muted/60 lg:col-span-6 xl:col-span-5">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border/50 bg-muted/60 md:col-span-5 lg:col-span-5">
                       {spotlightItem.coverImage ? (
                         <Image
                           src={spotlightItem.coverImage}
@@ -192,7 +190,7 @@ export function AchievementsSection({
                           }
                           fill
                           priority
-                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          sizes="(max-width: 768px) 100vw, 45vw"
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
@@ -212,7 +210,7 @@ export function AchievementsSection({
                         {spotlightItem.category && (
                           <Badge
                             variant="secondary"
-                            className="bg-background/90 text-xs font-semibold backdrop-blur-xs"
+                            className="max-w-[160px] truncate bg-background/90 text-xs font-semibold backdrop-blur-xs"
                           >
                             {isBn && spotlightItem.category.nameBn
                               ? spotlightItem.category.nameBn
@@ -223,14 +221,14 @@ export function AchievementsSection({
                     </div>
 
                     {/* Content details */}
-                    <div className="flex flex-col justify-between space-y-4 lg:col-span-6 xl:col-span-7">
+                    <div className="flex flex-col justify-between space-y-4 md:col-span-7 lg:col-span-7">
                       <div className="space-y-3">
                         {/* Organization / Awarding Body */}
                         {(spotlightItem.organization ||
                           spotlightItem.organizationBn) && (
                           <div className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
                             <Building2 className="size-3.5 shrink-0" />
-                            <span>
+                            <span className="truncate">
                               {isBn && spotlightItem.organizationBn
                                 ? spotlightItem.organizationBn
                                 : spotlightItem.organization}
@@ -262,7 +260,7 @@ export function AchievementsSection({
                             {spotlightItem.tags.slice(0, 4).map((tag) => (
                               <span
                                 key={tag}
-                                className="rounded-md border border-border/60 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
+                                className="max-w-[130px] truncate rounded-md border border-border/60 bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
                               >
                                 #{tag}
                               </span>
@@ -272,10 +270,10 @@ export function AchievementsSection({
                       </div>
 
                       {/* Footer & CTA */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 pt-4">
+                      <div className="flex flex-col gap-3.5 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         {/* Author info */}
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="size-8 border border-border">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <Avatar className="size-8 shrink-0 border border-border">
                             {spotlightItem.author?.avatar && (
                               <AvatarImage
                                 src={spotlightItem.author.avatar}
@@ -288,11 +286,11 @@ export function AchievementsSection({
                                 .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="text-xs">
-                            <p className="font-semibold text-foreground">
+                          <div className="min-w-0 flex-1 text-xs">
+                            <p className="truncate font-semibold text-foreground">
                               {spotlightItem.author?.name}
                             </p>
-                            <p className="text-muted-foreground">
+                            <p className="truncate text-muted-foreground">
                               {spotlightItem.author?.studentId ||
                                 spotlightItem.author?.instructorId ||
                                 (spotlightItem.eventDate
@@ -309,16 +307,16 @@ export function AchievementsSection({
                         </div>
 
                         {/* Link to detail */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                           {spotlightItem.certificateUrl && (
                             <a
                               href={spotlightItem.certificateUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                              className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                             >
                               <ExternalLink className="size-3" />
-                              <span>{t('Verify Credential', 'যাচাই করুন')}</span>
+                              <span>{t('Verify', 'যাচাই')}</span>
                             </a>
                           )}
                           <Button
@@ -329,7 +327,7 @@ export function AchievementsSection({
                                 href={`/achievements/${spotlightItem.slug}`}
                               />
                             }
-                            className="gap-1.5 bg-amber-500 font-medium text-white hover:bg-amber-600"
+                            className="gap-1.5 bg-amber-500 font-medium text-white hover:bg-amber-600 shrink-0"
                           >
                             <span>{t('Read Story', 'বিস্তারিত পড়ুন')}</span>
                             <ArrowRight className="size-3.5" />
@@ -342,11 +340,11 @@ export function AchievementsSection({
               </motion.div>
             )}
 
-            {/* Grid for secondary items */}
+            {/* Grid for secondary items - Balanced 3-column layout */}
             {gridItems.length > 0 && (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
                 {gridItems.map((item) => (
-                  <motion.div key={item.id} variants={itemVariants}>
+                  <motion.div key={item.id} variants={itemVariants} className="h-full">
                     <AchievementCard
                       achievement={item}
                       lang={lang}
@@ -381,13 +379,13 @@ export function AchievementsSection({
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex w-full flex-col sm:w-auto sm:flex-row items-center gap-2.5 shrink-0">
             <Button
               variant="outline"
               size="sm"
               nativeButton={false}
               render={<Link href="/profile/achievements/add" />}
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              className="w-full sm:w-auto gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
             >
               <PlusCircle className="size-4" />
               <span>{t('Submit Achievement', 'অর্জন জমা দিন')}</span>
@@ -396,7 +394,7 @@ export function AchievementsSection({
               size="sm"
               nativeButton={false}
               render={<Link href="/achievements" />}
-              className="gap-1.5"
+              className="w-full sm:w-auto gap-1.5"
             >
               <span>{t('View All', 'সব অর্জন')}</span>
               <ChevronRight className="size-4" />

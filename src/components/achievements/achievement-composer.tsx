@@ -278,7 +278,9 @@ export function AchievementComposer({
             <>
               <Select
                 value={adminStatus}
-                onValueChange={(val) => setAdminStatus(val as PostStatus)}
+                onValueChange={(val) => {
+                  if (val) setAdminStatus(val as PostStatus)
+                }}
               >
                 <SelectTrigger className="h-8 w-36 text-xs">
                   <SelectValue />

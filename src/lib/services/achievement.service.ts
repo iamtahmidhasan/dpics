@@ -442,6 +442,25 @@ export function parseAchievementUpdateInput(body: unknown): Partial<AchievementI
   return update
 }
 
+export function parseAchievementAdminUpdateInput(body: unknown): AchievementAdminUpdateInput {
+  if (!isRecord(body)) throw ApiError.badRequest("Invalid request body")
+  const base = parseAchievementUpdateInput(body)
+
+  const adminUpdate: AchievementAdminUpdateInput = {
+    ...base,
+  }
+
+  if (body.status !== undefined) {
+    adminUpdate.status = toEnum(body.status, "Status", ACHIEVEMENT_STATUSES)
+  }
+
+  if (body.massageForAuthor !== undefined) {
+    adminUpdate.massageForAuthor = toOptionalText(body.massageForAuthor, "Message for author", 2000)
+  }
+
+  return adminUpdate
+}
+
 // ============================================================================
 // Service Operations
 // ============================================================================
@@ -539,7 +558,7 @@ export async function updateAchievement(
   id: string,
   input: AchievementAdminUpdateInput,
   actor: AchievementActor
-): Promise<MyAchievementDetail> {
+): Promise<AchievementDetail> {
   const current = await prisma.achievement.findUnique({ where: { id } })
   if (!current) throw ApiError.notFound("Achievement not found")
 
@@ -562,22 +581,55 @@ export async function updateAchievement(
   const excerpt =
     input.excerpt !== undefined
       ? input.excerpt
-      : deriveExcerpt(content, null, MAX_ACHIEVEMENT_EXCERPT_LENGTH)
+      : input.content !== undefined
+      ? deriveExcerpt(content, null, MAX_ACHIEVEMENT_EXCERPT_LENGTH)
+      : current.excerpt
+
   const excerptBn =
     input.excerptBn !== undefined
       ? input.excerptBn
-      : contentBn
-      ? deriveExcerpt(contentBn, null, MAX_ACHIEVEMENT_EXCERPT_LENGTH)
-      : null
+      : input.contentBn !== undefined
+      ? (contentBn ? deriveExcerpt(contentBn, null, MAX_ACHIEVEMENT_EXCERPT_LENGTH) : null)
+      : current.excerptBn
+
+  let nextStatus: PostStatus | undefined = undefined
+  let nextPublishedAt: Date | null = current.publishedAt
+  let nextReviewedAt: Date | null = current.reviewedAt
+  let nextReviewedById: string | null = current.reviewedById
+
+  if (actor.isAdmin) {
+    if (input.status !== undefined) {
+      nextStatus = input.status
+      if (input.status === PostStatus.PUBLISHED) {
+        nextPublishedAt = current.publishedAt ?? new Date()
+        nextReviewedAt = new Date()
+        nextReviewedById = actor.userId
+      }
+    }
+  } else {
+    // If it was rejected, editing resets it to DRAFT until author submits again
+    if (current.status === PostStatus.REJECTED) {
+      nextStatus = PostStatus.DRAFT
+    }
+  }
+
+  const { status: _ignoreStatus, massageForAuthor, ...contentFields } = input
 
   const row = await prisma.achievement.update({
     where: { id },
     data: {
-      ...input,
+      ...contentFields,
       excerpt,
       excerptBn,
-      // If it was rejected, editing resets it to DRAFT until author submits again
-      status: !actor.isAdmin && current.status === PostStatus.REJECTED ? PostStatus.DRAFT : undefined,
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...(actor.isAdmin && input.status === PostStatus.PUBLISHED
+        ? {
+            publishedAt: nextPublishedAt,
+            reviewedAt: nextReviewedAt,
+            reviewedById: nextReviewedById,
+          }
+        : {}),
+      ...(actor.isAdmin && massageForAuthor !== undefined ? { massageForAuthor } : {}),
     },
     include: {
       category: { select: CATEGORY_SELECT },

@@ -1,7 +1,10 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { ExternalLink } from "lucide-react"
 
 import { AchievementComposer } from "@/components/achievements/achievement-composer"
+import { AdminAchievementStatusSelect } from "@/components/admin/admin-achievement-status-select"
+import { PostStatus } from "@/generated/prisma/enums"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import prisma from "@/lib/prisma"
@@ -57,18 +60,39 @@ export default async function AdminAchievementDetailPage({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="font-heading text-lg font-semibold">
-          {t("Review & Edit Achievement", "অর্জন পর্যালোচনা ও সম্পাদনা")}
-        </h1>
-        <p className="text-xs/relaxed text-muted-foreground">
-          {t(
-            "Authored by",
-            "লেখক:"
-          )}{" "}
-          <span className="font-semibold text-foreground">{achievement.author.name}</span>{" "}
-          ({achievement.author.email})
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="space-y-1">
+          <h1 className="font-heading text-lg font-semibold">
+            {t("Review & Edit Achievement", "অর্জন পর্যালোচনা ও সম্পাদনা")}
+          </h1>
+          <p className="text-xs/relaxed text-muted-foreground">
+            {t(
+              "Authored by",
+              "লেখক:"
+            )}{" "}
+            <span className="font-semibold text-foreground">{achievement.author.name}</span>{" "}
+            ({achievement.author.email})
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminAchievementStatusSelect
+            achievementId={achievement.id}
+            initialStatus={achievement.status}
+          />
+
+          {achievement.status === PostStatus.PUBLISHED ? (
+            <a
+              href={`/achievements/${achievement.slug}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
+            >
+              {t("View live", "লাইভ দেখুন")}
+              <ExternalLink className="size-3" />
+            </a>
+          ) : null}
+        </div>
       </div>
 
       <AchievementComposer

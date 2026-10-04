@@ -65,18 +65,18 @@ export function AchievementCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-200 hover:border-primary/40 hover:shadow-md",
         className
       )}
     >
       {/* Media / Thumbnail */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted/50">
+      <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-muted/50">
         {achievement.coverImage ? (
           <Image
             src={achievement.coverImage}
             alt={displayTitle}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
@@ -86,15 +86,18 @@ export function AchievementCard({
         )}
 
         {/* Badges Overlay */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
-          <div className="flex flex-wrap gap-1">
+        <div className="pointer-events-none absolute left-2.5 right-2.5 top-2.5 flex items-center justify-between gap-1.5">
+          <div className="flex min-w-0 max-w-[80%] items-center gap-1 overflow-hidden">
             {achievement.isFeatured && (
-              <Badge className="bg-primary text-primary-foreground text-[0.625rem] shadow-sm">
+              <Badge className="shrink-0 bg-primary text-primary-foreground text-[0.625rem] shadow-sm">
                 {t("Featured", "ফিচার্ড")}
               </Badge>
             )}
             {categoryName && (
-              <Badge variant="secondary" className="bg-background/90 backdrop-blur-xs text-[0.625rem] font-medium shadow-xs">
+              <Badge
+                variant="secondary"
+                className="max-w-[130px] truncate bg-background/90 text-[0.625rem] font-medium shadow-xs backdrop-blur-xs"
+              >
                 {categoryName}
               </Badge>
             )}
@@ -103,7 +106,7 @@ export function AchievementCard({
           {showStatus && (
             <Badge
               variant={achievementStatusBadgeVariant(achievement.status)}
-              className="text-[0.625rem] shadow-xs uppercase tracking-wider font-semibold"
+              className="shrink-0 text-[0.625rem] uppercase tracking-wider font-semibold shadow-xs"
             >
               {t(achievementStatusLabel(achievement.status))}
             </Badge>
@@ -112,7 +115,7 @@ export function AchievementCard({
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
         {/* Organization / Awarder info */}
         {displayOrg && (
           <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -121,7 +124,7 @@ export function AchievementCard({
           </div>
         )}
 
-        <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight">
+        <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground">
           <Link href={target} className="hover:text-primary transition-colors">
             {displayTitle}
           </Link>
@@ -139,7 +142,7 @@ export function AchievementCard({
             {achievement.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[0.625rem] text-muted-foreground"
+                className="max-w-[120px] truncate rounded-md bg-muted/80 px-1.5 py-0.5 text-[0.625rem] text-muted-foreground"
               >
                 #{tag}
               </span>
@@ -147,25 +150,25 @@ export function AchievementCard({
           </div>
         )}
 
-        {/* Meta info footer */}
-        <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-[0.6875rem] text-muted-foreground">
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar className="size-6 border">
+        {/* Meta info footer pinned to bottom */}
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/50 pt-3.5 text-[0.6875rem] text-muted-foreground">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Avatar className="size-6 shrink-0 border">
               {achievement.author.avatar && (
                 <AvatarImage src={achievement.author.avatar} alt={achievement.author.name} />
               )}
               <AvatarFallback className="text-[10px]">{authorInitials}</AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex flex-col">
-              <span className="truncate font-medium text-foreground">{achievement.author.name}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium leading-tight text-foreground">{achievement.author.name}</p>
               {authorIdentifier && (
-                <span className="truncate text-[10px] text-muted-foreground font-mono">{authorIdentifier}</span>
+                <p className="truncate font-mono text-[10px] text-muted-foreground mt-0.5">{authorIdentifier}</p>
               )}
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <CalendarDays className="size-3" />
+          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">
+            <CalendarDays className="size-3 shrink-0" />
             <time dateTime={timestamp}>{dateLabel}</time>
           </div>
         </div>
