@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { motion } from "framer-motion"
 import { Home, Calendar, Trophy, BookOpen, User } from "lucide-react"
 
 import { useLanguage } from "@/components/language-provider"
@@ -12,11 +13,25 @@ import { useSession } from "@/lib/auth-client"
 import { resolveUserImage } from "@/lib/user-image"
 import { cn } from "cn"
 
+const SCROLL_HIDE_THRESHOLD = 96
+
 export function BottomNav() {
   const pathname = usePathname()
   const { t } = useLanguage()
   const session = useSession()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY
+    const onScroll = () => {
+      const currentScrollY = window.scrollY
+      setIsHidden(currentScrollY > SCROLL_HIDE_THRESHOLD && currentScrollY > lastScrollY)
+      lastScrollY = currentScrollY
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const user = session.data?.user
   const initials = (user?.name || user?.email || "?").trim().charAt(0).toUpperCase()
@@ -54,11 +69,15 @@ export function BottomNav() {
     },
   ]
 
+  const hideNav = isHidden && !drawerOpen
+
   return (
     <>
-      <nav
+      <motion.nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 inset-x-0 z-40 block md:hidden border-t border-border/80 bg-background/90 backdrop-blur-xl shadow-lg"
+        animate={{ y: hideNav ? "100%" : "0%" }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
+        className="fixed bottom-0 inset-x-0 z-40 block md:hidden border-t border-border/80 bg-background/90 backdrop-blur-xl shadow-lg transform-gpu"
       >
         <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
           {navItems.map((item) => {
@@ -146,7 +165,7 @@ export function BottomNav() {
             </span>
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Full-Screen / Large User Drawer */}
       <UserDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
