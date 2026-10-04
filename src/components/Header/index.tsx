@@ -420,7 +420,7 @@ export function Header() {
                     <Button
                       variant="ghost"
                       size="icon-lg"
-                      className="relative size-8 overflow-hidden rounded-full p-0"
+                      className="relative size-8 overflow-hidden rounded-full p-0 hidden md:inline-flex"
                     />
                   }
                 >
@@ -463,6 +463,7 @@ export function Header() {
                 size="icon-lg"
                 nativeButton={false}
                 render={<Link href="/join" aria-label="Join" />}
+                className="hidden md:inline-flex"
               >
                 <User className="size-5" />
               </Button>
