@@ -6,7 +6,7 @@ import { getLang } from "@/lib/i18n-server"
 import { getProfile } from "@/lib/services/profile.service"
 import { requireUser } from "@/lib/session"
 
-export const metadata: Metadata = { title: "Profile" }
+export const metadata: Metadata = { title: "Profile | DPI Computing Society" }
 
 export default async function ProfilePage() {
   const [session, lang] = await Promise.all([requireUser(), getLang()])

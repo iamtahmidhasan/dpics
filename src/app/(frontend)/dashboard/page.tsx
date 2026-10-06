@@ -55,7 +55,7 @@ import { NOINDEX } from "@/lib/seo"
 import { cn } from "cn"
 
 export const metadata: Metadata = {
-  title: "Dashboard Overview",
+  title: "Dashboard | DPI Computing Society",
   description: "Member and student overview dashboard for DPI Computing Society.",
   robots: NOINDEX,
 }

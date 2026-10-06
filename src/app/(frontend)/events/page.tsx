@@ -26,7 +26,7 @@ export async function generateMetadata({
   const raw = Array.isArray(params.page) ? params.page[0] : params.page
   const pageNum = Number.parseInt(raw ?? "", 10)
   return websiteMetadata({
-    title: "Events",
+    title: "Events | DPI Computing Society",
     description: DESCRIPTION,
     // Paginated pages self-canonicalize; filtered variants fall back to the base URL.
     path: pageNum > 1 ? `/events?page=${pageNum}` : "/events",

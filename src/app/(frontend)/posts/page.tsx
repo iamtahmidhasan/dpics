@@ -25,7 +25,7 @@ export async function generateMetadata({
   const raw = Array.isArray(params.page) ? params.page[0] : params.page
   const pageNum = Number.parseInt(raw ?? "", 10)
   return websiteMetadata({
-    title: "Blog",
+    title: "Blog | DPI Computing Society",
     socialTitle: `Blog | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
     // Paginated pages self-canonicalize so page 2+ is not attributed to page 1.

@@ -19,7 +19,7 @@ const DESCRIPTION =
   "Meet the executive committee of DPI Computing Society — the students and mentors who plan our workshops, competitions, and community programs."
 
 export const metadata: Metadata = websiteMetadata({
-  title: "Committee",
+  title: "Committee | DPI Computing Society",
   description: DESCRIPTION,
   path: "/committee",
 })

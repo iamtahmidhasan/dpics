@@ -12,7 +12,7 @@ const DESCRIPTION =
   "Curated roadmaps, session notes, and problem archives for DPI Computing Society members — learn structured tracks alongside the community."
 
 export const metadata: Metadata = websiteMetadata({
-  title: "Resources",
+  title: "Resources | DPI Computing Society",
   description: DESCRIPTION,
   path: "/resources",
 })

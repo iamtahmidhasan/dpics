@@ -29,7 +29,7 @@ const DESCRIPTION = "Learn web development, competitive programming, and modern 
 
 export const metadata: Metadata = websiteMetadata({
   title: "Courses",
-  socialTitle: "Courses | DPICS Academy",
+  socialTitle: "Courses | DPI Computing Society",
   description: DESCRIPTION,
   path: "/courses",
 })

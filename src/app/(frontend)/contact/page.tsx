@@ -13,7 +13,7 @@ const DESCRIPTION =
   "Contact DPI Computing Society (DPICS) — email the team, find us on campus, or jump to the quick links for joining, committees, and courses."
 
 export const metadata: Metadata = websiteMetadata({
-  title: "Contact Us",
+  title: "Contact Us | DPI Computing Society",
   description: DESCRIPTION,
   path: "/contact",
 })

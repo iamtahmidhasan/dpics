@@ -16,7 +16,7 @@ export async function generateMetadata({
   const { page } = await searchParams
   const pageNum = Number.parseInt(page ?? "", 10)
   return websiteMetadata({
-    title: "Society Members Directory",
+    title: "Society Members Directory | DPI Computing Society",
     description: DESCRIPTION,
     // Paginated pages self-canonicalize so page 2+ is not attributed to page 1.
     path: pageNum > 1 ? `/members?page=${pageNum}` : "/members",

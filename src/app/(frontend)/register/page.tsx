@@ -16,7 +16,7 @@ import { NOINDEX } from "@/lib/seo"
 import { normalizeImageList } from "@/lib/user-image"
 
 export const metadata: Metadata = {
-  title: "Complete Registration",
+  title: "Complete Registration | DPI Computing Society",
   description: "Set up your profile, role, and details to join DPI Computing Society",
   robots: NOINDEX,
 }

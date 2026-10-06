@@ -7,7 +7,7 @@ const DESCRIPTION =
   "Privacy Policy and data protection terms for members, students, and visitors of the DPI Computing Society (DPICS)."
 
 export const metadata: Metadata = websiteMetadata({
-  title: "Privacy Policy",
+  title: "Privacy Policy | DPI Computing Society",
   description: DESCRIPTION,
   path: "/privacy",
 })

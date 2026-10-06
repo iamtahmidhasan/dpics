@@ -7,7 +7,7 @@ import { getSession } from "@/lib/session"
 import { NOINDEX } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Join",
+  title: "Join | DPI Computing Society",
   description: "Sign in or join DPI Computing Society using Google or GitHub",
   robots: NOINDEX,
 }

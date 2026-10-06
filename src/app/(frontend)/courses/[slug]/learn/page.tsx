@@ -14,7 +14,7 @@ import { isAdmin as checkAdmin } from "@/lib/roles"
 import { cn } from "cn"
 
 export const metadata: Metadata = {
-  title: "Classroom",
+  title: "Classroom | DPI Computing Society",
   robots: { index: false, follow: false },
 }
 

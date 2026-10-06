@@ -20,7 +20,7 @@ export async function generateMetadata({
   if (!profile) {
     return {
       // Plain string: the root template appends the site name once.
-      title: "Profile Not Found",
+      title: "Profile Not Found | DPI Computing Society",
       robots: { index: false, follow: false },
     }
   }
