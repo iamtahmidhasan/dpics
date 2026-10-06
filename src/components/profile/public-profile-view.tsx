@@ -26,6 +26,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useLanguage } from "@/components/language-provider"
 import { departmentLabel, semesterLabel, shiftLabel } from "@/lib/profile-labels"
+import { resolveCoverImage } from "@/lib/cover-images"
 import type { PublicProfile } from "@/lib/services/public-profile.service"
 import { cn } from "cn"
 
@@ -115,10 +116,16 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
     <div className="space-y-4 sm:space-y-6 w-full max-w-full">
       {/* 1. Header Profile Banner & Card */}
       <Card size="sm" className="overflow-hidden border-border bg-card shadow-xs">
-        {/* Decorative Top Accent Bar */}
-        <div className="h-24 sm:h-32 md:h-36 w-full bg-linear-to-r from-primary/20 via-primary/10 to-primary/5 relative overflow-hidden border-b border-border/60">
-          <div className="absolute -right-10 -bottom-10 size-36 sm:size-48 rounded-full bg-primary/10 blur-2xl" />
-          <div className="absolute left-10 top-0 size-28 sm:size-40 rounded-full bg-emerald-500/10 blur-xl" />
+        {/* Decorative Top Accent Bar with Cover Image */}
+        <div className="h-28 sm:h-36 md:h-44 w-full relative overflow-hidden border-b border-border/60 bg-muted">
+          <Image
+            src={resolveCoverImage(profile.coverImg)}
+            alt={`${profile.name} cover`}
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-linear-to-t from-card/80 via-transparent to-transparent pointer-events-none" />
         </div>
 
         <CardContent className="px-3.5 sm:px-6 pb-5 sm:pb-6 pt-0">
@@ -208,17 +215,21 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
               </p>
             )}
 
-            {profile.instructor?.expertise && (
-              <p className="text-xs sm:text-sm text-primary font-medium">
-                {profile.instructor.expertise}
-              </p>
+            {profile.skills && profile.skills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {profile.skills.map((skill) => (
+                  <Badge key={skill} variant="secondary" className="text-[10px] sm:text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
 
           {/* Bio Preview if available */}
-          {profile.instructor?.bio && (
+          {profile.bio && (
             <p className="text-xs sm:text-sm text-muted-foreground max-w-3xl mb-3.5 leading-relaxed">
-              {profile.instructor.bio}
+              {profile.bio}
             </p>
           )}
 
@@ -230,6 +241,21 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                   {t("ID:", "আইডি:")}
                 </span>
                 <span className="font-bold text-foreground">{profile.member.studentId}</span>
+              </div>
+            )}
+
+            {profile.member?.boardOrClassRoll && (
+              <div className="flex items-center gap-1.5 rounded-md bg-muted/40 border border-border px-2 py-0.5 text-muted-foreground text-[10px] sm:text-[11px] font-mono">
+                <span className="text-muted-foreground/70 uppercase font-sans font-semibold text-[9px] sm:text-[10px]">
+                  {t("Roll:", "রোল:")}
+                </span>
+                <span className="font-bold text-foreground">{profile.member.boardOrClassRoll}</span>
+              </div>
+            )}
+
+            {profile.bloodGroup && (
+              <div className="flex items-center gap-1.5 rounded-md bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-rose-600 dark:text-rose-400 text-[10px] sm:text-[11px] font-medium">
+                <span>{profile.bloodGroup}</span>
               </div>
             )}
 
@@ -796,6 +822,64 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
         {/* TAB 5: About & Credentials */}
         {activeTab === "about" && (
           <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+            {/* Bio & Skills Card */}
+            {(profile.bio || (profile.skills && profile.skills.length > 0) || profile.address || profile.whatsappNumber || profile.bloodGroup) && (
+              <Card size="sm" className="md:col-span-2">
+                <CardHeader className="p-3.5 sm:p-5">
+                  <CardTitle className="text-xs font-semibold flex items-center gap-2">
+                    <Sparkles className="size-4 text-primary shrink-0" />
+                    <span>{t("About & Skills", "পরিচিতি ও দক্ষতা")}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3.5 sm:p-5 pt-0 space-y-3 text-xs">
+                  {profile.bio && (
+                    <div className="space-y-1">
+                      <span className="text-muted-foreground text-[11px] block">{t("Biography", "জীবনী / পরিচিতি")}</span>
+                      <p className="text-xs text-foreground/90 leading-relaxed bg-muted/30 p-2.5 rounded-lg border border-border/60 whitespace-pre-wrap">
+                        {profile.bio}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.skills && profile.skills.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-muted-foreground text-[11px] block">{t("Skills & Expertise", "দক্ষতা ও ক্ষেত্র")}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.skills.map((skill) => (
+                          <Badge key={skill} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(profile.address || profile.bloodGroup || profile.whatsappNumber) && (
+                    <div className="grid gap-2 sm:grid-cols-3 pt-2 border-t border-border/50 text-[11px]">
+                      {profile.bloodGroup && (
+                        <div>
+                          <span className="text-muted-foreground block">{t("Blood Group", "রক্তের গ্রুপ")}</span>
+                          <span className="font-semibold text-foreground">{profile.bloodGroup}</span>
+                        </div>
+                      )}
+                      {profile.address && (
+                        <div>
+                          <span className="text-muted-foreground block">{t("Address", "ঠিকানা")}</span>
+                          <span className="font-medium text-foreground">{profile.address}</span>
+                        </div>
+                      )}
+                      {profile.whatsappNumber && (
+                        <div>
+                          <span className="text-muted-foreground block">{t("WhatsApp", "হোয়াটসঅ্যাপ")}</span>
+                          <span className="font-mono text-foreground">{profile.whatsappNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Instructor Credentials Card */}
             {profile.isInstructor && profile.instructor && (
               <Card size="sm">
@@ -815,15 +899,6 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                     </div>
                   )}
 
-                  {profile.instructor.expertise && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-b border-border/50 gap-0.5">
-                      <span className="text-muted-foreground text-[11px]">{t("Expertise", "দক্ষতা ও ক্ষেত্র")}</span>
-                      <span className="font-medium text-foreground sm:text-right">
-                        {profile.instructor.expertise}
-                      </span>
-                    </div>
-                  )}
-
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-b border-border/50 gap-0.5">
                     <span className="text-muted-foreground text-[11px]">{t("Courses Conducted", "পরিচালিত কোর্স")}</span>
                     <span className="font-medium text-foreground sm:text-right">
@@ -831,7 +906,7 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                     </span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-b border-border/50 gap-0.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 gap-0.5">
                     <span className="text-muted-foreground text-[11px]">{t("Instructor Status", "ইনস্ট্রাক্টর স্ট্যাটাস")}</span>
                     <span className="sm:text-right">
                       <Badge variant="success" className="text-[10px]">
@@ -839,15 +914,6 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                       </Badge>
                     </span>
                   </div>
-
-                  {profile.instructor.bio && (
-                    <div className="pt-1.5 space-y-1">
-                      <span className="text-muted-foreground text-[11px] block">{t("Professional Bio", "পেশাদার বিবরণ")}</span>
-                      <p className="text-xs text-foreground/90 leading-relaxed bg-muted/30 p-2.5 rounded-lg border border-border/60">
-                        {profile.instructor.bio}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -887,6 +953,13 @@ export function PublicProfileView({ profile, defaultTab }: PublicProfileViewProp
                       {shiftLabel(t)(profile.member.shift)} {t("Shift", "শিফট")}
                     </span>
                   </div>
+
+                  {profile.member.boardOrClassRoll && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-b border-border/50 gap-0.5">
+                      <span className="text-muted-foreground text-[11px]">{t("Board or Class Roll", "বোর্ড বা ক্লাস রোল")}</span>
+                      <span className="font-mono font-bold text-foreground sm:text-right">{profile.member.boardOrClassRoll}</span>
+                    </div>
+                  )}
 
                   {profile.member.studentId && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 gap-0.5">

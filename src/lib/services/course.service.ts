@@ -211,6 +211,8 @@ export class CourseService {
                             email: true,
                             image: true,
                             selactedImg: true,
+                            bio: true,
+                            skills: true,
                             member: {
                               select: {
                                 studentId: true,
@@ -302,8 +304,9 @@ export class CourseService {
               image: avatar,
               rawImages: li.instructor.user.image,
               selactedImg: li.instructor.user.selactedImg,
-              expertise: li.instructor.expertise || null,
-              bio: li.instructor.bio || null,
+              skills: li.instructor.user.skills || [],
+              expertise: li.instructor.user.skills?.join(", ") || null,
+              bio: li.instructor.user.bio || null,
             }
           }),
           isCompleted: Array.isArray(lesson.progress) && lesson.progress.length > 0 ? lesson.progress[0].completed : false,
@@ -349,6 +352,8 @@ export class CourseService {
               email: true,
               image: true,
               selactedImg: true,
+              bio: true,
+              skills: true,
               member: {
                 select: {
                   studentId: true,
@@ -375,8 +380,9 @@ export class CourseService {
           avatar,
           image: avatar,
           selactedImg: fi.user.selactedImg,
-          bio: fi.bio || "Senior Instructor at DPI Computing Society.",
-          expertise: fi.expertise,
+          bio: fi.user.bio || "Senior Instructor at DPI Computing Society.",
+          skills: fi.user.skills || [],
+          expertise: fi.user.skills?.join(", ") || null,
         }
       })
     }
@@ -628,6 +634,8 @@ export class CourseService {
             email: true,
             image: true,
             selactedImg: true,
+            bio: true,
+            skills: true,
           },
         },
       },
@@ -649,7 +657,8 @@ export class CourseService {
         image: avatar,
         rawImages: inst.user.image,
         selactedImg: inst.user.selactedImg,
-        expertise: inst.expertise,
+        skills: inst.user.skills || [],
+        expertise: inst.user.skills?.join(", ") || null,
       }
     })
   }

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c9-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#041215"/>
+      <stop offset="50%" stop-color="#0b242a"/>
+      <stop offset="100%" stop-color="#030e10"/>
+    </linearGradient>
+    <linearGradient id="c9-prism1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="c9-prism2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#c9-bg)"/>
+  <circle cx="900" cy="180" r="140" fill="#06b6d4" opacity="0.12" filter="blur(60px)"/>
+  <!-- Faceted Crystalline Shards -->
+  <polygon points="400,200 650,50 850,180 600,320" fill="url(#c9-prism1)" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.6"/>
+  <polygon points="650,50 850,180 980,100" fill="url(#c9-prism2)" stroke="#67e8f9" stroke-width="1" stroke-opacity="0.5"/>
+  <polygon points="850,180 980,100 1080,260 920,310" fill="url(#c9-prism1)" stroke="#06b6d4" stroke-width="1" stroke-opacity="0.4"/>
+  <polygon points="400,200 600,320 480,380 280,260" fill="url(#c9-prism2)" stroke="#22d3ee" stroke-width="1" stroke-opacity="0.4"/>
+  <polygon points="600,320 850,180 920,310 750,380" fill="url(#c9-prism2)" stroke="#14b8a6" stroke-width="1" stroke-opacity="0.35"/>
+  <line x1="0" y1="200" x2="400" y2="200" stroke="#06b6d4" stroke-width="2" stroke-opacity="0.4"/>
+  <circle cx="400" cy="200" r="4.5" fill="#67e8f9"/>
+  <circle cx="650" cy="50" r="4" fill="#a5f3fc"/>
+  <circle cx="850" cy="180" r="5" fill="#ffffff"/>
+</svg>

@@ -126,6 +126,37 @@ function AccountSection({ profile }: { profile: Profile }) {
             <span className="text-muted-foreground">{t("Not verified", "যাচাই হয়নি")}</span>
           )}
         </DetailRow>
+        {profile.whatsappNumber ? (
+          <DetailRow label={t("WhatsApp", "হোয়াটসঅ্যাপ")}>
+            <span>{profile.whatsappNumber}</span>
+          </DetailRow>
+        ) : null}
+        {profile.bloodGroup ? (
+          <DetailRow label={t("Blood group", "রক্তের গ্রুপ")}>
+            <Badge variant="outline">{profile.bloodGroup}</Badge>
+          </DetailRow>
+        ) : null}
+        {profile.address ? (
+          <DetailRow label={t("Address", "ঠিকানা")}>
+            <span>{profile.address}</span>
+          </DetailRow>
+        ) : null}
+        {profile.skills && profile.skills.length > 0 ? (
+          <DetailRow label={t("Skills", "দক্ষতা")}>
+            <span className="flex flex-wrap justify-end gap-1">
+              {profile.skills.map((skill) => (
+                <Badge key={skill} variant="secondary">
+                  {skill}
+                </Badge>
+              ))}
+            </span>
+          </DetailRow>
+        ) : null}
+        {profile.bio ? (
+          <DetailRow label={t("Bio", "পরিচিতি")}>
+            <span className="max-w-xs text-xs text-muted-foreground line-clamp-2">{profile.bio}</span>
+          </DetailRow>
+        ) : null}
         <DetailRow label={t("Joined", "যোগদান")}>
           <time dateTime={profile.createdAt}>
             {formatDate(profile.createdAt, locale)}
@@ -160,6 +191,11 @@ function MembershipSection({ member }: { member: MemberProfile }) {
             {tMembership(member.status)}
           </Badge>
         </DetailRow>
+        {member.boardOrClassRoll ? (
+          <DetailRow label={t("Board or Class Roll", "বোর্ড বা ক্লাস রোল")}>
+            <span>{member.boardOrClassRoll}</span>
+          </DetailRow>
+        ) : null}
         <DetailRow label={t("Verification", "যাচাই")}>
           <span className="flex items-center justify-end gap-2">
             {member.verifiedAt && (
@@ -218,6 +254,11 @@ function InstructorSection({ instructor }: { instructor: InstructorProfile }) {
             {tStatus(instructor.status)}
           </Badge>
         </DetailRow>
+        {instructor.instructorId ? (
+          <DetailRow label={t("Instructor ID", "শিক্ষক আইডি")}>
+            <span className="font-mono">{instructor.instructorId}</span>
+          </DetailRow>
+        ) : null}
       </CardContent>
     </Card>
   )

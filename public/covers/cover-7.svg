@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c7-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#140609"/>
+      <stop offset="50%" stop-color="#240a10"/>
+      <stop offset="100%" stop-color="#0e0406"/>
+    </linearGradient>
+    <linearGradient id="c7-ruby" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e"/>
+      <stop offset="50%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#9f1239"/>
+    </linearGradient>
+    <pattern id="c7-iso" width="60" height="104" patternUnits="userSpaceOnUse">
+      <path d="M30 0 L60 17.3 L60 52 L30 69.3 L0 52 L0 17.3 Z" fill="none" stroke="#f43f5e" stroke-width="0.5" stroke-opacity="0.12"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="400" fill="url(#c7-bg)"/>
+  <rect width="1200" height="400" fill="url(#c7-iso)"/>
+  <circle cx="800" cy="200" r="150" fill="#e11d48" opacity="0.12" filter="blur(70px)"/>
+  <!-- Ruby Isometric Diamond Shapes -->
+  <polygon points="800,100 900,180 800,260 700,180" fill="url(#c7-ruby)" opacity="0.4" stroke="#fb7185" stroke-width="1.5"/>
+  <polygon points="900,180 980,240 900,300 820,240" fill="url(#c7-ruby)" opacity="0.25" stroke="#f43f5e" stroke-width="1"/>
+  <polygon points="680,210 750,260 680,310 610,260" fill="url(#c7-ruby)" opacity="0.2" stroke="#f43f5e" stroke-width="1"/>
+  <!-- Cyber Cutlines -->
+  <line x1="-50" y1="180" x2="700" y2="180" stroke="#f43f5e" stroke-width="2" opacity="0.6"/>
+  <line x1="900" y1="180" x2="1250" y2="180" stroke="#f43f5e" stroke-width="2" opacity="0.6"/>
+  <circle cx="700" cy="180" r="4" fill="#fb7185"/>
+  <circle cx="900" cy="180" r="4" fill="#fb7185"/>
+</svg>

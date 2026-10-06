@@ -27,6 +27,15 @@ model User {
   accounts      Account[]
   // System roles
   roles         Role[]      @default([USER])
+
+  // Profile extensions
+  address        String?
+  bloodGroup     String?
+  coverImg       String?     @default("1")
+  whatsappNumber String?
+  bio            String?
+  skills         String[]    @default([])
+
   // Optional profiles
   member        Member?
   instructor    Instructor?
@@ -60,9 +69,9 @@ model Member {
   joinedAt  DateTime?
   expiresAt DateTime?
 
-  studentId String? @unique
+  studentId        String? @unique
+  boardOrClassRoll String?
 
-  whatsapp   String
   department Department
   session    String
   semester   Semester
@@ -97,9 +106,6 @@ model Instructor {
   userId String @unique
 
   instructorId String? @unique
-
-  bio       String?
-  expertise String?
 
   status InstructorStatus @default(PENDING)
 

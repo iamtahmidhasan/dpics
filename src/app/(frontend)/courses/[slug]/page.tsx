@@ -124,6 +124,8 @@ export default async function CourseDetailPage({
             email: true,
             image: true,
             selactedImg: true,
+            bio: true,
+            skills: true,
           },
         },
       },
@@ -135,8 +137,8 @@ export default async function CourseDetailPage({
       name: fi.user.name,
       email: fi.user.email,
       image: Array.isArray(fi.user.image) ? fi.user.image[0] : fi.user.image,
-      expertise: fi.expertise || "Software Engineering Mentor",
-      bio: fi.bio || "Senior Instructor at DPI Computing Society.",
+      expertise: fi.user.skills?.join(", ") || "Software Engineering Mentor",
+      bio: fi.user.bio || "Senior Instructor at DPI Computing Society.",
     }))
   }
 

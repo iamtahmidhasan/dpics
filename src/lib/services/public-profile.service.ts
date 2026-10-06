@@ -15,6 +15,7 @@ import {
 export type PublicMemberInfo = {
   id: string
   studentId: string | null
+  boardOrClassRoll: string | null
   department: Department
   session: string
   semester: Semester
@@ -27,8 +28,6 @@ export type PublicMemberInfo = {
 export type PublicInstructorInfo = {
   id: string
   instructorId: string | null
-  bio: string | null
-  expertise: string | null
   status: InstructorStatus
 }
 
@@ -99,6 +98,12 @@ export type PublicProfile = {
   slug: string
   name: string
   avatar: string | null
+  coverImg: string | null
+  address: string | null
+  bloodGroup: string | null
+  whatsappNumber: string | null
+  bio: string | null
+  skills: string[]
   roles: Role[]
   createdAt: string
   isMember: boolean
@@ -126,6 +131,7 @@ export type MemberListItem = {
   name: string
   avatar: string | null
   studentId: string | null
+  boardOrClassRoll: string | null
   instructorId: string | null
   department: Department
   session: string
@@ -146,8 +152,8 @@ export type InstructorListItem = {
   avatar: string | null
   instructorId: string | null
   studentId: string | null
-  expertise: string | null
   bio: string | null
+  skills: string[]
   coursesCount: number
   postsCount: number
   isMember: boolean
@@ -290,6 +296,7 @@ export const PublicProfileService = {
       ? {
           id: user.member.id,
           studentId: user.member.studentId,
+          boardOrClassRoll: user.member.boardOrClassRoll,
           department: user.member.department,
           session: user.member.session,
           semester: user.member.semester,
@@ -305,8 +312,6 @@ export const PublicProfileService = {
       ? {
           id: user.instructor.id,
           instructorId: user.instructor.instructorId,
-          bio: user.instructor.bio,
-          expertise: user.instructor.expertise,
           status: user.instructor.status,
         }
       : null
@@ -472,6 +477,12 @@ export const PublicProfileService = {
       slug,
       name: user.name,
       avatar,
+      coverImg: user.coverImg || "1",
+      address: user.address,
+      bloodGroup: user.bloodGroup,
+      whatsappNumber: user.whatsappNumber,
+      bio: user.bio,
+      skills: user.skills || [],
       roles: user.roles,
       createdAt: user.createdAt.toISOString(),
       isMember,
@@ -584,6 +595,7 @@ export const PublicProfileService = {
         name: u.name,
         avatar,
         studentId: u.member!.studentId,
+        boardOrClassRoll: u.member!.boardOrClassRoll,
         instructorId: u.instructor?.instructorId || null,
         department: u.member!.department,
         session: u.member!.session,
@@ -631,8 +643,8 @@ export const PublicProfileService = {
       const q = params.search.trim()
       where.OR = [
         { name: { contains: q, mode: "insensitive" } },
-        { instructor: { is: { expertise: { contains: q, mode: "insensitive" } } } },
-        { instructor: { is: { bio: { contains: q, mode: "insensitive" } } } },
+        { bio: { contains: q, mode: "insensitive" } },
+        { skills: { has: q } },
         { instructor: { is: { instructorId: { contains: q, mode: "insensitive" } } } },
       ]
     }
@@ -704,8 +716,8 @@ export const PublicProfileService = {
         avatar,
         instructorId: u.instructor!.instructorId,
         studentId: u.member?.studentId || null,
-        expertise: u.instructor!.expertise,
-        bio: u.instructor!.bio,
+        bio: u.bio,
+        skills: u.skills || [],
         coursesCount: uniqueCourseIds.size,
         postsCount: u._count.posts,
         isMember: Boolean(u.member && u.member.status === MembershipStatus.ACTIVE),

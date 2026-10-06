@@ -31,8 +31,8 @@ export async function generateMetadata({
 
   const title = `${profile.name} - ${roleTag} Profile | ${SITE_NAME}`
   const description =
-    profile.instructor?.bio ||
-    profile.instructor?.expertise ||
+    profile.bio ||
+    (profile.skills.length > 0 ? profile.skills.join(", ") : null) ||
     `${profile.name}'s public profile and activity timeline at ${SITE_NAME}.`
   const canonicalSlug = profile.slug || profile.member?.studentId || profile.instructor?.instructorId || id
   const profileUrl = `${SITE_URL}/profile/${canonicalSlug}`
@@ -77,7 +77,7 @@ export default async function PublicProfilePage({
     name: profile.name,
     image: profile.avatar || undefined,
     jobTitle: profile.isInstructor ? "Instructor" : profile.isMember ? "Member" : "Community Member",
-    description: profile.instructor?.bio || profile.instructor?.expertise || undefined,
+    description: profile.bio || (profile.skills.length > 0 ? profile.skills.join(", ") : undefined),
     worksFor: {
       "@type": "Organization",
       name: SITE_NAME,

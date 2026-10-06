@@ -48,6 +48,8 @@ const REQUIRED_FIELDS: Record<string, string> = {
   Setting: "isAutoStudentIdEnabled",
   Post: "massageForAuthor",
   Media: "folder",
+  User: "whatsappNumber",
+  Member: "boardOrClassRoll",
 };
 
 type RuntimeDataModel = {

@@ -127,7 +127,19 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
       }
 
       if (input.user) {
-        const { name, email, phone, images, selectedImageIndex } = input.user
+        const {
+          name,
+          email,
+          phone,
+          images,
+          selectedImageIndex,
+          address,
+          bloodGroup,
+          coverImg,
+          whatsappNumber,
+          bio,
+          skills,
+        } = input.user
 
         await tx.user.update({
           where: { id: userId },
@@ -137,6 +149,12 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
             phone,
             image: images,
             selactedImg: String(selectedImageIndex),
+            address: address !== undefined ? address : undefined,
+            bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
+            coverImg: coverImg !== undefined ? coverImg : undefined,
+            whatsappNumber: whatsappNumber !== undefined ? whatsappNumber : undefined,
+            bio: bio !== undefined ? bio : undefined,
+            skills: skills !== undefined ? skills : undefined,
             roles: [...user.roles, input.role],
           },
         })

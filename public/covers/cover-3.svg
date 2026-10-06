@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c3-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020d09"/>
+      <stop offset="50%" stop-color="#062219"/>
+      <stop offset="100%" stop-color="#010a07"/>
+    </linearGradient>
+    <linearGradient id="c3-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <pattern id="c3-hex" width="56" height="97" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)">
+      <path d="M28 0 L56 16 L56 48 L28 64 L0 48 L0 16 Z M28 97 L56 81 L56 48 L28 64 L0 48 L0 81 Z" fill="none" stroke="#10b981" stroke-width="0.75" stroke-opacity="0.12"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="400" fill="url(#c3-bg)"/>
+  <rect width="1200" height="400" fill="url(#c3-hex)"/>
+  <circle cx="600" cy="200" r="160" fill="#10b981" opacity="0.1" filter="blur(60px)"/>
+  <circle cx="150" cy="100" r="120" fill="#06b6d4" opacity="0.08" filter="blur(50px)"/>
+  <!-- Quantum Core Rings -->
+  <circle cx="950" cy="200" r="90" fill="none" stroke="url(#c3-glow)" stroke-width="2" opacity="0.6"/>
+  <circle cx="950" cy="200" r="130" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="4,8" opacity="0.4"/>
+  <circle cx="950" cy="200" r="45" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="12,6"/>
+  <!-- Laser vector beams -->
+  <line x1="0" y1="200" x2="860" y2="200" stroke="url(#c3-glow)" stroke-width="2.5" opacity="0.8"/>
+  <line x1="0" y1="210" x2="820" y2="210" stroke="#34d399" stroke-width="1" opacity="0.3"/>
+  <line x1="300" y1="50" x2="550" y2="200" stroke="#10b981" stroke-width="1.5" opacity="0.4"/>
+  <line x1="200" y1="350" x2="450" y2="200" stroke="#06b6d4" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="550" cy="200" r="5" fill="#34d399"/>
+  <circle cx="450" cy="200" r="4" fill="#06b6d4"/>
+</svg>

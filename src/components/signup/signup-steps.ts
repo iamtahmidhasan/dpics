@@ -40,7 +40,7 @@ export const ROLE_OPTIONS: RoleOption[] = [
       bn: "যারা সমিতিতে সাধারণ সদস্য হিসেবে যোগ দিতে চান, তাদের জন্য।",
     },
     highlights: [
-      { en: "Whatsapp, session and department", bn: "হোয়াটসঅ্যাপ, সেশন ও বিভাগ" },
+      { en: "Roll, session and department", bn: "রোল, সেশন ও বিভাগ" },
       { en: "Semester and shift", bn: "সেমিস্টার ও শিফট" },
       { en: "Student id and documents for verification", bn: "স্টুডেন্ট আইডি ও যাচাইয়ের কাগজপত্র" },
     ],
@@ -54,9 +54,9 @@ export const ROLE_OPTIONS: RoleOption[] = [
       bn: "যারা সমিতির অনুষ্ঠান পরিচালনা করেন, তাদের জন্য।",
     },
     highlights: [
-      { en: "Instructor id", bn: "শিক্ষক আইডি" },
-      { en: "Expertise", bn: "বিশেষজ্ঞতা" },
-      { en: "Short bio for the society page", bn: "সমিতির পেজের জন্য সংক্ষিপ্ত পরিচিতি" },
+      { en: "Instructor id generation", bn: "শিক্ষক আইডি জেনারেশন" },
+      { en: "Course teaching & curriculum", bn: "কোর্স পরিচালনা ও কারিকুলাম" },
+      { en: "Verified community status", bn: "যাচাইকৃত কমিউনিটি মর্যাদা" },
     ],
   },
 ]

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c8-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05060a"/>
+      <stop offset="50%" stop-color="#0f111a"/>
+      <stop offset="100%" stop-color="#030407"/>
+    </linearGradient>
+    <linearGradient id="c8-nebula" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#c8-bg)"/>
+  <ellipse cx="650" cy="200" rx="380" ry="140" fill="url(#c8-nebula)" filter="blur(60px)"/>
+  <!-- Constellation lines -->
+  <polyline points="150,120 280,220 400,160 520,280 680,200 820,120 950,220 1100,140" fill="none" stroke="#94a3b8" stroke-width="1" stroke-opacity="0.35"/>
+  <polyline points="280,220 380,310 520,280 620,340 780,260 950,220" fill="none" stroke="#818cf8" stroke-width="0.75" stroke-opacity="0.25"/>
+  <!-- Stars -->
+  <circle cx="150" cy="120" r="3.5" fill="#ffffff"/>
+  <circle cx="280" cy="220" r="4.5" fill="#a5b4fc"/>
+  <circle cx="400" cy="160" r="3" fill="#ffffff"/>
+  <circle cx="520" cy="280" r="4" fill="#c084fc"/>
+  <circle cx="680" cy="200" r="5" fill="#ffffff"/>
+  <circle cx="820" cy="120" r="3" fill="#e0e7ff"/>
+  <circle cx="950" cy="220" r="4.5" fill="#818cf8"/>
+  <circle cx="1100" cy="140" r="3" fill="#ffffff"/>
+  <!-- Coordinate reticle -->
+  <circle cx="680" cy="200" r="16" fill="none" stroke="#818cf8" stroke-width="1" opacity="0.6"/>
+  <line x1="680" y1="175" x2="680" y2="225" stroke="#818cf8" stroke-width="0.75" opacity="0.6"/>
+  <line x1="655" y1="200" x2="705" y2="200" stroke="#818cf8" stroke-width="0.75" opacity="0.6"/>
+</svg>

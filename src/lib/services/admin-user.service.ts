@@ -15,16 +15,6 @@ import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
 import { resolveUserImage } from "@/lib/user-image"
 import {
-  EMAIL_PATTERN,
-  MAX_BIO_LENGTH,
-  MAX_EMAIL_LENGTH,
-  MAX_EXPERTISE_LENGTH,
-  MAX_NAME_LENGTH,
-  MAX_PHONE_LENGTH,
-  MAX_SESSION_LENGTH,
-  MAX_STUDENT_ID_LENGTH,
-  MAX_TRANSACTION_ID_LENGTH,
-  MAX_WHATSAPP_LENGTH,
   isRecord,
   toBoolean,
   toDateTime,
@@ -38,13 +28,35 @@ import {
   toUrl,
 } from "@/lib/validation"
 
+export type AdminUserSummary = {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  roles: Role[]
+  isActive: boolean
+  avatar: string | null
+  coverImg: string | null
+  createdAt: string
+  memberStatus: MembershipStatus | null
+  instructorStatus: InstructorStatus | null
+}
+
+export type AdminUserPage = {
+  users: AdminUserSummary[]
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 export type AdminMemberDetail = {
   id: string
   status: MembershipStatus
   joinedAt: string | null
   expiresAt: string | null
   studentId: string | null
-  whatsapp: string
+  boardOrClassRoll: string | null
   department: Department
   session: string
   semester: Semester
@@ -64,8 +76,6 @@ export type AdminMemberDetail = {
 export type AdminInstructorDetail = {
   id: string
   instructorId: string | null
-  bio: string | null
-  expertise: string | null
   status: InstructorStatus
   createdAt: string
   updatedAt: string
@@ -112,6 +122,12 @@ export type AdminUserDetail = {
   images: string[]
   selectedImageIndex: number
   avatar: string | null
+  address: string | null
+  bloodGroup: string | null
+  coverImg: string | null
+  whatsappNumber: string | null
+  bio: string | null
+  skills: string[]
   createdAt: string
   updatedAt: string
   member: AdminMemberDetail | null
@@ -125,7 +141,7 @@ export type AdminMemberInput = {
   status: MembershipStatus
   joinedAt: Date | null
   expiresAt: Date | null
-  whatsapp: string
+  boardOrClassRoll: string | null
   department: Department
   session: string
   semester: Semester
@@ -143,8 +159,6 @@ export type AdminMemberInput = {
 
 export type AdminInstructorInput = {
   instructorId: string | null
-  bio: string | null
-  expertise: string | null
   status: InstructorStatus
 }
 
@@ -158,6 +172,12 @@ export type AdminUserInput = {
     roles: Role[]
     isActive: boolean
     emailVerified: boolean
+    address?: string | null
+    bloodGroup?: string | null
+    coverImg?: string | null
+    whatsappNumber?: string | null
+    bio?: string | null
+    skills?: string[]
   }
   member?: AdminMemberInput
   instructor?: AdminInstructorInput
@@ -169,7 +189,7 @@ const memberSelect = {
   joinedAt: true,
   expiresAt: true,
   studentId: true,
-  whatsapp: true,
+  boardOrClassRoll: true,
   department: true,
   session: true,
   semester: true,
@@ -189,8 +209,6 @@ const memberSelect = {
 const instructorSelect = {
   id: true,
   instructorId: true,
-  bio: true,
-  expertise: true,
   status: true,
   createdAt: true,
   updatedAt: true,
@@ -206,6 +224,12 @@ const adminUserSelect = {
   emailVerified: true,
   image: true,
   selactedImg: true,
+  address: true,
+  bloodGroup: true,
+  coverImg: true,
+  whatsappNumber: true,
+  bio: true,
+  skills: true,
   createdAt: true,
   updatedAt: true,
   member: { select: memberSelect },
@@ -229,7 +253,6 @@ const adminUserSelect = {
     orderBy: { createdAt: "desc" },
   },
   accounts: {
-    // Never select accessToken / refreshToken / idToken / password.
     select: { id: true, providerId: true, accountId: true, createdAt: true, updatedAt: true },
     orderBy: { createdAt: "asc" },
   },
@@ -255,6 +278,12 @@ function toMap(row: AdminUserRow, sessions: AdminSessionSummary): AdminUserDetai
     images: row.image,
     selectedImageIndex: selectedImageIndex ?? 0,
     avatar,
+    address: row.address,
+    bloodGroup: row.bloodGroup,
+    coverImg: row.coverImg || "1",
+    whatsappNumber: row.whatsappNumber,
+    bio: row.bio,
+    skills: row.skills || [],
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     member: row.member
@@ -264,7 +293,7 @@ function toMap(row: AdminUserRow, sessions: AdminSessionSummary): AdminUserDetai
           joinedAt: toIso(row.member.joinedAt),
           expiresAt: toIso(row.member.expiresAt),
           studentId: row.member.studentId,
-          whatsapp: row.member.whatsapp,
+          boardOrClassRoll: row.member.boardOrClassRoll,
           department: row.member.department,
           session: row.member.session,
           semester: row.member.semester,
@@ -285,8 +314,6 @@ function toMap(row: AdminUserRow, sessions: AdminSessionSummary): AdminUserDetai
       ? {
           id: row.instructor.id,
           instructorId: row.instructor.instructorId,
-          bio: row.instructor.bio,
-          expertise: row.instructor.expertise,
           status: row.instructor.status,
           createdAt: row.instructor.createdAt.toISOString(),
           updatedAt: row.instructor.updatedAt.toISOString(),
@@ -304,12 +331,12 @@ function toMap(row: AdminUserRow, sessions: AdminSessionSummary): AdminUserDetai
       startDate: toIso(entry.startDate),
       endDate: toIso(entry.endDate),
     })),
-    accounts: row.accounts.map((account) => ({
-      id: account.id,
-      providerId: account.providerId,
-      accountId: account.accountId,
-      createdAt: account.createdAt.toISOString(),
-      updatedAt: account.updatedAt.toISOString(),
+    accounts: row.accounts.map((entry) => ({
+      id: entry.id,
+      providerId: entry.providerId,
+      accountId: entry.accountId,
+      createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
     })),
     sessions,
   }
@@ -321,31 +348,140 @@ async function getSessionSummary(userId: string): Promise<AdminSessionSummary> {
     prisma.session.findFirst({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      // Never expose the session token, only harmless request metadata.
       select: { createdAt: true, expiresAt: true, ipAddress: true, userAgent: true },
     }),
   ])
 
   return {
     total,
-    latestCreatedAt: latest ? latest.createdAt.toISOString() : null,
-    latestExpiresAt: latest ? latest.expiresAt.toISOString() : null,
+    latestCreatedAt: toIso(latest?.createdAt ?? null),
+    latestExpiresAt: toIso(latest?.expiresAt ?? null),
     latestIpAddress: latest?.ipAddress ?? null,
     latestUserAgent: latest?.userAgent ?? null,
   }
 }
 
-/** Every column an admin may read about a user, with secrets left out. */
+export async function listAdminUsers({
+  page = 1,
+  pageSize = 20,
+  search,
+  role,
+}: {
+  page?: number
+  pageSize?: number
+  search?: string
+  role?: Role
+} = {}): Promise<AdminUserPage> {
+  const boundedPage = Math.max(1, page)
+  const boundedPageSize = Math.max(1, Math.min(pageSize, 100))
+  const skip = (boundedPage - 1) * boundedPageSize
+
+  const where: Prisma.UserWhereInput = {}
+
+  if (role) {
+    where.roles = { has: role }
+  }
+
+  if (search && search.trim().length > 0) {
+    const term = search.trim()
+    where.OR = [
+      { name: { contains: term, mode: "insensitive" } },
+      { email: { contains: term, mode: "insensitive" } },
+      { phone: { contains: term, mode: "insensitive" } },
+      { member: { studentId: { contains: term, mode: "insensitive" } } },
+      { member: { boardOrClassRoll: { contains: term, mode: "insensitive" } } },
+      { instructor: { instructorId: { contains: term, mode: "insensitive" } } },
+    ]
+  }
+
+  const [total, rows] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      skip,
+      take: boundedPageSize,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        roles: true,
+        isActive: true,
+        image: true,
+        selactedImg: true,
+        coverImg: true,
+        createdAt: true,
+        member: { select: { status: true } },
+        instructor: { select: { status: true } },
+      },
+    }),
+  ])
+
+  const users: AdminUserSummary[] = rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    roles: row.roles,
+    isActive: row.isActive,
+    avatar: resolveUserImage(row.image, row.selactedImg).avatar,
+    coverImg: row.coverImg || "1",
+    createdAt: row.createdAt.toISOString(),
+    memberStatus: row.member?.status ?? null,
+    instructorStatus: row.instructor?.status ?? null,
+  }))
+
+  return {
+    users,
+    page: boundedPage,
+    pageSize: boundedPageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / boundedPageSize)),
+  }
+}
+
 export async function getAdminUserDetail(id: string): Promise<AdminUserDetail> {
   if (!id) throw ApiError.badRequest("User id is required")
 
-  const user = await prisma.user.findUnique({ where: { id }, select: adminUserSelect })
+  const [user, sessions] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id },
+      select: adminUserSelect,
+    }),
+    getSessionSummary(id),
+  ])
 
   if (!user) throw ApiError.notFound("User not found")
 
-  const sessions = await getSessionSummary(id)
-
   return toMap(user, sessions)
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_NAME_LENGTH = 100
+const MAX_EMAIL_LENGTH = 191
+const MAX_PHONE_LENGTH = 20
+const MAX_SESSION_LENGTH = 20
+const MAX_STUDENT_ID_LENGTH = 30
+const MAX_TRANSACTION_ID_LENGTH = 60
+const MAX_BIO_LENGTH = 1000
+const MAX_ADDRESS_LENGTH = 250
+
+function toSkillsList(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+      .map((entry) => entry.trim().slice(0, 50))
+      .slice(0, 30)
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) {
+    return raw
+      .split(/[,，]+/)
+      .map((s) => s.trim().slice(0, 50))
+      .filter((s) => s.length > 0)
+      .slice(0, 30)
+  }
+  return []
 }
 
 /**
@@ -378,6 +514,12 @@ export function parseAdminUserInput(body: unknown): AdminUserInput {
       roles,
       isActive: toBoolean(body.user.isActive, "Active"),
       emailVerified: toBoolean(body.user.emailVerified, "Email verified"),
+      address: toOptionalText(body.user.address, "Address", MAX_ADDRESS_LENGTH),
+      bloodGroup: toOptionalText(body.user.bloodGroup, "Blood group", 10),
+      coverImg: toOptionalText(body.user.coverImg, "Cover image", 50),
+      whatsappNumber: toOptionalText(body.user.whatsappNumber, "WhatsApp number", MAX_PHONE_LENGTH),
+      bio: toOptionalText(body.user.bio, "Bio", MAX_BIO_LENGTH),
+      skills: toSkillsList(body.user.skills),
     }
   }
 
@@ -386,7 +528,7 @@ export function parseAdminUserInput(body: unknown): AdminUserInput {
       status: toEnum(body.member.status, "Membership status", Object.values(MembershipStatus)),
       joinedAt: toDateTime(body.member.joinedAt, "Joined at"),
       expiresAt: toDateTime(body.member.expiresAt, "Expires at"),
-      whatsapp: toText(body.member.whatsapp, "Whatsapp", { max: MAX_WHATSAPP_LENGTH }),
+      boardOrClassRoll: toOptionalText(body.member.boardOrClassRoll, "Board / Class roll", 30),
       department: toEnum(body.member.department, "Department", Object.values(Department)),
       session: toText(body.member.session, "Session", { max: MAX_SESSION_LENGTH }),
       semester: toEnum(body.member.semester, "Semester", Object.values(Semester)),
@@ -422,8 +564,6 @@ export function parseAdminUserInput(body: unknown): AdminUserInput {
         "Instructor id",
         MAX_STUDENT_ID_LENGTH
       ),
-      bio: toOptionalText(body.instructor.bio, "Bio", MAX_BIO_LENGTH),
-      expertise: toOptionalText(body.instructor.expertise, "Expertise", MAX_EXPERTISE_LENGTH),
       status: toEnum(
         body.instructor.status,
         "Instructor status",
@@ -464,8 +604,22 @@ export async function updateAdminUser(
   try {
     await prisma.$transaction(async (tx) => {
       if (input.user) {
-        const { name, email, phone, images, selectedImageIndex, roles, isActive, emailVerified } =
-          input.user
+        const {
+          name,
+          email,
+          phone,
+          images,
+          selectedImageIndex,
+          roles,
+          isActive,
+          emailVerified,
+          address,
+          bloodGroup,
+          coverImg,
+          whatsappNumber,
+          bio,
+          skills,
+        } = input.user
 
         await tx.user.update({
           where: { id },
@@ -478,6 +632,12 @@ export async function updateAdminUser(
             roles,
             isActive,
             emailVerified,
+            address: address !== undefined ? address : undefined,
+            bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
+            coverImg: coverImg !== undefined ? coverImg : undefined,
+            whatsappNumber: whatsappNumber !== undefined ? whatsappNumber : undefined,
+            bio: bio !== undefined ? bio : undefined,
+            skills: skills !== undefined ? skills : undefined,
           },
         })
       }
@@ -521,26 +681,18 @@ export async function updateAdminUser(
 
 export async function deleteAdminUser(id: string, actingAdminId: string): Promise<void> {
   if (!id) throw ApiError.badRequest("User id is required")
-
   if (id === actingAdminId) {
-    throw ApiError.badRequest("You cannot delete your own admin account")
+    throw ApiError.badRequest("You cannot delete your own account")
   }
 
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true },
+    select: { id: true },
   })
 
-  if (!user) {
-    throw ApiError.notFound("User not found")
-  }
+  if (!user) throw ApiError.notFound("User not found")
 
-  await prisma.$transaction(async (tx) => {
-    await tx.userCommitteeRole.deleteMany({ where: { userId: id } })
-    await tx.member.deleteMany({ where: { userId: id } })
-    await tx.instructor.deleteMany({ where: { userId: id } })
-    await tx.session.deleteMany({ where: { userId: id } })
-    await tx.account.deleteMany({ where: { userId: id } })
-    await tx.user.delete({ where: { id } })
+  await prisma.user.delete({
+    where: { id },
   })
 }

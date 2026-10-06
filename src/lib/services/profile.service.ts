@@ -15,16 +15,6 @@ import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
 import { resolveUserImage } from "@/lib/user-image"
 import {
-  EMAIL_PATTERN,
-  MAX_BIO_LENGTH,
-  MAX_EMAIL_LENGTH,
-  MAX_EXPERTISE_LENGTH,
-  MAX_NAME_LENGTH,
-  MAX_PHONE_LENGTH,
-  MAX_SESSION_LENGTH,
-  MAX_STUDENT_ID_LENGTH,
-  MAX_TRANSACTION_ID_LENGTH,
-  MAX_WHATSAPP_LENGTH,
   isRecord,
   toEnum,
   toImages,
@@ -38,7 +28,7 @@ import {
 export type MemberProfile = {
   id: string
   status: MembershipStatus
-  whatsapp: string
+  boardOrClassRoll: string | null
   department: Department
   session: string
   semester: Semester
@@ -60,8 +50,6 @@ export type MemberProfile = {
 export type InstructorProfile = {
   id: string
   instructorId: string | null
-  bio: string | null
-  expertise: string | null
   status: InstructorStatus
   createdAt: string
 }
@@ -86,6 +74,12 @@ export type Profile = {
   images: string[]
   selectedImageIndex: number
   avatar: string | null
+  address: string | null
+  bloodGroup: string | null
+  coverImg: string | null
+  whatsappNumber: string | null
+  bio: string | null
+  skills: string[]
   createdAt: string
   member: MemberProfile | null
   instructor: InstructorProfile | null
@@ -93,7 +87,7 @@ export type Profile = {
 }
 
 export type MemberInput = {
-  whatsapp: string
+  boardOrClassRoll?: string | null
   department: Department
   session: string
   semester: Semester
@@ -108,8 +102,6 @@ export type MemberInput = {
 
 export type InstructorInput = {
   instructorId: string | null
-  bio: string | null
-  expertise: string | null
 }
 
 export type ProfileInput = {
@@ -119,6 +111,12 @@ export type ProfileInput = {
     phone: string | null
     images: string[]
     selectedImageIndex: number
+    address?: string | null
+    bloodGroup?: string | null
+    coverImg?: string | null
+    whatsappNumber?: string | null
+    bio?: string | null
+    skills?: string[]
   }
   member?: MemberInput
   instructor?: InstructorInput
@@ -134,12 +132,18 @@ const profileSelect = {
   emailVerified: true,
   image: true,
   selactedImg: true,
+  address: true,
+  bloodGroup: true,
+  coverImg: true,
+  whatsappNumber: true,
+  bio: true,
+  skills: true,
   createdAt: true,
   member: {
     select: {
       id: true,
       status: true,
-      whatsapp: true,
+      boardOrClassRoll: true,
       department: true,
       session: true,
       semester: true,
@@ -162,8 +166,6 @@ const profileSelect = {
     select: {
       id: true,
       instructorId: true,
-      bio: true,
-      expertise: true,
       status: true,
       createdAt: true,
     },
@@ -205,12 +207,18 @@ function toMap(row: ProfileRow): Profile {
     images: row.image,
     selectedImageIndex: selectedImageIndex ?? 0,
     avatar,
+    address: row.address,
+    bloodGroup: row.bloodGroup,
+    coverImg: row.coverImg || "1",
+    whatsappNumber: row.whatsappNumber,
+    bio: row.bio,
+    skills: row.skills || [],
     createdAt: row.createdAt.toISOString(),
     member: row.member
       ? {
           id: row.member.id,
           status: row.member.status,
-          whatsapp: row.member.whatsapp,
+          boardOrClassRoll: row.member.boardOrClassRoll,
           department: row.member.department,
           session: row.member.session,
           semester: row.member.semester,
@@ -233,8 +241,6 @@ function toMap(row: ProfileRow): Profile {
       ? {
           id: row.instructor.id,
           instructorId: row.instructor.instructorId,
-          bio: row.instructor.bio,
-          expertise: row.instructor.expertise,
           status: row.instructor.status,
           createdAt: row.instructor.createdAt.toISOString(),
         }
@@ -248,6 +254,33 @@ function toMap(row: ProfileRow): Profile {
       endDate: toIso(entry.endDate),
     })),
   }
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_NAME_LENGTH = 100
+const MAX_EMAIL_LENGTH = 191
+const MAX_PHONE_LENGTH = 20
+const MAX_SESSION_LENGTH = 20
+const MAX_STUDENT_ID_LENGTH = 30
+const MAX_TRANSACTION_ID_LENGTH = 60
+const MAX_BIO_LENGTH = 1000
+const MAX_ADDRESS_LENGTH = 250
+
+function toSkillsList(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+      .map((entry) => entry.trim().slice(0, 50))
+      .slice(0, 30)
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) {
+    return raw
+      .split(/[,，]+/)
+      .map((s) => s.trim().slice(0, 50))
+      .filter((s) => s.length > 0)
+      .slice(0, 30)
+  }
+  return []
 }
 
 /**
@@ -273,12 +306,18 @@ export function parseProfileInput(body: unknown): ProfileInput {
       phone: toOptionalText(body.user.phone, "Phone", MAX_PHONE_LENGTH),
       images,
       selectedImageIndex: toSelectedImageIndex(body.user.selectedImageIndex, images.length),
+      address: toOptionalText(body.user.address, "Address", MAX_ADDRESS_LENGTH),
+      bloodGroup: toOptionalText(body.user.bloodGroup, "Blood group", 10),
+      coverImg: toOptionalText(body.user.coverImg, "Cover image", 50),
+      whatsappNumber: toOptionalText(body.user.whatsappNumber, "WhatsApp number", MAX_PHONE_LENGTH),
+      bio: toOptionalText(body.user.bio, "Bio", MAX_BIO_LENGTH),
+      skills: toSkillsList(body.user.skills),
     }
   }
 
   if (isRecord(body.member)) {
     input.member = {
-      whatsapp: toText(body.member.whatsapp, "Whatsapp", { max: MAX_WHATSAPP_LENGTH }),
+      boardOrClassRoll: toOptionalText(body.member.boardOrClassRoll, "Board / Class roll", 30),
       department: toEnum(body.member.department, "Department", Object.values(Department)),
       session: toText(body.member.session, "Session", { max: MAX_SESSION_LENGTH }),
       semester: toEnum(body.member.semester, "Semester", Object.values(Semester)),
@@ -316,8 +355,6 @@ export function parseProfileInput(body: unknown): ProfileInput {
         "Instructor id",
         MAX_STUDENT_ID_LENGTH
       ),
-      bio: toOptionalText(body.instructor.bio, "Bio", MAX_BIO_LENGTH),
-      expertise: toOptionalText(body.instructor.expertise, "Expertise", MAX_EXPERTISE_LENGTH),
     }
   }
 
@@ -351,7 +388,19 @@ export async function updateProfile(userId: string, input: ProfileInput): Promis
   try {
     await prisma.$transaction(async (tx) => {
       if (input.user) {
-        const { name, email, phone, images, selectedImageIndex } = input.user
+        const {
+          name,
+          email,
+          phone,
+          images,
+          selectedImageIndex,
+          address,
+          bloodGroup,
+          coverImg,
+          whatsappNumber,
+          bio,
+          skills,
+        } = input.user
 
         await tx.user.update({
           where: { id: userId },
@@ -361,6 +410,12 @@ export async function updateProfile(userId: string, input: ProfileInput): Promis
             phone,
             image: images,
             selactedImg: String(selectedImageIndex),
+            address: address !== undefined ? address : undefined,
+            bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
+            coverImg: coverImg !== undefined ? coverImg : undefined,
+            whatsappNumber: whatsappNumber !== undefined ? whatsappNumber : undefined,
+            bio: bio !== undefined ? bio : undefined,
+            skills: skills !== undefined ? skills : undefined,
           },
         })
       }

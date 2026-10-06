@@ -19,12 +19,17 @@ async function main() {
   })
 
   if (unlinkedInstructorUser) {
+    await prisma.user.update({
+      where: { id: unlinkedInstructorUser.id },
+      data: {
+        bio: "Senior Software Engineer and Mentor at DPI Computing Society.",
+        skills: ["Full-Stack Development", "Architecture", "System Design"],
+      },
+    })
     const newInst = await prisma.instructor.create({
       data: {
         userId: unlinkedInstructorUser.id,
         instructorId: "INST-" + Math.floor(1000 + Math.random() * 9000),
-        bio: "Senior Software Engineer and Mentor at DPI Computing Society.",
-        expertise: "Full-Stack Development, Architecture, System Design",
         status: InstructorStatus.ACTIVE,
       },
       include: { user: true },
@@ -40,12 +45,17 @@ async function main() {
       },
     })
     if (anotherUser) {
+      await prisma.user.update({
+        where: { id: anotherUser.id },
+        data: {
+          bio: "Competitive Programmer, Algorithms Specialist & Lab Mentor.",
+          skills: ["C++", "Data Structures", "Algorithms", "Problem Solving"],
+        },
+      })
       const createdInst = await prisma.instructor.create({
         data: {
           userId: anotherUser.id,
           instructorId: "INST-" + Math.floor(1000 + Math.random() * 9000),
-          bio: "Competitive Programmer, Algorithms Specialist & Lab Mentor.",
-          expertise: "C++, Data Structures, Algorithms, Problem Solving",
           status: InstructorStatus.ACTIVE,
         },
         include: { user: true },

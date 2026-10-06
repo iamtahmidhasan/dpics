@@ -24,6 +24,7 @@ import {
   instructorStatusLabel,
   membershipStatusLabel,
 } from "@/lib/profile-labels"
+import { resolveCoverImage } from "@/lib/cover-images"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 
 type BadgeVariant = VariantProps<typeof badgeVariants>["variant"]
@@ -111,10 +112,53 @@ export function AdminUserOverview({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <DetailRow label={t("User id", "ব্যবহারকারী আইডি")} value={user.id} mono />
             <DetailRow label={t("Phone", "ফোন")} value={user.phone} />
+            <DetailRow label={t("WhatsApp", "হোয়াটসঅ্যাপ")} value={user.whatsappNumber} />
+            <DetailRow label={t("Blood group", "রক্তের গ্রুপ")} value={user.bloodGroup} />
+            <DetailRow label={t("Address", "ঠিকানা")} value={user.address} />
             <DetailRow label={t("Pictures", "ছবি")} value={user.images.length} />
             <DetailRow label={t("Created", "তৈরি")} value={formatDate(user.createdAt)} />
             <DetailRow label={t("Last updated", "সর্বশেষ হালনাগাদ")} value={formatDate(user.updatedAt)} />
           </div>
+
+          {user.bio ? (
+            <div className="rounded-md border p-3 bg-muted/20">
+              <span className="text-xs font-semibold text-muted-foreground block mb-1">
+                {t("Bio / About", "পরিচিতি")}
+              </span>
+              <p className="text-xs/relaxed text-foreground whitespace-pre-wrap">{user.bio}</p>
+            </div>
+          ) : null}
+
+          {user.skills && user.skills.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">
+                {t("Skills", "দক্ষতা")}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {user.skills.map((skill) => (
+                  <Badge key={skill} variant="secondary">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {user.coverImg ? (
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">
+                {t("Cover Image", "কভার ছবি")} (Index {user.coverImg})
+              </span>
+              <div className="relative h-20 w-full overflow-hidden rounded-md border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={resolveCoverImage(user.coverImg)}
+                  alt="Cover image"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
+          ) : null}
 
           {user.images.length > 0 ? (
             <>
@@ -159,11 +203,11 @@ export function AdminUserOverview({
                   value={<VerificationBadge status={user.member.verificationStatus} />}
                 />
                 <DetailRow label={t("Student id", "শিক্ষা আইডি")} value={user.member.studentId} />
+                <DetailRow label={t("Board / Class Roll", "বোর্ড / ক্লাস রোল")} value={user.member.boardOrClassRoll} />
                 <DetailRow label={t("Department", "বিভাগ")} value={user.member.department} />
                 <DetailRow label={t("Session", "সেশন")} value={user.member.session} />
                 <DetailRow label={t("Semester", "সেমিস্টার")} value={user.member.semester} />
                 <DetailRow label={t("Shift", "শিফট")} value={user.member.shift} />
-                <DetailRow label={t("Whatsapp", "হোয়াটসঅ্যাপ")} value={user.member.whatsapp} />
                 <DetailRow label={t("Fee paid", "ফি পরিশোধ")} value={user.member.hasPaidMembershipFee ? t("Yes", "হ্যাঁ") : t("No", "না")} />
                 <DetailRow label={t("Payment method", "পেমেন্ট পদ্ধতি")} value={user.member.paymentMethod} />
                 <DetailRow label={t("Sender number", "প্রেরক নম্বর")} value={user.member.senderNumber} />
@@ -190,12 +234,6 @@ export function AdminUserOverview({
                   value={<Badge variant="outline">{instructorStatusLabel(t)(user.instructor.status)}</Badge>}
                 />
                 <DetailRow label={t("Instructor id", "শিক্ষক আইডি")} value={user.instructor.instructorId} />
-                <div className="sm:col-span-2">
-                  <DetailRow label={t("Expertise", "দক্ষতা")} value={user.instructor.expertise} />
-                </div>
-                <div className="sm:col-span-2">
-                  <DetailRow label={t("Bio", "পরিচিতি")} value={user.instructor.bio} />
-                </div>
               </div>
             ) : (
               <p className="text-muted-foreground">{t("No instructor record", "কোনো শিক্ষক রেকর্ড নেই")}</p>

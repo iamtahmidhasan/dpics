@@ -5,7 +5,10 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 
 import { CheckboxField, EnumSelect, TextAreaField, TextField, fromDateTimeLocal, toDateTimeLocal } from "@/components/form-fields"
+import { BloodGroupSelect } from "@/components/media/blood-group-select"
+import { CoverImagePicker } from "@/components/media/cover-image-picker"
 import { DocumentUploadField } from "@/components/media/document-upload-field"
+import { SkillsInput } from "@/components/media/skills-input"
 import { UserPhotoUpload } from "@/components/media/user-photo-upload"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +61,12 @@ export function AdminAccountForm({
   const [name, setName] = useState(user.name)
   const [email, setEmail] = useState(user.email)
   const [phone, setPhone] = useState(user.phone ?? "")
+  const [address, setAddress] = useState(user.address ?? "")
+  const [bloodGroup, setBloodGroup] = useState(user.bloodGroup ?? "")
+  const [coverImg, setCoverImg] = useState(user.coverImg ?? "1")
+  const [whatsappNumber, setWhatsappNumber] = useState(user.whatsappNumber ?? "")
+  const [bio, setBio] = useState(user.bio ?? "")
+  const [skills, setSkills] = useState<string[]>(user.skills ?? [])
   const [roles, setRoles] = useState<Role[]>(user.roles)
   const [isActive, setIsActive] = useState(user.isActive)
   const [emailVerified, setEmailVerified] = useState(user.emailVerified)
@@ -94,6 +103,12 @@ export function AdminAccountForm({
         phone: phone.trim() || null,
         images,
         selectedImageIndex,
+        address: address.trim() || null,
+        bloodGroup: bloodGroup || null,
+        coverImg: coverImg || "1",
+        whatsappNumber: whatsappNumber.trim() || null,
+        bio: bio.trim() || null,
+        skills,
         roles,
         isActive,
         emailVerified,
@@ -135,16 +150,39 @@ export function AdminAccountForm({
               />
             </div>
 
-            <TextField
-              id="admin-phone"
-              label={t("Phone", "ফোন")}
-              type="tel"
-              value={phone}
-              onChange={setPhone}
-              placeholder="+8801..."
-              autoComplete="tel"
-              hint={t("Must be unique across all users", "সব ব্যবহারকারীর মধ্যে অনন্য হতে হবে")}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                id="admin-phone"
+                label={t("Phone", "ফোন")}
+                type="tel"
+                value={phone}
+                onChange={setPhone}
+                placeholder="+8801..."
+                autoComplete="tel"
+                hint={t("Must be unique across all users", "সব ব্যবহারকারীর মধ্যে অনন্য হতে হবে")}
+              />
+              <TextField
+                id="admin-whatsapp"
+                label={t("WhatsApp number", "হোয়াটসঅ্যাপ নম্বর")}
+                type="tel"
+                value={whatsappNumber}
+                onChange={setWhatsappNumber}
+                placeholder="+8801..."
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <BloodGroupSelect value={bloodGroup} onChange={setBloodGroup} />
+              <TextField
+                id="admin-address"
+                label={t("Address", "ঠিকানা")}
+                value={address}
+                onChange={setAddress}
+                placeholder={t("City, Country or street address", "শহর, দেশ বা ঠিকানা")}
+              />
+            </div>
+
+            <CoverImagePicker value={coverImg} onChange={setCoverImg} />
 
             <div className="space-y-1">
               <span className="text-xs font-semibold">{t("User Photos / Avatar", "ব্যবহারকারীর ছবি / অ্যাভাটার")}</span>
@@ -157,6 +195,17 @@ export function AdminAccountForm({
                 }}
               />
             </div>
+
+            <SkillsInput value={skills} onChange={setSkills} />
+
+            <TextAreaField
+              id="admin-bio"
+              label={t("Bio / About", "পরিচিতি")}
+              value={bio}
+              onChange={setBio}
+              rows={3}
+              placeholder={t("A short bio or summary...", "সংক্ষিপ্ত পরিচিতি বা সারসংক্ষেপ...")}
+            />
 
             <Field data-invalid={!!errors.roles}>
               <span className="text-xs/relaxed font-medium">{t("Roles", "ভূমিকা")}</span>
@@ -238,7 +287,7 @@ export function AdminMemberForm({
 
   const member = user.member
   const [status, setStatus] = useState<MembershipStatus>(member?.status ?? MembershipStatus.PENDING)
-  const [whatsapp, setWhatsapp] = useState(member?.whatsapp ?? "")
+  const [boardOrClassRoll, setBoardOrClassRoll] = useState(member?.boardOrClassRoll ?? "")
   const [department, setDepartment] = useState<Department>(
     member?.department ?? Department.COMPUTER_SCIENCE_AND_TECHNOLOGY
   )
@@ -290,7 +339,6 @@ export function AdminMemberForm({
     event.preventDefault()
     const next: Errors = {}
 
-    if (!whatsapp.trim()) next.whatsapp = t("Whatsapp is required", "হোয়াটসঅ্যাপ আবশ্যক")
     if (!session.trim()) next.session = t("Session is required", "সেশন আবশ্যক")
 
     setErrors(next)
@@ -301,7 +349,7 @@ export function AdminMemberForm({
         status,
         joinedAt: fromDateTimeLocal(joinedAt),
         expiresAt: fromDateTimeLocal(expiresAt),
-        whatsapp: whatsapp.trim(),
+        boardOrClassRoll: boardOrClassRoll.trim() || null,
         department,
         session: session.trim(),
         semester,
@@ -360,13 +408,11 @@ export function AdminMemberForm({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
-                id="member-whatsapp"
-                label={t("Whatsapp", "হোয়াটসঅ্যাপ")}
-                type="tel"
-                value={whatsapp}
-                onChange={setWhatsapp}
-                error={errors.whatsapp}
-                placeholder="+8801..."
+                id="member-board-or-class-roll"
+                label={t("Board or Class Roll", "বোর্ড বা ক্লাস রোল")}
+                value={boardOrClassRoll}
+                onChange={setBoardOrClassRoll}
+                placeholder="e.g. 612345"
               />
               <Field data-invalid={!!errors.studentId}>
                 <div className="flex items-center justify-between gap-2">
@@ -547,8 +593,6 @@ export function AdminInstructorForm({
 
   const instructor = user.instructor
   const [instructorId, setInstructorId] = useState(instructor?.instructorId ?? "")
-  const [bio, setBio] = useState(instructor?.bio ?? "")
-  const [expertise, setExpertise] = useState(instructor?.expertise ?? "")
   const [status, setStatus] = useState<InstructorStatus>(
     instructor?.status ?? InstructorStatus.PENDING
   )
@@ -584,8 +628,6 @@ export function AdminInstructorForm({
     onSave({
       instructor: {
         instructorId: instructorId.trim() || null,
-        bio: bio.trim() || null,
-        expertise: expertise.trim() || null,
         status,
       },
     })
@@ -659,21 +701,12 @@ export function AdminInstructorForm({
               />
             </div>
 
-            <TextField
-              id="instructor-expertise"
-              label={t("Expertise", "দক্ষতা")}
-              value={expertise}
-              onChange={setExpertise}
-              placeholder={t("e.g. Web development, networking", "যেমন ওয়েব ডেভেলপমেন্ট, নেটওয়ার্কিং")}
-            />
-
-            <TextAreaField
-              id="instructor-bio"
-              label={t("Bio", "পরিচিতি")}
-              value={bio}
-              onChange={setBio}
-              rows={5}
-            />
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "Bio and Skills are unified and managed directly under the Account section above.",
+                "পরিচিতি ও দক্ষতা উপরের অ্যাকাউন্ট সেকশন থেকে সমন্বিতভাবে পরিচালিত হয়।"
+              )}
+            </p>
           </FieldGroup>
 
           <div className="flex justify-end">

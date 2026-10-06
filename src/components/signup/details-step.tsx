@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
 import { useState } from "react"
 
-import { EnumSelect, TextAreaField, TextField } from "@/components/form-fields"
+import { EnumSelect, TextField } from "@/components/form-fields"
 import { DocumentUploadField } from "@/components/media/document-upload-field"
 import { useLanguage } from "@/components/language-provider"
 import { roleOption } from "@/components/signup/signup-steps"
@@ -25,7 +25,7 @@ import type { InstructorInput, MemberInput } from "@/lib/services/profile.servic
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
 type MemberForm = {
-  whatsapp: string
+  boardOrClassRoll: string
   department: Department
   session: string
   semester: Semester
@@ -40,12 +40,10 @@ type MemberForm = {
 
 type InstructorForm = {
   instructorId: string
-  bio: string
-  expertise: string
 }
 
 const EMPTY_MEMBER: MemberForm = {
-  whatsapp: "",
+  boardOrClassRoll: "",
   department: Department.COMPUTER_SCIENCE_AND_TECHNOLOGY,
   session: "",
   semester: Semester.FIRST,
@@ -60,8 +58,6 @@ const EMPTY_MEMBER: MemberForm = {
 
 const EMPTY_INSTRUCTOR: InstructorForm = {
   instructorId: "",
-  bio: "",
-  expertise: "",
 }
 
 export type SignupPaymentDetails = {
@@ -231,10 +227,6 @@ export function DetailsStep({
     if (role === Role.MEMBER) {
       const nextErrors: Record<string, string> = {}
 
-      if (!member.whatsapp.trim()) {
-        nextErrors.whatsapp = t("Whatsapp is required", "হোয়াটসঅ্যাপ আবশ্যক")
-      }
-
       if (!member.session.trim()) {
         nextErrors.session = t("Session is required", "সেশন আবশ্যক")
       }
@@ -254,7 +246,7 @@ export function DetailsStep({
 
       onComplete({
         member: {
-          whatsapp: member.whatsapp.trim(),
+          boardOrClassRoll: member.boardOrClassRoll.trim() || null,
           department: member.department,
           session: member.session.trim(),
           semester: member.semester,
@@ -275,8 +267,6 @@ export function DetailsStep({
     onComplete({
       instructor: {
         instructorId: instructor.instructorId.trim() || null,
-        bio: instructor.bio.trim() || null,
-        expertise: instructor.expertise.trim() || null,
       },
     })
   }
@@ -382,12 +372,13 @@ export function DetailsStep({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
-                  id="whatsapp"
-                  label={t("Whatsapp", "হোয়াটসঅ্যাপ")}
-                  value={member.whatsapp}
-                  onChange={(whatsapp) => setMember((current) => ({ ...current, whatsapp }))}
-                  placeholder="+8801XXXXXXXXX"
-                  error={errors.whatsapp}
+                  id="board-or-class-roll"
+                  label={t("Board or Class Roll", "বোর্ড বা ক্লাস রোল")}
+                  value={member.boardOrClassRoll}
+                  onChange={(boardOrClassRoll) =>
+                    setMember((current) => ({ ...current, boardOrClassRoll }))
+                  }
+                  placeholder="e.g. 612345"
                 />
                 <TextField
                   id="session"
@@ -479,29 +470,16 @@ export function DetailsStep({
             <>
               <TextField
                 id="instructor-id"
-                label={t("Instructor id", "শিক্ষক আইডি")}
+                label={t("Instructor ID", "শিক্ষক আইডি")}
                 value={instructor.instructorId}
                 onChange={(instructorId) =>
                   setInstructor((current) => ({ ...current, instructorId }))
                 }
-                placeholder="DPI-INS-001"
-              />
-
-              <TextField
-                id="expertise"
-                label={t("Expertise", "বিশেষজ্ঞতা")}
-                value={instructor.expertise}
-                onChange={(expertise) => setInstructor((current) => ({ ...current, expertise }))}
-                placeholder={t("Web development, networking", "ওয়েব ডেভেলপমেন্ট, নেটওয়ার্কিং")}
-              />
-
-              <TextAreaField
-                id="bio"
-                label={t("Bio", "পরিচিতি")}
-                rows={4}
-                value={instructor.bio}
-                onChange={(bio) => setInstructor((current) => ({ ...current, bio }))}
-                placeholder={t("Tell us about yourself.", "আপনার সম্পর্কে লিখুন।")}
+                placeholder={t("e.g. INS0001 (or leave blank to auto-generate)", "যেমন INS0001 (স্বয়ংক্রিয় তৈরির জন্য খালি রাখুন)")}
+                hint={t(
+                  "Leave blank to automatically assign the next sequential ID (e.g. INS0001).",
+                  "স্বয়ংক্রিয়ভাবে পরবর্তী ক্রমিক আইডি পেতে খালি রাখুন (যেমন INS0001)।"
+                )}
               />
             </>
           )}

@@ -3,7 +3,10 @@
 import Image from "next/image"
 import { useState } from "react"
 
+import { BloodGroupSelect } from "@/components/media/blood-group-select"
+import { CoverImagePicker } from "@/components/media/cover-image-picker"
 import { DocumentUploadField } from "@/components/media/document-upload-field"
+import { SkillsInput } from "@/components/media/skills-input"
 import { UserPhotoUpload } from "@/components/media/user-photo-upload"
 import { EnumSelect } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
@@ -26,7 +29,7 @@ import type { Profile, ProfileInput } from "@/lib/services/profile.service"
 export type ProfileSection = "general" | "member" | "instructor"
 
 type MemberForm = {
-  whatsapp: string
+  boardOrClassRoll: string
   department: Department
   session: string
   semester: Semester
@@ -38,12 +41,10 @@ type MemberForm = {
 
 type InstructorForm = {
   instructorId: string
-  bio: string
-  expertise: string
 }
 
 const EMPTY_MEMBER: MemberForm = {
-  whatsapp: "",
+  boardOrClassRoll: "",
   department: Department.COMPUTER_SCIENCE_AND_TECHNOLOGY,
   session: "",
   semester: Semester.FIRST,
@@ -55,15 +56,13 @@ const EMPTY_MEMBER: MemberForm = {
 
 const EMPTY_INSTRUCTOR: InstructorForm = {
   instructorId: "",
-  bio: "",
-  expertise: "",
 }
 
 function toMemberForm(profile: Profile): MemberForm {
   if (!profile.member) return EMPTY_MEMBER
 
   return {
-    whatsapp: profile.member.whatsapp,
+    boardOrClassRoll: profile.member.boardOrClassRoll ?? "",
     department: profile.member.department,
     session: profile.member.session,
     semester: profile.member.semester,
@@ -79,8 +78,6 @@ function toInstructorForm(profile: Profile): InstructorForm {
 
   return {
     instructorId: profile.instructor.instructorId ?? "",
-    bio: profile.instructor.bio ?? "",
-    expertise: profile.instructor.expertise ?? "",
   }
 }
 
@@ -107,6 +104,12 @@ export function ProfileForm({
   const [phone, setPhone] = useState(profile.phone ?? "")
   const [images, setImages] = useState(profile.images)
   const [selectedImageIndex, setSelectedImageIndex] = useState(profile.selectedImageIndex)
+  const [address, setAddress] = useState(profile.address ?? "")
+  const [bloodGroup, setBloodGroup] = useState(profile.bloodGroup ?? "")
+  const [coverImg, setCoverImg] = useState(profile.coverImg ?? "1")
+  const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsappNumber ?? "")
+  const [bio, setBio] = useState(profile.bio ?? "")
+  const [skills, setSkills] = useState<string[]>(profile.skills ?? [])
   const [imageError, setImageError] = useState<string | null>(null)
   const [member, setMember] = useState<MemberForm>(() => toMemberForm(profile))
   const [instructor, setInstructor] = useState<InstructorForm>(() =>
@@ -139,20 +142,22 @@ export function ProfileForm({
         phone: phone.trim() || null,
         images,
         selectedImageIndex: images.length === 0 ? 0 : selectedImageIndex,
+        address: address.trim() || null,
+        bloodGroup: bloodGroup || null,
+        coverImg: coverImg || "1",
+        whatsappNumber: whatsappNumber.trim() || null,
+        bio: bio.trim() || null,
+        skills,
       }
     }
 
     if (section === "member") {
-      if (!member.whatsapp.trim()) {
-        nextErrors.whatsapp = t("Whatsapp is required", "হোয়াটসঅ্যাপ আবশ্যক")
-      }
-
       if (!member.session.trim()) {
         nextErrors.session = t("Session is required", "সেশন আবশ্যক")
       }
 
       input.member = {
-        whatsapp: member.whatsapp.trim(),
+        boardOrClassRoll: member.boardOrClassRoll.trim() || null,
         department: member.department,
         session: member.session.trim(),
         semester: member.semester,
@@ -166,8 +171,6 @@ export function ProfileForm({
     if (section === "instructor") {
       input.instructor = {
         instructorId: instructor.instructorId.trim() || null,
-        bio: instructor.bio.trim() || null,
-        expertise: instructor.expertise.trim() || null,
       }
     }
 
@@ -212,10 +215,14 @@ export function ProfileForm({
                       name="email"
                       type="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      disabled
                       autoComplete="email"
                       aria-invalid={!!errors.email}
+                      className="cursor-not-allowed opacity-60"
                     />
+                    <FieldDescription>
+                      {t("Email address is linked to your account and cannot be changed.", "ইমেইল ঠিকানা আপনার অ্যাকাউন্টের সাথে যুক্ত এবং পরিবর্তন করা যাবে না।")}
+                    </FieldDescription>
                     {errors.email ? <FieldError>{errors.email}</FieldError> : null}
                   </Field>
 
@@ -235,7 +242,60 @@ export function ProfileForm({
                     </FieldDescription>
                   </Field>
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="whatsapp-number">{t("WhatsApp number", "হোয়াটসঅ্যাপ নম্বর")}</FieldLabel>
+                    <Input
+                      id="whatsapp-number"
+                      type="tel"
+                      value={whatsappNumber}
+                      onChange={(event) => setWhatsappNumber(event.target.value)}
+                      placeholder="+8801XXXXXXXXX"
+                    />
+                  </Field>
+                  <BloodGroupSelect value={bloodGroup} onChange={setBloodGroup} />
+                </div>
+
+                <Field>
+                  <FieldLabel htmlFor="address">{t("Address", "ঠিকানা")}</FieldLabel>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    placeholder={t("City, Country or street address", "শহর, দেশ বা ঠিকানা")}
+                  />
+                </Field>
+
+                <SkillsInput value={skills} onChange={setSkills} />
+
+                <Field>
+                  <FieldLabel htmlFor="bio">{t("Bio / About", "পরিচিতি")}</FieldLabel>
+                  <textarea
+                    id="bio"
+                    rows={3}
+                    value={bio}
+                    onChange={(event) => setBio(event.target.value)}
+                    className="w-full resize-y rounded-md border border-input bg-input/20 px-2 py-1.5 text-xs/relaxed outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
+                    placeholder={t("Tell us about yourself.", "আপনার সম্পর্কে লিখুন।")}
+                  />
+                </Field>
               </FieldGroup>
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardHeader>
+              <CardTitle>{t("Cover Image", "কভার ছবি")}</CardTitle>
+              <CardDescription>
+                {t(
+                  "Choose a banner design for your profile header.",
+                  "আপনার প্রোফাইল হেডারের জন্য একটি ব্যানার ডিজাইন বেছে নিন।"
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CoverImagePicker value={coverImg} onChange={setCoverImg} />
             </CardContent>
           </Card>
 
@@ -300,18 +360,18 @@ export function ProfileForm({
           <CardContent>
             <FieldGroup>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field data-invalid={!!errors.whatsapp}>
-                  <FieldLabel htmlFor="whatsapp">{t("Whatsapp", "হোয়াটসঅ্যাপ")}</FieldLabel>
+                <Field>
+                  <FieldLabel htmlFor="board-or-class-roll">
+                    {t("Board or Class Roll", "বোর্ড বা ক্লাস রোল")}
+                  </FieldLabel>
                   <Input
-                    id="whatsapp"
-                    value={member.whatsapp}
+                    id="board-or-class-roll"
+                    value={member.boardOrClassRoll}
                     onChange={(event) =>
-                      setMember((current) => ({ ...current, whatsapp: event.target.value }))
+                      setMember((current) => ({ ...current, boardOrClassRoll: event.target.value }))
                     }
-                    placeholder="+8801XXXXXXXXX"
-                    aria-invalid={!!errors.whatsapp}
+                    placeholder="e.g. 612345"
                   />
-                  {errors.whatsapp ? <FieldError>{errors.whatsapp}</FieldError> : null}
                 </Field>
 
                 <Field data-invalid={!!errors.session}>
@@ -438,31 +498,12 @@ export function ProfileForm({
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="expertise">{t("Expertise", "বিশেষজ্ঞতা")}</FieldLabel>
-                <Input
-                  id="expertise"
-                  value={instructor.expertise}
-                  onChange={(event) =>
-                    setInstructor((current) => ({ ...current, expertise: event.target.value }))
-                  }
-                  placeholder="Web development, networking"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="bio">{t("Bio", "পরিচিতি")}</FieldLabel>
-                <textarea
-                  id="bio"
-                  rows={4}
-                  value={instructor.bio}
-                  onChange={(event) =>
-                    setInstructor((current) => ({ ...current, bio: event.target.value }))
-                  }
-                  className="w-full resize-y rounded-md border border-input bg-input/20 px-2 py-1.5 text-xs/relaxed outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30"
-                  placeholder={t("Tell us about yourself.", "আপনার সম্পর্কে লিখুন।")}
-                />
-              </Field>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  "Bio and Skills are unified and managed directly under the Basic Information tab.",
+                  "পরিচিতি ও দক্ষতা মৌলিক তথ্য ট্যাব থেকে পরিচালিত হয়।"
+                )}
+              </p>
 
               {profile.instructor === null ? (
                 <p className="text-xs/relaxed text-muted-foreground">

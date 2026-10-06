@@ -149,9 +149,9 @@ export function InstructorsDirectory({
                         </h3>
                       </div>
 
-                      {inst.expertise ? (
+                      {inst.skills && inst.skills.length > 0 ? (
                         <p className="text-xs text-primary font-medium line-clamp-1">
-                          {inst.expertise}
+                          {inst.skills.join(", ")}
                         </p>
                       ) : null}
 
