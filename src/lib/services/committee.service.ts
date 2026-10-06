@@ -569,3 +569,80 @@ export async function searchAssignableUsers(query?: string | null): Promise<Assi
     }
   })
 }
+
+export type AboutLeader = {
+  id: string
+  name: string
+  role: string
+  roleSlug: string
+  avatar: string | null
+  initials: string
+}
+
+export type AboutCommitteeData = {
+  committeeName: string
+  committeeDescription: string | null
+  members: AboutLeader[]
+}
+
+export async function getActiveCommitteeForAbout(): Promise<AboutCommitteeData | null> {
+  const committee = await prisma.committee.findFirst({
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
+    include: {
+      roles: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          users: {
+            where: { isActive: true },
+            orderBy: [{ isActive: "desc" }, { createdAt: "asc" }],
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                  selactedImg: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!committee) return null
+
+  const members: AboutLeader[] = []
+
+  for (const role of committee.roles) {
+    for (const userRole of role.users) {
+      const { avatar } = resolveUserImage(userRole.user.image, userRole.user.selactedImg)
+      const initials = (userRole.user.name || "U")
+        .trim()
+        .split(" ")
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+
+      members.push({
+        id: userRole.id,
+        name: userRole.user.name,
+        role: role.name,
+        roleSlug: role.slug,
+        avatar,
+        initials: initials || "DP",
+      })
+    }
+  }
+
+  return {
+    committeeName: committee.name,
+    committeeDescription: committee.description,
+    members,
+  }
+}
+
