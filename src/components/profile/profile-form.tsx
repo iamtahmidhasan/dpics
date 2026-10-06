@@ -382,7 +382,7 @@ export function ProfileForm({
                     onChange={(event) =>
                       setMember((current) => ({ ...current, session: event.target.value }))
                     }
-                    placeholder="2024"
+                    placeholder="25-26"
                     aria-invalid={!!errors.session}
                   />
                   {errors.session ? <FieldError>{errors.session}</FieldError> : null}
@@ -424,11 +424,12 @@ export function ProfileForm({
                 <FieldLabel htmlFor="student-id">{t("Student id", "স্টুডেন্ট আইডি")}</FieldLabel>
                 <Input
                   id="student-id"
+                  disabled
                   value={member.studentId}
                   onChange={(event) =>
                     setMember((current) => ({ ...current, studentId: event.target.value }))
                   }
-                  placeholder="DPI-2024-001"
+                  placeholder="DPICS[batch][order]"
                 />
               </Field>
 
@@ -487,6 +488,7 @@ export function ProfileForm({
                 </FieldLabel>
                 <Input
                   id="instructor-id"
+                  disabled
                   value={instructor.instructorId}
                   onChange={(event) =>
                     setInstructor((current) => ({

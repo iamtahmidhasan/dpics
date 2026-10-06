@@ -385,7 +385,7 @@ export function DetailsStep({
                   label={t("Session", "সেশন")}
                   value={member.session}
                   onChange={(session) => setMember((current) => ({ ...current, session }))}
-                  placeholder="2024"
+                  placeholder="25-26"
                   error={errors.session}
                 />
               </div>

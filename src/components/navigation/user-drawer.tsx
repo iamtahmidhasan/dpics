@@ -101,18 +101,18 @@ function GitHubIcon({ className }: { className?: string }) {
 }
 
 const SOCIAL_PROFILES = [
-  {
-    name: "LinkedIn",
-    title: { en: "LinkedIn Network", bn: "লিঙ্কডইন নেটওয়ার্ক" },
-    desc: {
-      en: "Connect with alumni, engineers & mentors",
-      bn: "অ্যালামনাই ও ইঞ্জিনিয়ারদের সাথে যুক্ত হোন",
-    },
-    href: "https://www.linkedin.com/company/dpi-computing-society",
-    icon: LinkedInIcon,
-    bgClass: "bg-[#0A66C2]/10 text-[#0A66C2] dark:bg-[#0A66C2]/20",
-    borderClass: "hover:border-[#0A66C2]/40",
-  },
+  // {
+  //   name: "LinkedIn",
+  //   title: { en: "LinkedIn Network", bn: "লিঙ্কডইন নেটওয়ার্ক" },
+  //   desc: {
+  //     en: "Connect with alumni, engineers & mentors",
+  //     bn: "অ্যালামনাই ও ইঞ্জিনিয়ারদের সাথে যুক্ত হোন",
+  //   },
+  //   href: "https://www.linkedin.com/company/dpi-computing-society",
+  //   icon: LinkedInIcon,
+  //   bgClass: "bg-[#0A66C2]/10 text-[#0A66C2] dark:bg-[#0A66C2]/20",
+  //   borderClass: "hover:border-[#0A66C2]/40",
+  // },
   {
     name: "Facebook",
     title: { en: "Facebook Community", bn: "ফেসবুক কমিউনিটি" },
@@ -120,35 +120,47 @@ const SOCIAL_PROFILES = [
       en: "Official discussions, event photos & polls",
       bn: "গ্রুপ আলোচনা, ইভেন্ট আপডেট ও ছবি",
     },
-    href: "https://www.facebook.com/groups/dpics",
+    href: "https://www.facebook.com/groups/dpics.2026",
     icon: FacebookIcon,
     bgClass: "bg-[#1877F2]/10 text-[#1877F2] dark:bg-[#1877F2]/20",
     borderClass: "hover:border-[#1877F2]/40",
   },
   {
-    name: "Twitter / X",
-    title: { en: "Twitter / X Feed", bn: "টুইটার / এক্স" },
+    name: "Facebook Page",
+    title: { en: "Facebook Page", bn: "ফেসবুক পেজ" },
     desc: {
-      en: "Tech news, sprint results & announcements",
-      bn: "প্রযুক্তি আপডেট ও সাম্প্রতিক খবর",
+      en: "Official discussions, event photos & polls",
+      bn: "গ্রুপ আলোচনা, ইভেন্ট আপডেট ও ছবি",
     },
-    href: "https://twitter.com/dpics_official",
-    icon: TwitterIcon,
-    bgClass: "bg-foreground/10 text-foreground",
-    borderClass: "hover:border-foreground/30",
+    href: "https://www.facebook.com/profile.php?id=61594926394020",
+    icon: FacebookIcon,
+    bgClass: "bg-[#1877F2]/10 text-[#1877F2] dark:bg-[#1877F2]/20",
+    borderClass: "hover:border-[#1877F2]/40",
   },
-  {
-    name: "GitHub",
-    title: { en: "GitHub Repositories", bn: "গিটহাব ওপেন সোর্স" },
-    desc: {
-      en: "Open source projects & student codes",
-      bn: "ওপেন সোর্স কোড ও টিম প্রজেক্ট",
-    },
-    href: "https://github.com/iamtahmidhasan/dpics",
-    icon: GitHubIcon,
-    bgClass: "bg-[#24292F]/10 text-foreground dark:bg-white/10",
-    borderClass: "hover:border-primary/40",
-  },
+  // {
+  //   name: "Twitter / X",
+  //   title: { en: "Twitter / X Feed", bn: "টুইটার / এক্স" },
+  //   desc: {
+  //     en: "Tech news, sprint results & announcements",
+  //     bn: "প্রযুক্তি আপডেট ও সাম্প্রতিক খবর",
+  //   },
+  //   href: "https://twitter.com/dpics_official",
+  //   icon: TwitterIcon,
+  //   bgClass: "bg-foreground/10 text-foreground",
+  //   borderClass: "hover:border-foreground/30",
+  // },
+  // {
+  //   name: "GitHub",
+  //   title: { en: "GitHub Repositories", bn: "গিটহাব ওপেন সোর্স" },
+  //   desc: {
+  //     en: "Open source projects & student codes",
+  //     bn: "ওপেন সোর্স কোড ও টিম প্রজেক্ট",
+  //   },
+  //   href: "https://github.com/iamtahmidhasan/dpics",
+  //   icon: GitHubIcon,
+  //   bgClass: "bg-[#24292F]/10 text-foreground dark:bg-white/10",
+  //   borderClass: "hover:border-primary/40",
+  // },
 ]
 
 type UserDrawerProps = {
@@ -248,7 +260,7 @@ export function UserDrawer({ open, onOpenChange }: UserDrawerProps) {
           {user ? (
             <>
               {/* User Profile Identity Hero */}
-              <div className="relative overflow-hidden rounded-2xl border border-primary/25 p-4 shadow-xs">
+              <div className="relative overflow-hidden rounded-2xl border border-primary/25 p-4 shadow-xs bg-card">
                 <div className="flex items-center gap-3.5">
                   <div className="relative size-14 shrink-0 rounded-full ring-2 ring-primary/40 ring-offset-2 ring-offset-background overflow-hidden bg-muted">
                     {avatar ? (
