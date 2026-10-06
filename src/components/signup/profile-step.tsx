@@ -1,18 +1,17 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowRight, Plus } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
 import { TextField } from "@/components/form-fields"
+import { UserPhotoUpload } from "@/components/media/user-photo-upload"
 import { useLanguage } from "@/components/language-provider"
-import { MAX_IMAGES, PicturePicker, isImageSource } from "@/components/picture-picker"
 import { normalizeImageList } from "@/lib/user-image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 
 const EASE = [0.25, 0.1, 0.25, 1] as const
 
@@ -55,52 +54,10 @@ export function ProfileStep({
     normalizeImageList(seed.images ?? seed.image)
   )
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [imageUrl, setImageUrl] = useState("")
   const [imageError, setImageError] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const initials = (name || "?").trim().charAt(0).toUpperCase()
-
-  function handleAddImage() {
-    const url = imageUrl.trim()
-
-    if (!isImageSource(url)) {
-      setImageError(
-        t(
-          "Enter a full url starting with http or a / path.",
-          "http বা / দিয়ে শুরু হওয়া লিংক দিন।"
-        )
-      )
-      return
-    }
-
-    if (images.length >= MAX_IMAGES) {
-      setImageError(
-        t(`You can keep at most ${MAX_IMAGES} pictures.`, `সর্বোচ্চ ${MAX_IMAGES}টি ছবি রাখা যাবে।`)
-      )
-      return
-    }
-
-    if (images.includes(url)) {
-      setImageError(t("That picture is already added.", "ছবিটি ইতিমধ্যেই যোগ করা আছে।"))
-      return
-    }
-
-    setImages((current) => [...current, url])
-    setSelectedImageIndex(images.length)
-    setImageUrl("")
-    setImageError(null)
-  }
-
-  function handleRemoveImage(index: number) {
-    setImages((current) => current.filter((_, position) => position !== index))
-    setSelectedImageIndex((current) => {
-      if (index < current) return current - 1
-      if (index === current) return Math.max(0, current - 1)
-
-      return current
-    })
-  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -214,34 +171,15 @@ export function ProfileStep({
               </p>
             </div>
 
-            <PicturePicker
+            <UserPhotoUpload
               images={images}
               selectedIndex={selectedImageIndex}
-              onSelect={setSelectedImageIndex}
-              onRemove={handleRemoveImage}
+              onChange={({ images: nextImages, selectedIndex: nextIndex }) => {
+                setImages(nextImages)
+                setSelectedImageIndex(nextIndex)
+                setImageError(null)
+              }}
             />
-
-            <div className="flex gap-2">
-              <Input
-                id="info-image-url"
-                value={imageUrl}
-                onChange={(event) => {
-                  setImageUrl(event.target.value)
-                  setImageError(null)
-                }}
-                placeholder="https://example.com/me.jpg"
-                aria-invalid={!!imageError}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddImage}
-                disabled={images.length >= MAX_IMAGES}
-              >
-                <Plus data-icon="inline-start" />
-                {t("Add", "যোগ করুন")}
-              </Button>
-            </div>
             {imageError ? <FieldError>{imageError}</FieldError> : null}
           </Field>
         </FieldGroup>

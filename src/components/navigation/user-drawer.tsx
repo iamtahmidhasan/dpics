@@ -220,7 +220,7 @@ export function UserDrawer({ open, onOpenChange }: UserDrawerProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[74vh] rounded-t-3xl border-t border-border bg-background/95 backdrop-blur-xl">
+      <DrawerContent className="max-h-[78vh] rounded-t-3xl border-t border-border bg-background/95 backdrop-blur-xl">
         {/* Header bar with Close button */}
         <div className="relative flex items-center justify-between px-5 pt-3 pb-2 border-b border-border/50">
           <DrawerHeader className="p-0 text-left">

@@ -39,8 +39,10 @@ import {
   toggleWrap,
 } from "@/components/posts/markdown-commands"
 import { Button } from "@/components/ui/button"
+import { MediaPickerModal } from "@/components/media/media-picker-modal"
 import { Separator } from "@/components/ui/separator"
 import { countWords, estimateReadingMinutes, MARKDOWN_PLACEHOLDER } from "@/lib/markdown"
+import { compressImage } from "@/lib/client-image-compression"
 import { cn } from "cn"
 
 // CodeMirror touches `document` while mounting, so it must not render on the
@@ -61,6 +63,7 @@ export type MarkdownEditorProps = {
   onChange: (value: string) => void
   id?: string
   disabled?: boolean
+  allowMediaLibrary?: boolean
 }
 
 type ToolbarAction = {
@@ -165,13 +168,66 @@ const MODE_TABS: { mode: EditorMode; label: string; icon: typeof PenLine }[] = [
   { mode: "preview", label: "Preview", icon: Eye },
 ]
 
-export function MarkdownEditor({ value, onChange, id, disabled }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  id,
+  disabled,
+  allowMediaLibrary = true,
+}: MarkdownEditorProps) {
   const viewRef = useRef<EditorView | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<EditorMode>("split")
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const handleReady = useCallback((view: EditorView) => {
     viewRef.current = view
   }, [])
+
+  const handleMediaSelected = useCallback((url: string, alt?: string) => {
+    const view = viewRef.current
+    if (!view) return
+    const { state } = view
+    const { from, to } = state.selection.main
+    const selected = state.sliceDoc(from, to)
+    const imageAlt = alt || selected || "Image description"
+    const insert = `![${imageAlt}](${url})`
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: from + insert.length },
+      scrollIntoView: true,
+    })
+    view.focus()
+  }, [])
+
+  const handleDirectImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingImage(true)
+    try {
+      const compressedFile = await compressImage(file)
+      const formData = new FormData()
+      formData.append("file", compressedFile)
+      formData.append("folder", "posts")
+
+      const res = await fetch("/api/upload/image", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to upload image")
+
+      const defaultAlt = file.name.replace(/\.[^/.]+$/, "")
+      handleMediaSelected(data.url, defaultAlt)
+    } catch (err) {
+      console.error("Direct image upload failed:", err)
+    } finally {
+      setIsUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
 
   const runAction = useCallback((run: (view: EditorView) => void) => {
     const view = viewRef.current
@@ -251,7 +307,17 @@ export function MarkdownEditor({ value, onChange, id, disabled }: MarkdownEditor
                   variant="ghost"
                   size="icon-sm"
                   disabled={disabled}
-                  onClick={() => runAction(action.run)}
+                  onClick={() => {
+                    if (action.key === "image") {
+                      if (allowMediaLibrary) {
+                        setMediaPickerOpen(true)
+                      } else {
+                        fileInputRef.current?.click()
+                      }
+                    } else {
+                      runAction(action.run)
+                    }
+                  }}
                   title={action.label}
                   aria-label={action.label}
                 >
@@ -334,6 +400,25 @@ export function MarkdownEditor({ value, onChange, id, disabled }: MarkdownEditor
           </span>
         </div>
       </div>
+
+      {allowMediaLibrary && (
+        <MediaPickerModal
+          open={mediaPickerOpen}
+          onOpenChange={setMediaPickerOpen}
+          onSelect={handleMediaSelected}
+          title="Insert Image into Content"
+          defaultFolder="posts"
+        />
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        disabled={disabled || isUploadingImage}
+        onChange={handleDirectImageUpload}
+      />
     </div>
   )
 }

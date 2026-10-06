@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
+import { ImageUploadField } from "@/components/media/image-upload-field"
 import { MarkdownEditor } from "@/components/posts/markdown-editor"
 import { SeoPreview } from "@/components/posts/seo-preview"
 import { TagInput } from "@/components/posts/tag-input"
@@ -659,6 +660,7 @@ export function PostComposer({
                   value={values.content}
                   onChange={(next) => patch("content", next)}
                   disabled={readOnly}
+                  allowMediaLibrary={scope === "admin"}
                 />
               </div>
             ) : (
@@ -672,6 +674,7 @@ export function PostComposer({
                   value={values.contentBn}
                   onChange={(next) => patch("contentBn", next)}
                   disabled={readOnly}
+                  allowMediaLibrary={scope === "admin"}
                 />
               </div>
             )}
@@ -780,30 +783,22 @@ export function PostComposer({
             />
           </div>
 
-          {/* Cover image URL and Preview in Sidebar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="post-cover">{t("Cover image URL", "কভার ছবির লিংক")}</Label>
-              {values.coverImage && !readOnly ? (
-                <button
-                  type="button"
-                  onClick={() => patch("coverImage", "")}
-                  className="text-[0.6875rem] text-destructive hover:underline"
-                >
-                  {t("Remove", "মুছুন")}
-                </button>
-              ) : null}
-            </div>
-            <Input
-              id="post-cover"
-              type="url"
-              value={values.coverImage}
-              disabled={readOnly}
-              onChange={(event) => patch("coverImage", event.target.value)}
-              placeholder="https://… or /hero-tech.jpg"
-            />
-
-          </div>
+          {/* Cover Image with ImageKit Upload & Library Picker */}
+          <ImageUploadField
+            id="post-cover"
+            label={t("Cover Image", "কভার ছবি")}
+            value={values.coverImage}
+            onChange={(next) => patch("coverImage", next)}
+            disabled={readOnly}
+            aspectRatio="wide"
+            allowLibrary={scope === "admin"}
+            defaultFolder="posts"
+            placeholder={
+              scope === "admin"
+                ? t("Upload post cover image or pick from library", "কভার ছবি আপলোড করুন বা লাইব্রেরি থেকে বেছে নিন")
+                : t("Upload post cover image", "পোস্টের কভার ছবি আপলোড করুন")
+            }
+          />
 
           {scope === "admin" ? (
             <div className="flex items-center justify-between rounded-md border px-3 py-2">

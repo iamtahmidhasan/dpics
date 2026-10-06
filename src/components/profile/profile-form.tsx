@@ -1,12 +1,12 @@
 "use client"
 
-import { Plus } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
+import { DocumentUploadField } from "@/components/media/document-upload-field"
+import { UserPhotoUpload } from "@/components/media/user-photo-upload"
 import { EnumSelect } from "@/components/form-fields"
 import { useLanguage } from "@/components/language-provider"
-import { MAX_IMAGES, PicturePicker, isImageSource } from "@/components/picture-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -107,7 +107,6 @@ export function ProfileForm({
   const [phone, setPhone] = useState(profile.phone ?? "")
   const [images, setImages] = useState(profile.images)
   const [selectedImageIndex, setSelectedImageIndex] = useState(profile.selectedImageIndex)
-  const [imageUrl, setImageUrl] = useState("")
   const [imageError, setImageError] = useState<string | null>(null)
   const [member, setMember] = useState<MemberForm>(() => toMemberForm(profile))
   const [instructor, setInstructor] = useState<InstructorForm>(() =>
@@ -116,44 +115,6 @@ export function ProfileForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const initials = (profile.name || "?").trim().charAt(0).toUpperCase()
-
-  function handleAddImage() {
-    const url = imageUrl.trim()
-
-    if (!isImageSource(url)) {
-      setImageError(
-        t("Enter a full url starting with http or a / path.", "http বা / দিয়ে শুরু হওয়া লিংক দিন।")
-      )
-      return
-    }
-
-    if (images.length >= MAX_IMAGES) {
-      setImageError(
-        t(`You can keep at most ${MAX_IMAGES} pictures.`, `সর্বোচ্চ ${MAX_IMAGES}টি ছবি রাখা যাবে।`)
-      )
-      return
-    }
-
-    if (images.includes(url)) {
-      setImageError(t("That picture is already added.", "ছবিটি ইতিমধ্যেই যোগ করা আছে।"))
-      return
-    }
-
-    setImages((current) => [...current, url])
-    setSelectedImageIndex(images.length)
-    setImageUrl("")
-    setImageError(null)
-  }
-
-  function handleRemoveImage(index: number) {
-    setImages((current) => current.filter((_, position) => position !== index))
-    setSelectedImageIndex((current) => {
-      if (index < current) return current - 1
-      if (index === current) return Math.max(0, current - 1)
-
-      return current
-    })
-  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -312,38 +273,17 @@ export function ProfileForm({
                 </p>
               </div>
 
-              <PicturePicker
+              <UserPhotoUpload
                 images={images}
                 selectedIndex={selectedImageIndex}
-                onSelect={setSelectedImageIndex}
-                onRemove={handleRemoveImage}
+                disabled={isPending}
+                onChange={({ images: nextImages, selectedIndex: nextIndex }) => {
+                  setImages(nextImages)
+                  setSelectedImageIndex(nextIndex)
+                  setImageError(null)
+                }}
               />
-
-              <Field data-invalid={!!imageError}>
-                <FieldLabel htmlFor="image-url">{t("Picture url", "ছবির লিংক")}</FieldLabel>
-                <div className="flex gap-2">
-                  <Input
-                    id="image-url"
-                    value={imageUrl}
-                    onChange={(event) => {
-                      setImageUrl(event.target.value)
-                      setImageError(null)
-                    }}
-                    placeholder="https://example.com/me.jpg"
-                    aria-invalid={!!imageError}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddImage}
-                    disabled={isPending || images.length >= MAX_IMAGES}
-                  >
-                    <Plus data-icon="inline-start" />
-                    {t("Add", "যোগ করুন")}
-                  </Button>
-                </div>
-                {imageError ? <FieldError>{imageError}</FieldError> : null}
-              </Field>
+              {imageError ? <FieldError>{imageError}</FieldError> : null}
             </CardContent>
           </Card>
         </>
@@ -432,39 +372,31 @@ export function ProfileForm({
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="student-id-card">
-                  {t("Student id card url", "স্টুডেন্ট আইডি কার্ড লিংক")}
-                </FieldLabel>
-                <Input
-                  id="student-id-card"
-                  value={member.studentIdCardUrl}
-                  onChange={(event) =>
-                    setMember((current) => ({
-                      ...current,
-                      studentIdCardUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="https://example.com/id-card.jpg"
-                />
-                <FieldDescription>
-                  {t("An administrator verifies this.", "একজন প্রশাসক এটি যাচাই করবেন।")}
-                </FieldDescription>
-              </Field>
+              <DocumentUploadField
+                id="student-id-card"
+                label={t("Student ID card", "স্টুডেন্ট আইডি কার্ড")}
+                value={member.studentIdCardUrl}
+                onChange={(url) =>
+                  setMember((current) => ({
+                    ...current,
+                    studentIdCardUrl: url,
+                  }))
+                }
+                disabled={isPending}
+                helpText={t("An administrator verifies this.", "একজন প্রশাসক এটি যাচাই করবেন।")}
+                placeholder={t("Upload student ID card photo or PDF", "আইডি কার্ড আপলোড করুন")}
+              />
 
-              <Field>
-                <FieldLabel htmlFor="nid">
-                  {t("Nid or birth certificate url", "এনআইডি বা জন্ম সার্টিফিকেট লিংক")}
-                </FieldLabel>
-                <Input
-                  id="nid"
-                  value={member.nidorbirthUrl}
-                  onChange={(event) =>
-                    setMember((current) => ({ ...current, nidorbirthUrl: event.target.value }))
-                  }
-                  placeholder="https://example.com/nid.jpg"
-                />
-              </Field>
+              <DocumentUploadField
+                id="nid"
+                label={t("NID or birth certificate", "এনআইডি বা জন্ম সনদ")}
+                value={member.nidorbirthUrl}
+                onChange={(url) =>
+                  setMember((current) => ({ ...current, nidorbirthUrl: url }))
+                }
+                disabled={isPending}
+                placeholder={t("Upload NID or birth certificate photo or PDF", "এনআইডি বা জন্ম সনদ আপলোড করুন")}
+              />
 
               {profile.member === null ? (
                 <p className="text-xs/relaxed text-muted-foreground">

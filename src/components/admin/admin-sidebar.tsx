@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, CreditCard, FileText, FolderTree, GraduationCap, Settings, Shield, Trophy, Users } from "lucide-react"
+import { Award, CreditCard, FileText, FolderTree, GraduationCap, Image as ImageIcon, Settings, Shield, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -47,6 +47,11 @@ const NAV_ITEMS = [
     href: "/admin/category" as const,
     label: { en: "Categories", bn: "ক্যাটাগরি" },
     icon: FolderTree,
+  },
+  {
+    href: "/admin/media" as const,
+    label: { en: "Media", bn: "মিডিয়া" },
+    icon: ImageIcon,
   },
   {
     href: "/admin/settings" as const,

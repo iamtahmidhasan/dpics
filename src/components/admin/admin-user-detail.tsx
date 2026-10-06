@@ -30,10 +30,11 @@ import { AdminUserCourses } from "./admin-user-courses"
 import { AdminUserOverview } from "./admin-user-overview"
 import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
 import { AdminUserAchievements } from "./admin-user-achievements"
+import { AdminUserMedia } from "./admin-user-media"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 import type { AchievementPage, AdminAchievementSummary } from "@/lib/services/achievement.service"
 
-const SECTIONS = ["overview", "account", "member", "instructor", "committee", "achievements", "posts", "courses"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee", "achievements", "posts", "courses", "media"] as const
 
 type Section = (typeof SECTIONS)[number]
 
@@ -48,8 +49,8 @@ export function AdminUserDetailView({
   initialUser: AdminUserDetail
   initialPosts?: UserPostsPayload
   initialAchievements?: AchievementPage<AdminAchievementSummary>
-  initialEnrollments?: any[]
-  availableCourses?: any[]
+  initialEnrollments?: unknown[]
+  availableCourses?: unknown[]
   isSelf: boolean
 }) {
   const { t } = useLanguage()
@@ -73,6 +74,7 @@ export function AdminUserDetailView({
     achievements: { en: "Achievements", bn: "অর্জনসমূহ" },
     posts: { en: "Posts", bn: "পোস্ট" },
     courses: { en: "Enrolled Courses", bn: "কোর্সসমূহ" },
+    media: { en: "Media & Documents", bn: "মিডিয়া ও ডকুমেন্টস" },
   }
 
   async function save(payload: Record<string, unknown>) {
@@ -289,6 +291,10 @@ export function AdminUserDetailView({
           initialEnrollments={initialEnrollments}
           availableCourses={availableCourses}
         />
+      ) : null}
+
+      {section === "media" ? (
+        <AdminUserMedia user={user} isSelf={isSelf} />
       ) : null}
 
       {/* Danger Zone */}

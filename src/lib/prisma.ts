@@ -41,11 +41,13 @@ const REQUIRED_MODELS = [
   "lessonInstructor",
   "courseEnrollment",
   "lessonProgress",
+  "media",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {
   Setting: "isAutoStudentIdEnabled",
   Post: "massageForAuthor",
+  Media: "folder",
 };
 
 type RuntimeDataModel = {

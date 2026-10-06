@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import { useState } from "react"
 
 import { EnumSelect, TextAreaField, TextField } from "@/components/form-fields"
+import { DocumentUploadField } from "@/components/media/document-upload-field"
 import { useLanguage } from "@/components/language-provider"
 import { roleOption } from "@/components/signup/signup-steps"
 import { Button } from "@/components/ui/button"
@@ -453,25 +454,25 @@ export function DetailsStep({
                 />
               )}
 
-              <TextField
+              <DocumentUploadField
                 id="student-id-card"
-                label={t("Student id card url", "স্টুডেন্ট আইডি কার্ড লিংক")}
+                label={t("Student ID card", "স্টুডেন্ট আইডি কার্ড")}
                 value={member.studentIdCardUrl}
-                onChange={(studentIdCardUrl) =>
-                  setMember((current) => ({ ...current, studentIdCardUrl }))
+                onChange={(url) =>
+                  setMember((current) => ({ ...current, studentIdCardUrl: url }))
                 }
-                placeholder="https://example.com/id-card.jpg"
-                hint={t("An administrator verifies this.", "একজন প্রশাসক এটি যাচাই করবেন।")}
+                helpText={t("An administrator verifies this.", "একজন প্রশাসক এটি যাচাই করবেন।")}
+                placeholder={t("Upload student ID card photo or PDF", "আইডি কার্ড আপলোড করুন")}
               />
 
-              <TextField
+              <DocumentUploadField
                 id="nid"
-                label={t("Nid or birth certificate url", "এনআইডি বা জন্ম সার্টিফিকেট লিংক")}
+                label={t("NID or birth certificate", "এনআইডি বা জন্ম সনদ")}
                 value={member.nidorbirthUrl}
-                onChange={(nidorbirthUrl) =>
-                  setMember((current) => ({ ...current, nidorbirthUrl }))
+                onChange={(url) =>
+                  setMember((current) => ({ ...current, nidorbirthUrl: url }))
                 }
-                placeholder="https://example.com/nid.jpg"
+                placeholder={t("Upload NID or birth certificate photo or PDF", "এনআইডি বা জন্ম সনদ আপলোড করুন")}
               />
             </>
           ) : (

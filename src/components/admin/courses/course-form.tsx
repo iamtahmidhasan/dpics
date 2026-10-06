@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -10,15 +9,13 @@ import {
   Check,
   Globe,
   ImageIcon,
-  ImageOff,
   Layers,
   Loader2,
   Save,
-  Sparkles,
 } from "lucide-react"
 
 import { MarkdownEditor } from "@/components/posts/markdown-editor"
-import { Badge } from "@/components/ui/badge"
+import { ImageUploadField } from "@/components/media/image-upload-field"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
@@ -40,8 +37,28 @@ import { Switch } from "@/components/ui/switch"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "cn"
 
+export interface InitialCourseData {
+  id?: string
+  title?: string
+  slug?: string
+  excerpt?: string | null
+  description?: string | null
+  titleBn?: string | null
+  excerptBn?: string | null
+  descriptionBn?: string | null
+  thumbnail?: string | null
+  level?: string
+  isFree?: boolean
+  price?: number | null
+  discountPrice?: number | null
+  tags?: string[]
+  isPublished?: boolean
+  featured?: boolean
+  [key: string]: unknown
+}
+
 interface CourseFormProps {
-  initialCourse?: any
+  initialCourse?: InitialCourseData
   isEditing?: boolean
 }
 
@@ -66,7 +83,6 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
 
   // Shared metadata
   const [thumbnail, setThumbnail] = React.useState(initialCourse?.thumbnail || "")
-  const [thumbnailError, setThumbnailError] = React.useState(false)
   const [level, setLevel] = React.useState(initialCourse?.level || "ALL_LEVELS")
   const [isFree, setIsFree] = React.useState(
     initialCourse ? Boolean(initialCourse.isFree) : true
@@ -89,11 +105,6 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
 
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-
-  // Reset thumbnail error when URL changes
-  React.useEffect(() => {
-    setThumbnailError(false)
-  }, [thumbnail])
 
   const handleTitleChange = (val: string) => {
     setTitle(val)
@@ -135,7 +146,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
         featured,
       }
 
-      const url = isEditing ? `/api/courses/${initialCourse.id}` : "/api/courses"
+      const url = isEditing && initialCourse?.id ? `/api/courses/${initialCourse.id}` : "/api/courses"
       const method = isEditing ? "PATCH" : "POST"
 
       const res = await fetch(url, {
@@ -150,7 +161,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
         throw new Error(data?.error?.message || "Failed to save course")
       }
 
-      const savedId = isEditing ? initialCourse.id : data.course?.id
+      const savedId = isEditing ? initialCourse?.id : data.course?.id
 
       if (!isEditing && savedId) {
         router.push(`/admin/courses/${savedId}/curriculum`)
@@ -158,8 +169,8 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
         router.push("/admin/courses")
       }
       router.refresh()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save course")
     } finally {
       setLoading(false)
     }
@@ -402,7 +413,7 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
           </CardContent>
         </Card>
 
-        {/* Thumbnail with Live Image Preview */}
+        {/* Thumbnail with Live Image Preview & Media Library */}
         <Card className="border-border shadow-xs">
           <CardHeader>
             <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -411,64 +422,20 @@ export function CourseForm({ initialCourse, isEditing = false }: CourseFormProps
             </CardTitle>
             <CardDescription className="text-xs">
               {t(
-                "Enter a public image URL. A 16:9 live preview is rendered below.",
-                "ছবির ইউআরএল দিন। নিচে সরাসরি ১৬:৯ অনুপাতে প্রিভিউ দেখতে পাবেন।"
+                "Upload a 16:9 course banner or select an existing graphic from your ImageKit media library.",
+                "১৬:৯ অনুপাতে কোর্সের ব্যানার আপলোড করুন অথবা ইমেজকিট লাইব্রেরি থেকে বেছে নিন।"
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                {t("Thumbnail Image URL", "থাম্বনেইল ইমেজ ইউআরএল")}
-              </Label>
-              <Input
-                value={thumbnail}
-                onChange={(e) => setThumbnail(e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-                className="text-xs font-mono"
-              />
-            </div>
-
-            {/* Live Image Preview Box */}
-            <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
-              <span className="text-[11px] font-mono text-muted-foreground uppercase font-semibold block">
-                {t("Live Card Preview (16:9)", "লাইভ কার্ড প্রিভিউ (১৬:৯)")}
-              </span>
-
-              <div className="relative aspect-video max-w-md overflow-hidden rounded-lg border border-border bg-muted">
-                {thumbnail.trim() && !thumbnailError ? (
-                  <Image
-                    src={thumbnail.trim()}
-                    alt={title || "Course thumbnail preview"}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 440px"
-                    className="object-cover"
-                    onError={() => setThumbnailError(true)}
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/60 p-4 text-center">
-                    {thumbnailError ? (
-                      <>
-                        <ImageOff className="size-8 text-destructive/60" />
-                        <span className="text-xs text-destructive">
-                          {t("Unable to load image from URL", "ইউআরএল থেকে ছবি লোড করা যায়নি")}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="size-8" />
-                        <span className="text-xs">
-                          {t(
-                            "Enter an image URL above to preview the course thumbnail",
-                            "কোর্স থাম্বনেইল দেখতে উপরে একটি ছবির ইউআরএল দিন"
-                          )}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+          <CardContent>
+            <ImageUploadField
+              label={t("Thumbnail Image", "থাম্বনেইল ছবি")}
+              value={thumbnail}
+              onChange={setThumbnail}
+              aspectRatio="video"
+              defaultFolder="courses"
+              placeholder={t("Upload 16:9 course thumbnail or pick from library", "কোর্স ব্যানার আপলোড করুন বা লাইব্রেরি থেকে বেছে নিন")}
+            />
           </CardContent>
         </Card>
 

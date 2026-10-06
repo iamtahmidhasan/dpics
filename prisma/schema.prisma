@@ -44,6 +44,9 @@ model User {
   courseEnrollments CourseEnrollment[]
   lessonProgress    LessonProgress[]
 
+  // Media uploads
+  media Media[]
+
   @@unique([email])
   @@map("user")
 }
@@ -625,5 +628,36 @@ model Achievement {
   @@index([authorId])
   @@index([eventDate])
   @@map("achievement")
+}
+
+// ============================================================
+// MEDIA (ImageKit Integration)
+// ============================================================
+
+model Media {
+  id           String   @id @default(cuid())
+  fileId       String   @unique
+  name         String
+  url          String
+  thumbnailUrl String?
+  filePath     String?
+  fileType     String?  @default("image")
+  mimeType     String?
+  size         Int      @default(0)
+  width        Int?
+  height       Int?
+  alt          String?
+  folder       String?  @default("general")
+
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([folder])
+  @@index([fileType])
+  @@index([createdAt])
+  @@map("media")
 }
 

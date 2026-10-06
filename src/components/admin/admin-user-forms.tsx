@@ -1,10 +1,12 @@
 "use client"
 
-import { Award, Calendar, Check, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react"
+import { Award, Calendar, Check, Loader2, Plus, Sparkles, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
 import { CheckboxField, EnumSelect, TextAreaField, TextField, fromDateTimeLocal, toDateTimeLocal } from "@/components/form-fields"
+import { DocumentUploadField } from "@/components/media/document-upload-field"
+import { UserPhotoUpload } from "@/components/media/user-photo-upload"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,128 +39,7 @@ import type { AdminCommitteeRole, AdminUserDetail } from "@/lib/services/admin-u
 
 type Errors = Record<string, string | undefined>
 
-// Kept local rather than imported from `@/lib/validation`, which is server only.
-const MAX_IMAGES = 5
 
-/** Photos with a "set as avatar" action, mirroring the profile picture picker. */
-function PicturePicker({
-  images,
-  selectedIndex,
-  onChange,
-}: {
-  images: string[]
-  selectedIndex: number
-  onChange: (next: { images: string[]; selectedIndex: number }) => void
-}) {
-  const { t } = useLanguage()
-  const [draft, setDraft] = useState("")
-  const [error, setError] = useState<string | null>(null)
-
-  function add() {
-    const value = draft.trim()
-
-    if (!value) return
-
-    if (images.length >= MAX_IMAGES) {
-      setError(t(`You can keep at most ${MAX_IMAGES} pictures`, `সর্বোচ্চ ${MAX_IMAGES}টি ছবি রাখা যাবে`))
-      return
-    }
-
-    if (!value.startsWith("/") && !/^https?:\/\//.test(value)) {
-      setError(t("Enter a valid url", "একটি বৈধ url দিন"))
-      return
-    }
-
-    if (images.includes(value)) {
-      setError(t("That picture is already added", "ছবিটি ইতিমধ্যে যোগ করা আছে"))
-      return
-    }
-
-    onChange({ images: [...images, value], selectedIndex })
-    setDraft("")
-    setError(null)
-  }
-
-  function remove(index: number) {
-    const next = images.filter((_, position) => position !== index)
-
-    onChange({
-      images: next,
-      selectedIndex: next.length === 0 ? 0 : Math.min(selectedIndex, next.length - 1),
-    })
-  }
-
-  return (
-    <Field>
-      <span className="text-xs/relaxed font-medium">{t("Pictures", "ছবি")}</span>
-
-      <div className="flex gap-2">
-        <Input
-          value={draft}
-          placeholder={t("Paste an image url", "একটি ছবির url দিন")}
-          aria-label={t("Picture url", "ছবির url")}
-          onChange={(event) => {
-            setDraft(event.target.value)
-            setError(null)
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault()
-              add()
-            }
-          }}
-        />
-        <Button type="button" variant="outline" size="icon-lg" onClick={add} aria-label={t("Add picture", "ছবি যোগ করুন")}>
-          <Plus />
-        </Button>
-      </div>
-
-      {error ? (
-        <p role="alert" className="text-xs/relaxed text-destructive">
-          {error}
-        </p>
-      ) : null}
-
-      {images.length === 0 ? (
-        <p className="text-muted-foreground">{t("No pictures yet", "কোনো ছবি নেই")}</p>
-      ) : (
-        <ul className="flex flex-wrap gap-2 pt-1">
-          {images.map((image, index) => (
-            <li key={image} className="flex flex-col gap-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image}
-                alt={t("Picture", "ছবি")}
-                className="size-16 rounded-md border border-border object-cover"
-              />
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant={index === selectedIndex ? "default" : "outline"}
-                  size="icon-sm"
-                  disabled={index === selectedIndex}
-                  onClick={() => onChange({ images, selectedIndex: index })}
-                  aria-label={t("Set as avatar", "অ্যাভাটার হিসেবে সেট করুন")}
-                >
-                  <Star />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() => remove(index)}
-                  aria-label={t("Remove picture", "ছবি সরান")}
-                >
-                  <X />
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Field>
-  )
-}
 
 export function AdminAccountForm({
   user,
@@ -265,14 +146,17 @@ export function AdminAccountForm({
               hint={t("Must be unique across all users", "সব ব্যবহারকারীর মধ্যে অনন্য হতে হবে")}
             />
 
-            <PicturePicker
-              images={images}
-              selectedIndex={selectedImageIndex}
-              onChange={(next) => {
-                setImages(next.images)
-                setSelectedImageIndex(next.selectedIndex)
-              }}
-            />
+            <div className="space-y-1">
+              <span className="text-xs font-semibold">{t("User Photos / Avatar", "ব্যবহারকারীর ছবি / অ্যাভাটার")}</span>
+              <UserPhotoUpload
+                images={images}
+                selectedIndex={selectedImageIndex}
+                onChange={(next) => {
+                  setImages(next.images)
+                  setSelectedImageIndex(next.selectedIndex)
+                }}
+              />
+            </div>
 
             <Field data-invalid={!!errors.roles}>
               <span className="text-xs/relaxed font-medium">{t("Roles", "ভূমিকা")}</span>
@@ -392,8 +276,11 @@ export function AdminMemberForm({
       if (data.studentId) {
         setStudentId(data.studentId)
       }
-    } catch (err: any) {
-      setErrors((prev) => ({ ...prev, studentId: err.message || "Failed to generate ID" }))
+    } catch (err: unknown) {
+      setErrors((prev) => ({
+        ...prev,
+        studentId: err instanceof Error ? err.message : "Failed to generate ID",
+      }))
     } finally {
       setGeneratingStudentId(false)
     }
@@ -561,19 +448,19 @@ export function AdminMemberForm({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
+              <DocumentUploadField
                 id="member-id-card"
-                label={t("Student id card url", "শিক্ষা আইডি কার্ডের url")}
-                type="url"
+                label={t("Student ID card", "শিক্ষার্থী আইডি কার্ড")}
                 value={studentIdCardUrl}
                 onChange={setStudentIdCardUrl}
+                placeholder={t("Upload student ID card", "আইডি কার্ড আপলোড করুন")}
               />
-              <TextField
+              <DocumentUploadField
                 id="member-nid"
-                label={t("Nid or birth certificate url", "নিড বা জন্ম সার্টিফিকেটের url")}
-                type="url"
+                label={t("NID or birth certificate", "এনআইডি বা জন্ম সনদ")}
                 value={nidorbirthUrl}
                 onChange={setNidorbirthUrl}
+                placeholder={t("Upload NID or birth certificate", "এনআইডি বা জন্ম সনদ আপলোড করুন")}
               />
             </div>
 
@@ -680,8 +567,11 @@ export function AdminInstructorForm({
       if (data.instructorId) {
         setInstructorId(data.instructorId)
       }
-    } catch (err: any) {
-      setErrors((prev) => ({ ...prev, instructorId: err.message || "Failed to generate ID" }))
+    } catch (err: unknown) {
+      setErrors((prev) => ({
+        ...prev,
+        instructorId: err instanceof Error ? err.message : "Failed to generate ID",
+      }))
     } finally {
       setGeneratingInstructorId(false)
     }

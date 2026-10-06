@@ -4,14 +4,8 @@ import {
   AlertCircle,
   ArrowLeft,
   Award,
-  Building2,
   Calendar,
   Check,
-  ExternalLink,
-  Globe,
-  Image as ImageIcon,
-  ImageOff,
-  Link as LinkIcon,
   Lock,
   Plus,
   Send,
@@ -21,8 +15,12 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 
 import { useLanguage } from "@/components/language-provider"
+import { DocumentUploadField } from "@/components/media/document-upload-field"
+import { ImageUploadField } from "@/components/media/image-upload-field"
+import { MediaPickerModal } from "@/components/media/media-picker-modal"
 import { MarkdownEditor } from "@/components/posts/markdown-editor"
 import { TagInput } from "@/components/posts/tag-input"
+import { compressImage } from "@/lib/client-image-compression"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Input } from "@/components/ui/input"
@@ -37,14 +35,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { PostStatus } from "@/generated/prisma/enums"
 import {
-  MAX_ACHIEVEMENT_CONTENT_LENGTH,
   MAX_ACHIEVEMENT_EXCERPT_LENGTH,
   MAX_ACHIEVEMENT_ORGANIZATION_LENGTH,
   MAX_ACHIEVEMENT_SLUG_LENGTH,
   MAX_ACHIEVEMENT_TITLE_LENGTH,
 } from "@/lib/achievement-constants"
 import { toAchievementSlug } from "@/lib/achievement-slug"
-import { cn } from "cn"
 
 export type AchievementFormValues = {
   title: string
@@ -126,6 +122,8 @@ export function AchievementComposer({
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(Boolean(initialValues?.slug))
   const [adminStatus, setAdminStatus] = useState<PostStatus>(initialStatus)
   const [newImageUrl, setNewImageUrl] = useState("")
+  const [galleryPickerOpen, setGalleryPickerOpen] = useState(false)
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -338,6 +336,13 @@ export function AchievementComposer({
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400">
+          <Check className="size-4 shrink-0 mt-0.5" />
+          <span>{success}</span>
         </div>
       )}
 
@@ -574,90 +579,157 @@ export function AchievementComposer({
             </div>
 
             {/* Credential / Certificate Link */}
-            <div className="space-y-1.5">
-              <Label htmlFor="certificateUrl" className="text-xs font-medium flex items-center gap-1.5">
-                <ExternalLink className="size-3.5" />
-                {t("Certificate / Proof Link", "সার্টিফিকেট / প্রমাণ লিঙ্ক")}
-              </Label>
-              <Input
-                id="certificateUrl"
-                type="url"
-                value={values.certificateUrl}
-                onChange={(e) => handleFieldChange("certificateUrl", e.target.value)}
-                placeholder="https://..."
-                disabled={locked}
-              />
-            </div>
+            <DocumentUploadField
+              id="certificateUrl"
+              label={t("Certificate / Proof Link", "সার্টিফিকেট / প্রমাণ লিঙ্ক")}
+              value={values.certificateUrl}
+              onChange={(url) => handleFieldChange("certificateUrl", url)}
+              disabled={locked}
+              placeholder={t("Upload certificate image/PDF or enter link", "সার্টিফিকেট আপলোড করুন বা লিংক দিন")}
+            />
 
             {/* Cover Image */}
-            <div className="space-y-1.5">
-              <Label htmlFor="coverImage" className="text-xs font-medium flex items-center gap-1.5">
-                <ImageIcon className="size-3.5" />
-                {t("Cover Image URL", "কভার ছবির ইউআরএল")}
-              </Label>
-              <Input
-                id="coverImage"
-                type="url"
-                value={values.coverImage}
-                onChange={(e) => handleFieldChange("coverImage", e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-                disabled={locked}
-              />
-              {values.coverImage && (
-                <div className="relative mt-2 aspect-video w-full overflow-hidden rounded-md border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={values.coverImage}
-                    alt="Cover preview"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
+            <ImageUploadField
+              id="coverImage"
+              label={t("Cover Image", "কভার ছবি")}
+              value={values.coverImage}
+              onChange={(url) => handleFieldChange("coverImage", url)}
+              disabled={locked}
+              aspectRatio="video"
+              allowLibrary={scope === "admin"}
+              defaultFolder="achievements"
+              placeholder={t("Upload achievement cover image", "কভার ছবি আপলোড করুন")}
+            />
 
             {/* Additional Images (Gallery) */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">
-                {t("Additional Gallery Images (Max 6)", "অতিরিক্ত গ্যালারি ছবি (সর্বোচ্চ ৬টি)")}
-              </Label>
-              <div className="flex gap-1.5">
-                <Input
-                  value={newImageUrl}
-                  onChange={(e) => setNewImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="text-xs"
-                  disabled={locked || values.images.length >= 6}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={addGalleryImage}
-                  disabled={locked || values.images.length >= 6 || !newImageUrl.trim()}
-                >
-                  <Plus className="size-3.5" />
-                </Button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">
+                  {t("Additional Gallery Images (Max 6)", "অতিরিক্ত গ্যালারি ছবি (সর্বোচ্চ ৬টি)")}
+                </Label>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {values.images.length}/6
+                </span>
               </div>
 
+              {/* Gallery Thumbnails Grid */}
               {values.images.length > 0 && (
-                <div className="mt-2 space-y-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   {values.images.map((img, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between gap-2 rounded border bg-muted/40 px-2 py-1 text-xs"
+                      className="group relative aspect-video overflow-hidden rounded-md border border-border bg-muted/30"
                     >
-                      <span className="truncate max-w-[180px] font-mono">{img}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryImage(idx)}
-                        disabled={locked}
-                        className="text-destructive hover:opacity-80"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt="Gallery item" className="size-full object-cover" />
+                      {!locked && (
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(idx)}
+                          className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white transition-opacity hover:bg-destructive"
+                          title={t("Remove", "মুছুন")}
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Add Gallery Actions */}
+              {values.images.length < 6 && !locked && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        const input = document.createElement("input")
+                        input.type = "file"
+                        input.accept = "image/*"
+                        input.onchange = async (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0]
+                          if (!file) return
+                          setIsUploadingGallery(true)
+                          try {
+                            const compressedFile = await compressImage(file)
+                            const formData = new FormData()
+                            formData.append("file", compressedFile)
+                            formData.append("folder", "achievements")
+
+                            const endpoint = scope === "admin" ? "/api/admin/media" : "/api/upload/image"
+                            const res = await fetch(endpoint, {
+                              method: "POST",
+                              body: formData,
+                            })
+                            const data = await res.json()
+                            if (res.ok && data.url) {
+                              handleFieldChange("images", [...values.images, data.url])
+                            }
+                          } catch (err) {
+                            console.error(err)
+                          } finally {
+                            setIsUploadingGallery(false)
+                          }
+                        }
+                        input.click()
+                      }}
+                      disabled={isUploadingGallery}
+                    >
+                      <Plus className="mr-1 size-3" />
+                      {isUploadingGallery ? t("Uploading...", "আপলোড...") : t("Upload Image", "ছবি আপলোড")}
+                    </Button>
+
+                    {scope === "admin" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setGalleryPickerOpen(true)}
+                      >
+                        {t("From Library", "লাইব্রেরি থেকে")}
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex gap-1.5 pt-1">
+                    <Input
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder={t("Or paste image URL...", "বা ছবির ইউআরএল দিন...")}
+                      className="h-7 text-xs"
+                      disabled={locked}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 text-xs shrink-0"
+                      onClick={addGalleryImage}
+                      disabled={locked || !newImageUrl.trim()}
+                    >
+                      {t("Add", "যোগ")}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {scope === "admin" && (
+                <MediaPickerModal
+                  open={galleryPickerOpen}
+                  onOpenChange={setGalleryPickerOpen}
+                  onSelect={(url) => {
+                    if (values.images.length < 6) {
+                      handleFieldChange("images", [...values.images, url])
+                    }
+                  }}
+                  title={t("Add Image to Achievement Gallery", "অর্জনের গ্যালারিতে ছবি যোগ করুন")}
+                  defaultFolder="achievements"
+                />
               )}
             </div>
 
