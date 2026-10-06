@@ -41,7 +41,10 @@ const REQUIRED_MODELS = [
   "lessonInstructor",
   "courseEnrollment",
   "lessonProgress",
+  "achievement",
   "media",
+  "event",
+  "eventRegistration",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {
