@@ -9,6 +9,15 @@ import { PostsSection } from '@/components/home/PostsSection'
 import { listPublishedAchievements } from '@/lib/services/achievement.service'
 import { listPublishedEvents } from '@/lib/services/event.service'
 import { listPublishedPosts } from '@/lib/services/post.service'
+import { websiteMetadata } from '@/lib/seo'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/site'
+
+export const metadata = websiteMetadata({
+  title: SITE_NAME,
+  socialTitle: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  path: '/',
+})
 
 export default async function Home() {
   const [featuredAchievements, latestAchievements, postsData, eventsData] = await Promise.all([

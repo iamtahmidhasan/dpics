@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { PublicProfileView } from "@/components/profile/public-profile-view"
 import { PublicProfileService } from "@/lib/services/public-profile.service"
 import { getLang } from "@/lib/i18n-server"
+import { absoluteUrl, breadcrumbJsonLd } from "@/lib/seo"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 
 interface PublicProfilePageProps {
@@ -18,7 +19,8 @@ export async function generateMetadata({
 
   if (!profile) {
     return {
-      title: `Profile Not Found | ${SITE_NAME}`,
+      // Plain string: the root template appends the site name once.
+      title: "Profile Not Found",
       robots: { index: false, follow: false },
     }
   }
@@ -35,10 +37,11 @@ export async function generateMetadata({
     (profile.skills.length > 0 ? profile.skills.join(", ") : null) ||
     `${profile.name}'s public profile and activity timeline at ${SITE_NAME}.`
   const canonicalSlug = profile.slug || profile.member?.studentId || profile.instructor?.instructorId || id
-  const profileUrl = `${SITE_URL}/profile/${canonicalSlug}`
+  const profileUrl = absoluteUrl(`/profile/${canonicalSlug}`)
 
   return {
-    title,
+    // `absolute` keeps the root title template from repeating the site name.
+    title: { absolute: title },
     description,
     alternates: { canonical: profileUrl },
     openGraph: {
@@ -78,6 +81,7 @@ export default async function PublicProfilePage({
     image: profile.avatar || undefined,
     jobTitle: profile.isInstructor ? "Instructor" : profile.isMember ? "Member" : "Community Member",
     description: profile.bio || (profile.skills.length > 0 ? profile.skills.join(", ") : undefined),
+    url: absoluteUrl(`/profile/${profile.slug || profile.member?.studentId || profile.instructor?.instructorId || id}`),
     worksFor: {
       "@type": "Organization",
       name: SITE_NAME,
@@ -85,11 +89,24 @@ export default async function PublicProfilePage({
     },
   }
 
+  // Mirrors the visible breadcrumb trail (Home / directory / name).
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    profile.isInstructor
+      ? { name: "Instructors", path: "/instructors" }
+      : { name: "Members", path: "/members" },
+    { name: profile.name },
+  ])
+
   return (
     <div className="mx-auto w-full max-w-6xl px-3 sm:px-6 md:px-8 py-4 sm:py-7 space-y-3 sm:space-y-4">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       {/* Responsive Breadcrumb Navigation */}

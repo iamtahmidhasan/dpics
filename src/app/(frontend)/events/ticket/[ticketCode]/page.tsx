@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EventTicketCard } from "@/components/events/event-ticket-card"
 import { getEventTicket } from "@/lib/services/event.service"
-import { SITE_NAME } from "@/lib/site"
+import { NOINDEX } from "@/lib/seo"
 
 type Props = {
   params: Promise<{ ticketCode: string }>
@@ -15,8 +15,10 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ticketCode } = await params
   return {
-    title: `Ticket ${ticketCode} | ${SITE_NAME}`,
+    title: `Ticket ${ticketCode}`,
     description: "Official event entry pass and registration confirmation.",
+    // Private entry passes must never appear in search results.
+    robots: NOINDEX,
   }
 }
 

@@ -1,0 +1,179 @@
+$ prisma generate && next build
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.10.0 -> 8.0.0-rc.20                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+✔ Generated Prisma Client (7.10.0) to .\src\generated\prisma in 259ms
+
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 110ms
+Warning: Custom Cache-Control headers detected for the following routes:
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 17.6s
+  Running TypeScript ...
+  Finished TypeScript in 19.0s ...
+  Collecting page data using 11 workers ...
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+  Generating static pages using 11 workers (0/72) ...
+  Generating static pages using 11 workers (18/72) 
+[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and Open Graph tags will point at http://localhost:3000. Set it to the public production origin (e.g. https://dpics.org) before building.
+  Generating static pages using 11 workers (36/72) 
+  Generating static pages using 11 workers (54/72) 
+✓ Generating static pages using 11 workers (72/72) in 1389ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /achievements
+├ ● /achievements/[slug]
+├ ƒ /admin
+├ ƒ /admin/achievements
+├ ƒ /admin/achievements/[id]
+├ ƒ /admin/achievements/add
+├ ƒ /admin/category
+├ ƒ /admin/committees
+├ ƒ /admin/committees/[id]
+├ ƒ /admin/courses
+├ ƒ /admin/courses/[id]
+├ ƒ /admin/courses/[id]/curriculum
+├ ƒ /admin/courses/enrollments
+├ ƒ /admin/courses/new
+├ ƒ /admin/events
+├ ƒ /admin/events/[id]
+├ ƒ /admin/events/[id]/registrations
+├ ƒ /admin/events/add
+├ ƒ /admin/media
+├ ƒ /admin/posts
+├ ƒ /admin/posts/[id]
+├ ƒ /admin/posts/new
+├ ƒ /admin/settings
+├ ƒ /admin/users
+├ ƒ /admin/users/[id]
+├ ƒ /api/achievements/[slug]
+├ ƒ /api/admin/achievements
+├ ƒ /api/admin/achievements/[id]
+├ ƒ /api/admin/achievements/[id]/review
+├ ƒ /api/admin/categories
+├ ƒ /api/admin/categories/[id]
+├ ƒ /api/admin/committee-options
+├ ƒ /api/admin/committees
+├ ƒ /api/admin/committees/[id]
+├ ƒ /api/admin/committees/[id]/members
+├ ƒ /api/admin/committees/[id]/members/[memberRoleId]
+├ ƒ /api/admin/committees/[id]/roles
+├ ƒ /api/admin/committees/[id]/roles/[roleId]
+├ ƒ /api/admin/enrollments
+├ ƒ /api/admin/events
+├ ƒ /api/admin/events/[id]
+├ ƒ /api/admin/events/[id]/registrations
+├ ƒ /api/admin/events/[id]/registrations/[regId]
+├ ƒ /api/admin/events/speaker-options
+├ ƒ /api/admin/instructors
+├ ƒ /api/admin/instructors/generate-id
+├ ƒ /api/admin/media
+├ ƒ /api/admin/media/[id]
+├ ƒ /api/admin/members/generate-id
+├ ƒ /api/admin/posts
+├ ƒ /api/admin/posts/[id]
+├ ƒ /api/admin/posts/[id]/review
+├ ƒ /api/admin/settings
+├ ƒ /api/admin/settings/batch-stats
+├ ƒ /api/admin/settings/instructor-stats
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/[id]/committee-roles
+├ ƒ /api/admin/users/[id]/committee-roles/[userRoleId]
+├ ƒ /api/auth/[...all]
+├ ƒ /api/categories
+├ ƒ /api/courses
+├ ƒ /api/courses/[id]
+├ ƒ /api/courses/[id]/curriculum
+├ ƒ /api/courses/[id]/enroll
+├ ƒ /api/courses/[id]/progress
+├ ƒ /api/events
+├ ƒ /api/events/[slug]
+├ ƒ /api/events/[slug]/register
+├ ƒ /api/events/tickets/[ticketCode]
+├ ƒ /api/my/achievements
+├ ƒ /api/my/achievements/[id]
+├ ƒ /api/my/achievements/[id]/submit
+├ ƒ /api/my/courses
+├ ƒ /api/my/posts
+├ ƒ /api/my/posts/[id]
+├ ƒ /api/my/posts/[id]/submit
+├ ƒ /api/my/posts/[id]/withdraw
+├ ƒ /api/onboarding
+├ ƒ /api/posts
+├ ƒ /api/posts/[slug]
+├ ƒ /api/profile
+├ ƒ /api/upload/image
+├ ○ /apple-icon.png
+├ ƒ /committee
+├ ƒ /contact
+├ ƒ /courses
+├ ƒ /courses/[slug]
+├ ƒ /courses/[slug]/learn
+├ ƒ /dashboard
+├ ƒ /events
+├ ƒ /events/[slug]
+├ ƒ /events/ticket/[ticketCode]
+├ ƒ /instructors
+├ ƒ /join
+├ ƒ /join/callback
+├ ○ /manifest.webmanifest
+├ ƒ /members
+├ ƒ /posts
+├ ● /posts/[slug]
+├ ƒ /privacy
+├ ƒ /profile
+├ ƒ /profile/[id]
+├ ƒ /profile/achievements
+├ ƒ /profile/achievements/[id]/edit
+├ ƒ /profile/achievements/add
+├ ƒ /profile/achivements
+├ ƒ /profile/enrolled
+├ ƒ /profile/instructor
+├ ƒ /profile/member
+├ ƒ /profile/posts
+├ ƒ /profile/write
+├ ƒ /profile/write/[id]
+├ ƒ /register
+├ ƒ /resources
+├ ○ /robots.txt
+└ ○ /sitemap.xml
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

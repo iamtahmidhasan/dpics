@@ -11,14 +11,26 @@ import { getLang } from "@/lib/i18n-server"
 import { eventFiltersFromParams } from "@/lib/event-params"
 import { listPublishedEvents } from "@/lib/services/event.service"
 import prisma from "@/lib/prisma"
-import { SITE_NAME } from "@/lib/site"
+import { websiteMetadata } from "@/lib/seo"
 import { cn } from "cn"
 
-export const metadata: Metadata = {
-  title: { default: "Events", absolute: "Events | " + SITE_NAME },
-  description:
-    "Explore upcoming workshops, coding hackathons, seminars, and tech sessions hosted by DPI Computing Society.",
-  alternates: { canonical: "/events" },
+const DESCRIPTION =
+  "Explore upcoming workshops, coding hackathons, seminars, and tech sessions hosted by DPI Computing Society."
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const raw = Array.isArray(params.page) ? params.page[0] : params.page
+  const pageNum = Number.parseInt(raw ?? "", 10)
+  return websiteMetadata({
+    title: "Events",
+    description: DESCRIPTION,
+    // Paginated pages self-canonicalize; filtered variants fall back to the base URL.
+    path: pageNum > 1 ? `/events?page=${pageNum}` : "/events",
+  })
 }
 
 function FilterPill({

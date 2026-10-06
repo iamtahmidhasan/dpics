@@ -51,12 +51,13 @@ import {
   verificationStatusLabel,
 } from "@/lib/profile-labels"
 import { EventRegistrationStatus, Role, VerificationStatus } from "@/generated/prisma/enums"
-import { SITE_NAME } from "@/lib/site"
+import { NOINDEX } from "@/lib/seo"
 import { cn } from "cn"
 
 export const metadata: Metadata = {
-  title: `Dashboard Overview | ${SITE_NAME}`,
+  title: "Dashboard Overview",
   description: "Member and student overview dashboard for DPI Computing Society.",
+  robots: NOINDEX,
 }
 
 export default async function DashboardOverviewPage() {

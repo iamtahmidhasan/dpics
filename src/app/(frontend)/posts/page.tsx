@@ -12,20 +12,25 @@ import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { postFiltersFromParams } from "@/lib/post-params"
 import { listPostFacets, listPublishedPosts } from "@/lib/services/post.service"
+import { websiteMetadata } from "@/lib/seo"
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site"
 import { cn } from "cn"
 
-export const metadata: Metadata = {
-  title: { default: "Blog", absolute: "Blog" },
-  description: SITE_DESCRIPTION,
-  alternates: { canonical: "/posts" },
-  openGraph: {
-    type: "website",
-    url: "/posts",
-    siteName: SITE_NAME,
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const raw = Array.isArray(params.page) ? params.page[0] : params.page
+  const pageNum = Number.parseInt(raw ?? "", 10)
+  return websiteMetadata({
     title: "Blog",
+    socialTitle: `Blog | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
-  },
+    // Paginated pages self-canonicalize so page 2+ is not attributed to page 1.
+    path: pageNum > 1 ? `/posts?page=${pageNum}` : "/posts",
+  })
 }
 
 /** Filter chips are links, so the whole page stays server rendered. */

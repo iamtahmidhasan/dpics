@@ -1,5 +1,12 @@
+import type { Metadata } from "next"
+
 import { ProfileSidebar } from "@/components/profile/profile-sidebar"
 import { getUserRoles, requireUser } from "@/lib/session"
+import { NOINDEX } from "@/lib/seo"
+
+// Auth-gated account screens — never index them, even though their public
+// counterparts under /profile/[id] are.
+export const metadata: Metadata = { robots: NOINDEX }
 
 export default async function ProfileLayout({
   children,

@@ -222,7 +222,7 @@ const NAV_ITEMS: NavItem[] = [
           },
           {
             label: { en: 'Past Events', bn: 'অতীতের ইভেন্ট' },
-            href: '/events#past',
+            href: '/events?timeframe=past',
             description: {
               en: 'Recap of what we have hosted',
               bn: 'আমাদের আয়োজিত কার্যক্রমের সারসংক্ষেপ',
@@ -230,7 +230,7 @@ const NAV_ITEMS: NavItem[] = [
           },
           {
             label: { en: 'Competitions', bn: 'প্রতিযোগিতা' },
-            href: '/events#competitions',
+            href: '/events?q=competition',
             description: {
               en: 'Programming contests and hackathons',
               bn: 'প্রোগ্রামিং প্রতিযোগিতা ও হ্যাকাথন',

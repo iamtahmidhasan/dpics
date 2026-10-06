@@ -1,21 +1,25 @@
 import type { Metadata } from "next"
 
 import { InstructorsDirectory } from "@/components/instructors/instructors-directory"
+import { websiteMetadata } from "@/lib/seo"
 import { PublicProfileService } from "@/lib/services/public-profile.service"
-import { SITE_NAME, SITE_URL } from "@/lib/site"
 
-export const metadata: Metadata = {
-  title: `Our Instructors & Mentors | ${SITE_NAME}`,
-  description:
-    "Learn from senior engineers, instructors, and mentors teaching technical courses and leading workshops at DPI Computing Society.",
-  alternates: { canonical: `${SITE_URL}/instructors` },
-  openGraph: {
-    title: `Our Instructors & Mentors | ${SITE_NAME}`,
-    description:
-      "Learn from senior engineers, instructors, and mentors teaching technical courses and leading workshops at DPI Computing Society.",
-    url: `${SITE_URL}/instructors`,
-    type: "website",
-  },
+const DESCRIPTION =
+  "Learn from senior engineers, instructors, and mentors teaching technical courses and leading workshops at DPI Computing Society."
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}): Promise<Metadata> {
+  const { page } = await searchParams
+  const pageNum = Number.parseInt(page ?? "", 10)
+  return websiteMetadata({
+    title: "Our Instructors & Mentors",
+    description: DESCRIPTION,
+    // Paginated pages self-canonicalize so page 2+ is not attributed to page 1.
+    path: pageNum > 1 ? `/instructors?page=${pageNum}` : "/instructors",
+  })
 }
 
 interface InstructorsPageProps {

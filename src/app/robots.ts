@@ -9,8 +9,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // Nothing behind the wall should ever be indexed, and the authoring
-        // routes are useless to a crawler.
-        disallow: ["/admin", "/admin/", "/api/", "/profile"],
+        // routes are useless to a crawler. Event tickets are private passes.
+        disallow: ["/admin", "/admin/", "/api/", "/events/ticket/"],
       },
     ],
     sitemap: new URL("/sitemap.xml", SITE_URL).toString(),

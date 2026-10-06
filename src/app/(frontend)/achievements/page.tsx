@@ -14,20 +14,26 @@ import {
   listAchievementFacets,
   listPublishedAchievements,
 } from "@/lib/services/achievement.service"
-import { SITE_NAME, SITE_URL } from "@/lib/site"
+import { websiteMetadata } from "@/lib/seo"
 import { cn } from "cn"
 
-export const metadata: Metadata = {
-  title: { default: "Achievements", absolute: "Achievements | " + SITE_NAME },
-  description: "Celebrate the achievements, awards, hackathon triumphs, and technical excellence of DPI Computing Society members and mentors.",
-  alternates: { canonical: "/achievements" },
-  openGraph: {
-    type: "website",
-    url: "/achievements",
-    siteName: SITE_NAME,
-    title: "Achievements | " + SITE_NAME,
-    description: "Explore the accomplishments, contest wins, and certifications of DPI Computing Society members.",
-  },
+const DESCRIPTION =
+  "Celebrate the achievements, awards, hackathon triumphs, and technical excellence of DPI Computing Society members and mentors."
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const raw = Array.isArray(params.page) ? params.page[0] : params.page
+  const pageNum = Number.parseInt(raw ?? "", 10)
+  return websiteMetadata({
+    title: "Achievements | DPI Computing Society",
+    description: DESCRIPTION,
+    // Paginated pages self-canonicalize; filtered variants fall back to the base URL.
+    path: pageNum > 1 ? `/achievements?page=${pageNum}` : "/achievements",
+  })
 }
 
 function FilterLink({

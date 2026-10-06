@@ -26,7 +26,8 @@ import {
   getPublishedAchievementBySlug,
   listPublishedAchievements,
 } from "@/lib/services/achievement.service"
-import { SITE_NAME, SITE_URL } from "@/lib/site"
+import { absoluteUrl, breadcrumbJsonLd, NOINDEX } from "@/lib/seo"
+import { SITE_NAME } from "@/lib/site"
 import { cn } from "cn"
 
 type AchievementPageProps = {
@@ -55,11 +56,12 @@ export async function generateMetadata({
     const description =
       achievement.excerpt ||
       `${achievement.title} awarded by ${achievement.organization || "DPI Computing Society"}.`
-    const url = `${SITE_URL}/achievements/${achievement.slug}`
-    const image = achievement.coverImage
+    const url = absoluteUrl(`/achievements/${achievement.slug}`)
+    const image = achievement.coverImage ?? undefined
 
     return {
-      title,
+      // `absolute` keeps the root title template from repeating the site name.
+      title: { absolute: title },
       description,
       alternates: { canonical: url },
       openGraph: {
@@ -82,7 +84,7 @@ export async function generateMetadata({
       },
     }
   } catch {
-    return { title: "Achievement not found" }
+    return { title: "Achievement not found", robots: NOINDEX }
   }
 }
 
@@ -117,30 +119,39 @@ export default async function AchievementDetailPage({ params }: AchievementPageP
 
   const displayOrg = isBn && achievement.organizationBn ? achievement.organizationBn : achievement.organization
 
+  // schema.org has no "Achievement" type — model the record as a CreativeWork
+  // and keep the awarding organization in the `award` property.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Achievement",
+    "@type": "CreativeWork",
     name: achievement.title,
-    description: achievement.excerpt,
-    datePublished: achievement.publishedAt,
-    image: achievement.coverImage,
+    description: achievement.excerpt || undefined,
+    url: absoluteUrl(`/achievements/${achievement.slug}`),
+    datePublished: achievement.publishedAt ?? undefined,
+    image: achievement.coverImage ?? undefined,
     author: {
       "@type": "Person",
       name: achievement.author.name,
     },
-    recognizedBy: achievement.organization
-      ? {
-          "@type": "Organization",
-          name: achievement.organization,
-        }
-      : undefined,
+    award: achievement.organization || undefined,
   }
+
+  // Mirrors the visible breadcrumb trail (Home / Achievements / title).
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Achievements", path: "/achievements" },
+    { name: isBn && achievement.titleBn ? achievement.titleBn : achievement.title },
+  ])
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 md:px-8">
@@ -278,10 +289,12 @@ export default async function AchievementDetailPage({ params }: AchievementPageP
                     rel="noopener noreferrer"
                     className="group relative aspect-video overflow-hidden rounded-xl border border-border/70 bg-muted/40 transition-transform hover:scale-[1.02]"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary CDN urls cannot go through the image optimizer */}
                     <img
                       src={imgUrl}
                       alt={`Gallery image ${i + 1}`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">

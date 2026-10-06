@@ -1,22 +1,26 @@
 import type { Metadata } from "next"
 
 import { MembersDirectory } from "@/components/members/members-directory"
+import { websiteMetadata } from "@/lib/seo"
 import { PublicProfileService } from "@/lib/services/public-profile.service"
 import { Department } from "@/generated/prisma/enums"
-import { SITE_NAME, SITE_URL } from "@/lib/site"
 
-export const metadata: Metadata = {
-  title: `Society Members Directory | ${SITE_NAME}`,
-  description:
-    "Explore the active student members, contributors, and leaders of Dhaka Polytechnic Institute Computing Society.",
-  alternates: { canonical: `${SITE_URL}/members` },
-  openGraph: {
-    title: `Society Members Directory | ${SITE_NAME}`,
-    description:
-      "Explore the active student members, contributors, and leaders of Dhaka Polytechnic Institute Computing Society.",
-    url: `${SITE_URL}/members`,
-    type: "website",
-  },
+const DESCRIPTION =
+  "Explore the active student members, contributors, and leaders of Dhaka Polytechnic Institute Computing Society."
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}): Promise<Metadata> {
+  const { page } = await searchParams
+  const pageNum = Number.parseInt(page ?? "", 10)
+  return websiteMetadata({
+    title: "Society Members Directory",
+    description: DESCRIPTION,
+    // Paginated pages self-canonicalize so page 2+ is not attributed to page 1.
+    path: pageNum > 1 ? `/members?page=${pageNum}` : "/members",
+  })
 }
 
 interface MembersPageProps {

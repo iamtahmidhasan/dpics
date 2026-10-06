@@ -1,0 +1,22 @@
+$ next dev
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.192:3000
+- Environments: .env
+✓ Ready in 641ms
+✓ Running next.config.ts took 89ms
+
+ GET /about 200 in 2.3s (next.js: 1054ms, application-code: 1265ms)
+  Reload env: .env
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.192:3000
+- Environments: .env
+✓ Ready in 920ms
+✓ Running next.config.ts took 149ms
+Warning: Custom Cache-Control headers detected for the following routes:
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+

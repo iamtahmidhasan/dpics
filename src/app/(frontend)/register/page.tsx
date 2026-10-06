@@ -12,11 +12,13 @@ import { isOnboarded, isSetupComplete, type SelfAssignableRole } from "@/lib/rol
 import { getBatchMemberStats } from "@/lib/services/member-id.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { getSession } from "@/lib/session"
+import { NOINDEX } from "@/lib/seo"
 import { normalizeImageList } from "@/lib/user-image"
 
 export const metadata: Metadata = {
   title: "Complete Registration",
   description: "Set up your profile, role, and details to join DPI Computing Society",
+  robots: NOINDEX,
 }
 
 export default async function RegisterPage() {

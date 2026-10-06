@@ -21,6 +21,7 @@ import {
   getPublishedPostBySlug,
   listPublishedPosts,
 } from "@/lib/services/post.service"
+import { breadcrumbJsonLd } from "@/lib/seo"
 import { postPath, SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "cn"
 
@@ -160,11 +161,22 @@ export default async function PostDetailPage({ params }: PostPageProps) {
     articleSection: categoryName ?? undefined,
   }
 
+  // Mirrors the site chrome: Home (header logo) → Blog → this post.
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/posts" },
+    { name: displayTitle },
+  ])
+
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <div className="mb-4">

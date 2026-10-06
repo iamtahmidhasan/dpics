@@ -1,0 +1,37 @@
+$ next dev
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.192:3000
+- Environments: .env
+✓ Ready in 853ms
+✓ Running next.config.ts took 101ms
+Warning: Custom Cache-Control headers detected for the following routes:
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+
+ GET / 200 in 3.1s (next.js: 768ms, application-code: 2.3s)
+ GET /dashboard 200 in 824ms (next.js: 483ms, application-code: 341ms)
+ GET /join 200 in 304ms (next.js: 146ms, application-code: 158ms)
+ GET /register 200 in 478ms (next.js: 125ms, application-code: 353ms)
+○ Compiling /events/ticket/[ticketCode] ...
+ GET /events/ticket/ABC123 200 in 6.0s (next.js: 5.7s, application-code: 320ms)
+ GET /profile 200 in 252ms (next.js: 113ms, application-code: 139ms)
+ GET /profile/password 200 in 1458ms (next.js: 689ms, application-code: 769ms)
+ GET /manifest.webmanifest 200 in 849ms (next.js: 812ms, application-code: 37ms)
+ HEAD /about 200 in 181ms (next.js: 48ms, application-code: 134ms)
+ GET /posts?page=2 200 in 580ms (next.js: 59ms, application-code: 520ms)
+ GET /events 200 in 304ms (next.js: 53ms, application-code: 251ms)
+ GET /posts 200 in 718ms (next.js: 15ms, application-code: 702ms)
+ GET /events 200 in 252ms (next.js: 14ms, application-code: 238ms)
+ GET /achievements 200 in 304ms (next.js: 55ms, application-code: 249ms)
+ GET /courses 200 in 1112ms (next.js: 55ms, application-code: 1057ms)
+ GET /instructors 200 in 452ms (next.js: 70ms, application-code: 382ms)
+ GET /posts 200 in 474ms (next.js: 4ms, application-code: 470ms)
+ GET / 200 in 794ms (next.js: 86ms, application-code: 707ms)
+ GET /about 200 in 341ms (next.js: 82ms, application-code: 259ms)
+ GET /about 200 in 276ms (next.js: 5ms, application-code: 271ms)
+ GET /events?timeframe=past 200 in 253ms (next.js: 5ms, application-code: 248ms)
+ GET /events?q=competition 200 in 234ms (next.js: 3ms, application-code: 231ms)
+[?25h
+[ELIFECYCLE] Command failed with exit code 1.

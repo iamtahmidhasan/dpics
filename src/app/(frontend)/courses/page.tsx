@@ -22,21 +22,17 @@ import { Input } from "@/components/ui/input"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { CourseService } from "@/lib/services/course.service"
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site"
+import { websiteMetadata } from "@/lib/seo"
 import { cn } from "cn"
 
-export const metadata: Metadata = {
-  title: { default: "Courses | DPICS Academy", absolute: "Courses | DPICS Academy" },
-  description: "Learn web development, competitive programming, and modern engineering skills.",
-  alternates: { canonical: "/courses" },
-  openGraph: {
-    type: "website",
-    url: "/courses",
-    siteName: SITE_NAME,
-    title: "Courses | DPICS Academy",
-    description: "Learn web development, competitive programming, and modern engineering skills.",
-  },
-}
+const DESCRIPTION = "Learn web development, competitive programming, and modern engineering skills."
+
+export const metadata: Metadata = websiteMetadata({
+  title: "Courses",
+  socialTitle: "Courses | DPICS Academy",
+  description: DESCRIPTION,
+  path: "/courses",
+})
 
 /** Filter chips are links, so the whole page stays server rendered. */
 function FilterLink({

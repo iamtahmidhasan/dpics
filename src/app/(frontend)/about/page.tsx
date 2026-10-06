@@ -4,21 +4,16 @@ import { AboutView } from "@/components/about/about-view"
 import prisma from "@/lib/prisma"
 import { getActiveCommitteeForAbout } from "@/lib/services/committee.service"
 import { EventStatus, PostStatus } from "@/generated/prisma/enums"
-import { SITE_NAME, SITE_URL } from "@/lib/site"
+import { websiteMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = {
-  title: `About Us | ${SITE_NAME}`,
-  description:
-    "Discover the mission, history, technical wings, executive leadership, and student membership of Dhaka Polytechnic Institute Computing Society (DPICS).",
-  alternates: { canonical: `${SITE_URL}/about` },
-  openGraph: {
-    title: `About Us | ${SITE_NAME}`,
-    description:
-      "Discover the mission, history, technical wings, executive leadership, and student membership of Dhaka Polytechnic Institute Computing Society (DPICS).",
-    url: `${SITE_URL}/about`,
-    type: "website",
-  },
-}
+const DESCRIPTION =
+  "Discover the mission, history, technical wings, executive leadership, and student membership of Dhaka Polytechnic Institute Computing Society (DPICS)."
+
+export const metadata: Metadata = websiteMetadata({
+  title: "About Us | DPI Computing Society",
+  description: DESCRIPTION,
+  path: "/about",
+})
 
 export default async function AboutPage() {
   const [membersCount, eventsCount, coursesCount, achievementsCount, committeeData] = await Promise.all([

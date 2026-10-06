@@ -31,7 +31,8 @@ import {
 } from "@/lib/event-labels"
 import { EventStatus, EventType } from "@/generated/prisma/enums"
 import { getPublishedEventBySlug } from "@/lib/services/event.service"
-import { SITE_NAME } from "@/lib/site"
+import { absoluteUrl, NOINDEX, websiteMetadata } from "@/lib/seo"
+import { SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "cn"
 
 type Props = {
@@ -43,22 +44,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const event = await getPublishedEventBySlug(slug)
-    const title = `${event.title} | ${SITE_NAME}`
     const description =
       event.excerpt ||
       `Join ${event.title} organized by DPI Computing Society on ${new Date(event.startDate).toDateString()}.`
 
-    return {
-      title,
+    // websiteMetadata emits an absolute title, canonical and complete
+    // OG/Twitter blocks — no double site name, no root-metadata leakage.
+    return websiteMetadata({
+      title: event.title,
       description,
-      openGraph: {
-        title,
-        description,
-        images: event.coverImage ? [{ url: event.coverImage }] : undefined,
-      },
-    }
+      path: `/events/${slug}`,
+      image: event.coverImage ?? undefined,
+    })
   } catch {
-    return { title: "Event Not Found" }
+    return { title: "Event Not Found", robots: NOINDEX }
   }
 }
 
@@ -110,8 +109,38 @@ export default async function PublicEventDetailPage({ params }: Props) {
         )
       : null
 
+  // Rich-result eligible Event schema: dates, cancelled state, attendance
+  // mode, venue and organizer.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: displayTitle,
+    description: displayExcerpt || undefined,
+    startDate: event.startDate,
+    endDate: event.endDate ?? undefined,
+    eventStatus:
+      event.status === EventStatus.CANCELLED
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
+    eventAttendanceMode:
+      event.eventType === EventType.ONLINE
+        ? "https://schema.org/OnlineEventAttendanceMode"
+        : event.eventType === EventType.HYBRID
+          ? "https://schema.org/MixedEventAttendanceMode"
+          : "https://schema.org/OfflineEventAttendanceMode",
+    image: event.coverImage ?? undefined,
+    url: absoluteUrl(`/events/${slug}`),
+    ...(displayVenue ? { location: { "@type": "Place", name: displayVenue } } : {}),
+    organizer: { "@type": "Organization", name: SITE_NAME, url: SITE_URL.toString() },
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Navigation breadcrumb */}
       <div className="mb-6 flex items-center justify-between">
         <Button

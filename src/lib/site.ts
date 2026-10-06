@@ -18,12 +18,31 @@ function resolveSiteUrl(): URL {
 
 export const SITE_URL = resolveSiteUrl()
 
+// Every canonical, sitemap entry, og:url and JSON-LD url is derived from
+// SITE_URL. Shipping a localhost value would poison all of them silently, so
+// a production build must never fall through to the fallback.
+if (
+  process.env.NODE_ENV === "production" &&
+  (SITE_URL.hostname === "localhost" || SITE_URL.hostname === "127.0.0.1")
+) {
+  console.warn(
+    `[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and ` +
+      `Open Graph tags will point at ${SITE_URL.origin}. Set it to the ` +
+      `public production origin (e.g. https://dpics.org) before building.`
+  )
+}
+
 export const SITE_NAME = "DPI Computing Society"
 
 export const SITE_DESCRIPTION =
   "News, tutorials and write-ups from the DPI Computing Society — a student-led computing community."
 
 export const SITE_LOCALE = "en_US"
+
+/** Default social-share image (1376×768) for pages without a cover of their own. */
+export const DEFAULT_OG_IMAGE = "/hero-tech.jpg"
+export const DEFAULT_OG_IMAGE_WIDTH = 1376
+export const DEFAULT_OG_IMAGE_HEIGHT = 768
 
 /** Canonical path of a single post, always root-relative for `metadataBase`. */
 export function postPath(slug: string): string {

@@ -45,7 +45,8 @@ import { isAdmin as checkAdmin } from "@/lib/roles"
 import { CourseService } from "@/lib/services/course.service"
 import { getSettings } from "@/lib/services/settings.service"
 import { getSession } from "@/lib/session"
-import { SITE_NAME } from "@/lib/site"
+import { absoluteUrl, breadcrumbJsonLd, NOINDEX } from "@/lib/seo"
+import { DEFAULT_OG_IMAGE, DEFAULT_OG_IMAGE_HEIGHT, DEFAULT_OG_IMAGE_WIDTH, SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "cn"
 
 export async function generateMetadata({
@@ -57,20 +58,43 @@ export async function generateMetadata({
   const course = await CourseService.getCourseBySlug(slug)
 
   if (!course) {
-    return { title: "Course Not Found | DPICS Academy" }
+    return { title: "Course Not Found", robots: NOINDEX }
   }
 
   const isBn = lang === "bn"
   const title = (isBn && course.titleBn) ? course.titleBn : course.title
   const excerpt = (isBn && course.excerptBn) ? course.excerptBn : (course.excerpt || `Learn ${course.title} with DPI Computing Society`)
+  const socialTitle = `${title} | DPICS Academy`
+  const url = absoluteUrl(`/courses/${slug}`)
+  const image = course.thumbnail ?? undefined
 
   return {
-    title: `${title} | DPICS Academy`,
+    // `absolute` keeps the root template from appending the site name again.
+    title: { absolute: socialTitle },
     description: excerpt,
+    alternates: { canonical: url },
     openGraph: {
-      title: `${title} | DPICS Academy`,
+      type: "website",
+      siteName: SITE_NAME,
+      title: socialTitle,
       description: excerpt,
-      images: course.thumbnail ? [course.thumbnail] : undefined,
+      url,
+      images: image
+        ? [{ url: image, alt: title }]
+        : [
+            {
+              url: DEFAULT_OG_IMAGE,
+              width: DEFAULT_OG_IMAGE_WIDTH,
+              height: DEFAULT_OG_IMAGE_HEIGHT,
+              alt: socialTitle,
+            },
+          ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: socialTitle,
+      description: excerpt,
+      images: [image ?? DEFAULT_OG_IMAGE],
     },
   }
 }
@@ -233,8 +257,35 @@ export default async function CourseDetailPage({
   const displayExcerpt = (isBn && course.excerptBn) ? course.excerptBn : course.excerpt
   const displayDescription = (isBn && course.descriptionBn) ? course.descriptionBn : (course.description || course.descriptionBn)
 
+  // Rich-result eligible Course schema + breadcrumb trail matching the nav.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: displayTitle,
+    description: displayExcerpt || undefined,
+    url: absoluteUrl(`/courses/${slug}`),
+    image: course.thumbnail ?? undefined,
+    provider: { "@type": "Organization", name: SITE_NAME, url: SITE_URL.toString() },
+    isAccessibleForFree: Boolean(course.isFree),
+  }
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Courses", path: "/courses" },
+    { name: displayTitle },
+  ])
+
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8 space-y-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+
       {/* Academy Navigation Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
         <Link

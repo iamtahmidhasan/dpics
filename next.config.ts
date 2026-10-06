@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
+const CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -24,6 +27,34 @@ const nextConfig: NextConfig = {
         hostname: "ik.imagekit.io",
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        // Hashed build assets are safe to cache forever.
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Root-level static files in /public (favicon, logos, covers, …).
+        source: "/:file(png|jpg|jpeg|webp|svg|ico|avif|txt|xml)",
+        headers: [{ key: "Cache-Control", value: CACHE_CONTROL }],
+      },
+      {
+        source: "/covers/:path*",
+        headers: [{ key: "Cache-Control", value: CACHE_CONTROL }],
+      },
+      {
+        // Baseline hardening for every response (incl. HTML).
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
   },
 };
 

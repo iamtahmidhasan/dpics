@@ -4,10 +4,12 @@ import { redirect } from "next/navigation"
 import { JoinForm } from "@/components/join-form"
 import { isSetupComplete } from "@/lib/roles"
 import { getSession } from "@/lib/session"
+import { NOINDEX } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Join DPI Computing Society",
+  title: "Join",
   description: "Sign in or join DPI Computing Society using Google or GitHub",
+  robots: NOINDEX,
 }
 
 export default async function JoinPage({
