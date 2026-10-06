@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { Home, Calendar, Trophy, BookOpen, User } from "lucide-react"
+import { Home, Calendar, Trophy, BookOpen, User, LayoutDashboard } from "lucide-react"
 
 import { useLanguage } from "@/components/language-provider"
 import { UserDrawer } from "@/components/navigation/user-drawer"
@@ -43,12 +43,19 @@ export function BottomNav() {
     : null
 
   const navItems = [
-    {
-      label: t("Home", "হোম"),
-      href: "/",
-      icon: Home,
-      isActive: pathname === "/",
-    },
+    user
+      ? {
+          label: t("Dashboard", "ড্যাশবোর্ড"),
+          href: "/dashboard",
+          icon: LayoutDashboard,
+          isActive: pathname.startsWith("/dashboard"),
+        }
+      : {
+          label: t("Home", "হোম"),
+          href: "/",
+          icon: Home,
+          isActive: pathname === "/",
+        },
     {
       label: t("Events", "ইভেন্ট"),
       href: "/events",
@@ -113,7 +120,7 @@ export function BottomNav() {
             aria-label={t("Account & Shortcuts", "অ্যাকাউন্ট ও মেনু")}
             className={cn(
               "relative flex flex-1 flex-col items-center justify-center py-1 transition-colors text-muted-foreground hover:text-foreground",
-              (pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || drawerOpen) &&
+              (pathname.startsWith("/profile") || drawerOpen) &&
                 "text-primary font-semibold"
             )}
           >
@@ -122,7 +129,7 @@ export function BottomNav() {
                 <div
                   className={cn(
                     "size-6 rounded-full overflow-hidden border border-border transition-all",
-                    (pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || drawerOpen)
+                    (pathname.startsWith("/profile") || drawerOpen)
                       ? "ring-2 ring-primary ring-offset-1 ring-offset-background"
                       : "ring-1 ring-border"
                   )}
@@ -142,7 +149,7 @@ export function BottomNav() {
                     </span>
                   )}
                 </div>
-                {(pathname.startsWith("/profile") || pathname.startsWith("/dashboard")) && (
+                {(pathname.startsWith("/profile") || drawerOpen) && (
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 size-1 rounded-full bg-primary" />
                 )}
               </div>
@@ -161,7 +168,7 @@ export function BottomNav() {
             )}
 
             <span className="mt-1 text-[10px] leading-none tracking-tight">
-              {user ? t("Account", "অ্যাকাউন্ট") : t("Account", "অ্যাকাউন্ট")}
+              {t("Account", "অ্যাকাউন্ট")}
             </span>
           </button>
         </div>
