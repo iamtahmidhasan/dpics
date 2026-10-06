@@ -10,6 +10,8 @@ import { postPath, SITE_URL } from "@/lib/site"
 const STATIC_PATHS: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/posts", changeFrequency: "daily", priority: 0.9 },
+  { path: "/events", changeFrequency: "daily", priority: 0.9 },
+  { path: "/achievements", changeFrequency: "weekly", priority: 0.8 },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -1,64 +1,14 @@
 'use client'
 
 import { motion, useInView, type Variants } from 'framer-motion'
-import { Calendar, MapPin, Users, ChevronRight } from 'lucide-react'
+import { Calendar, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRef } from 'react'
 
-import { Badge } from '@/components/ui/badge'
+import { EventCard } from '@/components/events/event-card'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card'
-
-const EVENTS = [
-  {
-    id: 1,
-    title: 'Intro to Competitive Programming',
-    date: 'Oct 15, 2026',
-    time: '3:00 PM',
-    location: 'CS Lab – Room 301',
-    seats: 40,
-    enrolled: 38,
-    status: 'upcoming',
-    tag: 'Workshop',
-    tagVariant: 'success' as const,
-    description:
-      'A beginner-friendly session on competitive programming fundamentals, Codeforces setup, and solving your first rated problems.',
-  },
-  {
-    id: 2,
-    title: 'DPI CS Hackathon 2026',
-    date: 'Nov 1–2, 2026',
-    time: 'All Day',
-    location: 'Main Auditorium',
-    seats: 80,
-    enrolled: 60,
-    status: 'upcoming',
-    tag: 'Hackathon',
-    tagVariant: 'warning' as const,
-    description:
-      '24-hour hackathon where teams of 3–5 compete to build innovative solutions to real-world problems.',
-  },
-  {
-    id: 3,
-    title: 'Web Dev Bootcamp – React & Next.js',
-    date: 'Nov 10–11, 2026',
-    time: '10:00 AM',
-    location: 'CS Lab – Room 302',
-    seats: 30,
-    enrolled: 30,
-    status: 'full',
-    tag: 'Bootcamp',
-    tagVariant: 'default' as const,
-    description:
-      'An intensive 2-day weekend bootcamp covering React fundamentals, component design, and building full-stack apps with Next.js.',
-  },
-]
+import { useLanguage } from '@/components/language-provider'
+import type { EventSummary } from '@/lib/services/event.service'
 
 const containerVariants = {
   hidden: {},
@@ -66,17 +16,18 @@ const containerVariants = {
 } satisfies Variants
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
-    x: 0,
+    y: 0,
     transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
   },
 } satisfies Variants
 
-export function EventsSection() {
+export function EventsSection({ events = [] }: { events?: EventSummary[] }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const { t, lang } = useLanguage()
 
   return (
     <section className="bg-background py-24" id="events">
@@ -91,16 +42,19 @@ export function EventsSection() {
         >
           <div>
             <span className="mb-3 inline-block rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-              Upcoming Events
+              {t({ en: "Upcoming Events", bn: "আসন্ন ইভেন্টসমূহ" })}
             </span>
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Don&apos;t miss what&apos;s{' '}
+              {t({ en: "Don't miss what's", bn: "যুক্ত হোন আমাদের" })}{' '}
               <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
-                coming up
+                {t({ en: "coming up", bn: "আগামী আয়োজনে" })}
               </span>
             </h2>
             <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-              Workshops, competitions, and bootcamps to keep you sharp all semester.
+              {t({
+                en: "Workshops, competitions, and bootcamps to keep you sharp all semester.",
+                bn: "ওয়ার্কশপ, প্রোগ্রামিং প্রতিযোগিতা এবং বুটক্যাম্পের মাধ্যমে নিজের দক্ষতা বৃদ্ধি করুন।",
+              })}
             </p>
           </div>
           <Button
@@ -110,70 +64,44 @@ export function EventsSection() {
             render={<Link href="/events" />}
             className="shrink-0 gap-1.5"
           >
-            View All Events
+            {t({ en: "View All Events", bn: "সকল ইভেন্ট দেখুন" })}
             <ChevronRight className="size-4" />
           </Button>
         </motion.div>
 
         {/* Event cards */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={inView ? 'show' : 'hidden'}
-          className="grid gap-4 md:grid-cols-3"
-        >
-          {EVENTS.map((event) => (
-            <motion.div key={event.id} variants={itemVariants}>
-              <Card className="group h-full cursor-pointer border-border/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <Badge variant={event.tagVariant} className="rounded-full px-2.5 py-0.5">
-                      {event.tag}
-                    </Badge>
-                    {event.status === 'full' && (
-                      <Badge variant="destructive" className="rounded-full px-2.5 py-0.5">
-                        Full
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="mt-2 text-base font-semibold leading-snug text-foreground">
-                    {event.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs leading-relaxed">
-                    {event.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2 border-t border-border/40 pt-3">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="size-3.5 shrink-0 text-primary" />
-                    <span>
-                      {event.date} · {event.time}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="size-3.5 shrink-0 text-primary" />
-                    <span>{event.location}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Users className="size-3.5 shrink-0 text-primary" />
-                      <span>
-                        {event.enrolled}/{event.seats} enrolled
-                      </span>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${(event.enrolled / event.seats) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
+        {events.length > 0 ? (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate={inView ? 'show' : 'hidden'}
+            className="grid gap-6 md:grid-cols-3"
+          >
+            {events.map((event) => (
+              <motion.div key={event.id} variants={itemVariants}>
+                <EventCard event={event} lang={lang} />
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 py-16 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
+              <Calendar className="size-6" />
+            </div>
+            <h3 className="text-base font-semibold text-foreground">
+              {t({
+                en: "New events will be announced soon!",
+                bn: "শীঘ্রই নতুন ইভেন্টের ঘোষণা আসছে!",
+              })}
+            </h3>
+            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+              {t({
+                en: "Stay connected with DPI Computing Society for upcoming hackathons and workshops.",
+                bn: "আসন্ন হ্যাকাথন ও কর্মশালার আপডেটের জন্য ডিপিআই কম্পিউটিং সোসাইটির সাথে যুক্ত থাকুন।",
+              })}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   )

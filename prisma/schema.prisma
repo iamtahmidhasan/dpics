@@ -56,6 +56,10 @@ model User {
   // Media uploads
   media Media[]
 
+  // Events
+  events             Event[]
+  eventRegistrations EventRegistration[]
+
   @@unique([email])
   @@map("user")
 }
@@ -352,6 +356,7 @@ model Category {
 
   posts        Post[]
   achievements Achievement[]
+  events       Event[]
 
   @@unique([type, slug])
   @@index([type])
@@ -666,4 +671,122 @@ model Media {
   @@index([createdAt])
   @@map("media")
 }
+
+// ============================================================
+// EVENTS & REGISTRATION
+// ============================================================
+
+enum EventType {
+  IN_PERSON
+  ONLINE
+  HYBRID
+}
+
+enum EventStatus {
+  DRAFT
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum EventRegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  ATTENDED
+  REJECTED
+}
+
+model Event {
+  id                   String      @id @default(cuid())
+  title                String
+  titleBn              String?
+  slug                 String      @unique
+  excerpt              String?
+  excerptBn            String?
+  content              String      @db.Text
+  contentBn            String?     @db.Text
+  coverImage           String?
+  images               String[]    @default([])
+  eventType            EventType   @default(IN_PERSON)
+  status               EventStatus @default(UPCOMING)
+
+  startDate            DateTime
+  endDate              DateTime?
+  registrationDeadline DateTime?
+
+  venue                String?
+  venueBn              String?
+  locationMapUrl       String?
+  onlineJoinUrl        String?
+
+  categoryId           String?
+  category             Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags                 String[]    @default([])
+  isFeatured           Boolean     @default(false)
+
+  // Registration & Capacity
+  isRegistrationOpen   Boolean     @default(true)
+  isFree               Boolean     @default(true)
+  registrationFee      Int         @default(0)
+  maxParticipants      Int?
+
+  // Structured Guest Speakers / Mentors
+  guestSpeakers        Json?
+
+  authorId             String
+  author               User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  registrations        EventRegistration[]
+
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  @@index([status, startDate])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([slug])
+  @@map("event")
+}
+
+model EventRegistration {
+  id            String                  @id @default(cuid())
+  eventId       String
+  event         Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  name          String
+  email         String
+  phone         String
+  studentId     String?
+  department    Department?
+  semester      Semester?
+  shift         Shift?
+  institution   String?
+
+  status        EventRegistrationStatus @default(PENDING)
+  ticketCode    String                  @unique
+
+  paymentMethod PaymentMethod?
+  senderNumber  String?
+  transactionId String?
+  amountPaid    Int                     @default(0)
+
+  notes         String?
+  registeredAt  DateTime                @default(now())
+  confirmedAt   DateTime?
+  confirmedById String?
+
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([eventId, status])
+  @@index([userId])
+  @@index([ticketCode])
+  @@index([email])
+  @@map("event_registration")
+}
+
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, CreditCard, FileText, FolderTree, GraduationCap, Image as ImageIcon, Settings, Shield, Trophy, Users } from "lucide-react"
+import { Award, Calendar, CreditCard, FileText, FolderTree, GraduationCap, Image as ImageIcon, Settings, Shield, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -12,6 +12,11 @@ const NAV_ITEMS = [
     href: "/admin" as const,
     label: { en: "Overview", bn: "ওভারভিউ" },
     icon: Shield,
+  },
+  {
+    href: "/admin/events" as const,
+    label: { en: "Events", bn: "ইভেন্টসমূহ" },
+    icon: Calendar,
   },
   {
     href: "/admin/courses" as const,

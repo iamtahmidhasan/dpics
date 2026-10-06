@@ -7,13 +7,15 @@ import { TestimonialsSection } from '@/components/home/TestimonialsSection'
 import { AchievementsSection } from '@/components/home/AchievementsSection'
 import { PostsSection } from '@/components/home/PostsSection'
 import { listPublishedAchievements } from '@/lib/services/achievement.service'
+import { listPublishedEvents } from '@/lib/services/event.service'
 import { listPublishedPosts } from '@/lib/services/post.service'
 
 export default async function Home() {
-  const [featuredAchievements, latestAchievements, postsData] = await Promise.all([
+  const [featuredAchievements, latestAchievements, postsData, eventsData] = await Promise.all([
     listPublishedAchievements({ isFeatured: true, pageSize: 6 }),
     listPublishedAchievements({ pageSize: 6 }),
     listPublishedPosts({ pageSize: 3 }),
+    listPublishedEvents({ timeframe: "upcoming", pageSize: 3 }),
   ])
 
   return (
@@ -24,7 +26,7 @@ export default async function Home() {
         featured={featuredAchievements.achievements}
         latest={latestAchievements.achievements}
       />
-      <EventsSection />
+      <EventsSection events={eventsData.events} />
       <PostsSection posts={postsData.posts} />
       <TestimonialsSection />
       <JoinSection />

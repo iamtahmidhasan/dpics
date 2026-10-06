@@ -472,10 +472,11 @@ export function DetailsStep({
                 id="instructor-id"
                 label={t("Instructor ID", "শিক্ষক আইডি")}
                 value={instructor.instructorId}
+                disabled
                 onChange={(instructorId) =>
                   setInstructor((current) => ({ ...current, instructorId }))
                 }
-                placeholder={t("e.g. INS0001 (or leave blank to auto-generate)", "যেমন INS0001 (স্বয়ংক্রিয় তৈরির জন্য খালি রাখুন)")}
+                placeholder={t("auto-generate", "স্বয়ংক্রিয় ভাবে তৈরি হবে")}
                 hint={t(
                   "Leave blank to automatically assign the next sequential ID (e.g. INS0001).",
                   "স্বয়ংক্রিয়ভাবে পরবর্তী ক্রমিক আইডি পেতে খালি রাখুন (যেমন INS0001)।"
