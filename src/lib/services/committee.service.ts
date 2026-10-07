@@ -2,6 +2,7 @@ import "server-only"
 
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
+import { EmailService } from "@/lib/services/email.service"
 import { resolveUserImage } from "@/lib/user-image"
 import {
   isRecord,
@@ -440,6 +441,22 @@ export async function assignUserCommitteeRole(
         isActive: input.isActive,
       },
     })
+  }
+
+  // Dispatch committee appointment email
+  if (user.email && record.isActive) {
+    try {
+      await EmailService.sendTemplatedEmail(
+        "COMMITTEE_ROLE_ASSIGNED",
+        { email: user.email, name: user.name, userId: user.id },
+        {
+          committeeName: role.committee?.name || "Executive Committee",
+          roleName: role.name,
+        }
+      )
+    } catch (emailErr) {
+      console.error("[committee.service] Failed to send committee appointment email:", emailErr)
+    }
   }
 
   const { avatar } = resolveUserImage(user.image, user.selactedImg)

@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma"
 import { SELF_ASSIGNABLE_ROLES, type SelfAssignableRole } from "@/lib/roles"
 import { generateNextStudentId } from "@/lib/services/member-id.service"
 import { generateNextInstructorId } from "@/lib/services/instructor-id.service"
+import { EmailService } from "@/lib/services/email.service"
 import {
   getProfile,
   parseProfileInput,
@@ -209,5 +210,27 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
     throw error
   }
 
-  return getProfile(userId)
+  const profile = await getProfile(userId)
+
+  // Dispatch onboarding application received email
+  if (profile.email) {
+    try {
+      const recipient = { email: profile.email, name: profile.name, userId }
+
+      if (input.role === Role.MEMBER) {
+        await EmailService.sendTemplatedEmail("MEMBERSHIP_APPLICATION_SUBMITTED", recipient, {
+          studentId: profile.member?.studentId || "Pending",
+          department: profile.member?.department || "N/A",
+          semester: profile.member?.semester || "N/A",
+          session: profile.member?.session || "N/A",
+        })
+      } else if (input.role === Role.INSTRUCTOR) {
+        await EmailService.sendTemplatedEmail("INSTRUCTOR_APPLICATION_SUBMITTED", recipient)
+      }
+    } catch (emailErr) {
+      console.error("[onboarding.service] Failed to send onboarding email:", emailErr)
+    }
+  }
+
+  return profile
 }

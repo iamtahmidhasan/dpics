@@ -3,6 +3,8 @@ import "server-only"
 import { Prisma } from "@/generated/prisma/client"
 import { PostStatus } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 import { deriveExcerpt, estimateReadingMinutes, stripMarkdown } from "@/lib/markdown"
 import prisma from "@/lib/prisma"
 import { resolveUserImage } from "@/lib/user-image"
@@ -996,6 +998,23 @@ export async function submitPost(id: string, actor: PostActor): Promise<MyPostDe
     },
   })
 
+  // Dispatch post submitted email to author
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: actor.userId },
+      select: { name: true, email: true },
+    })
+    if (user?.email) {
+      await EmailService.sendTemplatedEmail(
+        "POST_SUBMITTED",
+        { email: user.email, name: user.name, userId: actor.userId },
+        { postTitle: existing.title }
+      )
+    }
+  } catch (err) {
+    console.error("[post.service] Failed to send post submitted email:", err)
+  }
+
   return getMyPost(id, actor)
 }
 
@@ -1106,6 +1125,36 @@ export async function updatePostAsAdmin(
     },
   })
 
+  // Dispatch email if status changed
+  if (status !== undefined && status !== existing.status) {
+    try {
+      const post = await prisma.post.findUnique({
+        where: { id },
+        select: {
+          title: true,
+          slug: true,
+          author: { select: { id: true, name: true, email: true } },
+        },
+      })
+      if (post?.author?.email) {
+        const recipient = { email: post.author.email, name: post.author.name, userId: post.author.id }
+        if (status === PostStatus.PUBLISHED) {
+          await EmailService.sendTemplatedEmail("POST_PUBLISHED", recipient, {
+            postTitle: post.title,
+            postUrl: `${SITE_URL.origin}/posts/${post.slug}`,
+          })
+        } else if (status === PostStatus.REJECTED) {
+          await EmailService.sendTemplatedEmail("POST_REJECTED", recipient, {
+            postTitle: post.title,
+            massageForAuthor: massageForAuthor || existing.massageForAuthor || "Changes requested by editorial board.",
+          })
+        }
+      }
+    } catch (emailErr) {
+      console.error("[post.service] Error sending status change email in updatePostAsAdmin:", emailErr)
+    }
+  }
+
   return getPostDetailForAdmin(id)
 }
 
@@ -1137,6 +1186,30 @@ export async function reviewPost(
       },
     })
 
+    // Dispatch approval email to author
+    try {
+      const post = await prisma.post.findUnique({
+        where: { id },
+        select: {
+          title: true,
+          slug: true,
+          author: { select: { id: true, name: true, email: true } },
+        },
+      })
+      if (post?.author?.email) {
+        await EmailService.sendTemplatedEmail(
+          "POST_PUBLISHED",
+          { email: post.author.email, name: post.author.name, userId: post.author.id },
+          {
+            postTitle: post.title,
+            postUrl: `${SITE_URL.origin}/posts/${post.slug}`,
+          }
+        )
+      }
+    } catch (err) {
+      console.error("[post.service] Failed to send post published email:", err)
+    }
+
     return getPostDetailForAdmin(id)
   }
 
@@ -1156,6 +1229,29 @@ export async function reviewPost(
       publishedAt: existing.publishedAt,
     },
   })
+
+  // Dispatch rejection email with feedback to author
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id },
+      select: {
+        title: true,
+        author: { select: { id: true, name: true, email: true } },
+      },
+    })
+    if (post?.author?.email) {
+      await EmailService.sendTemplatedEmail(
+        "POST_REJECTED",
+        { email: post.author.email, name: post.author.name, userId: post.author.id },
+        {
+          postTitle: post.title,
+          massageForAuthor: reason,
+        }
+      )
+    }
+  } catch (err) {
+    console.error("[post.service] Failed to send post rejection email:", err)
+  }
 
   return getPostDetailForAdmin(id)
 }

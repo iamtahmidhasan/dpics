@@ -13,6 +13,8 @@ import {
 } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 import { resolveUserImage } from "@/lib/user-image"
 import {
   isRecord,
@@ -601,6 +603,33 @@ export async function updateAdminUser(
     }
   }
 
+  // Fetch previous state for change detection
+  const previous = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isActive: true,
+      member: {
+        select: {
+          studentId: true,
+          department: true,
+          semester: true,
+          status: true,
+          verificationStatus: true,
+          hasPaidMembershipFee: true,
+        },
+      },
+      instructor: {
+        select: {
+          instructorId: true,
+          status: true,
+        },
+      },
+    },
+  })
+
   try {
     await prisma.$transaction(async (tx) => {
       if (input.user) {
@@ -674,6 +703,113 @@ export async function updateAdminUser(
     }
 
     throw error
+  }
+
+  // Dispatch status emails based on transitions
+  if (previous?.email) {
+    const userEmail = input.user?.email || previous.email
+    const userName = input.user?.name || previous.name
+    const recipient = { email: userEmail, name: userName, userId: id }
+
+    try {
+      // 1. Member Status and Verification changed
+      if (input.member) {
+        const prevVerification = previous.member?.verificationStatus
+        const nextVerification = input.member.verificationStatus
+        const prevMemberStatus = previous.member?.status
+        const nextMemberStatus = input.member.status
+
+        const isBecomingVerifiedOrActive =
+          (nextVerification === VerificationStatus.VERIFIED &&
+            prevVerification !== VerificationStatus.VERIFIED) ||
+          (nextMemberStatus === MembershipStatus.ACTIVE &&
+            prevMemberStatus !== MembershipStatus.ACTIVE)
+
+        if (isBecomingVerifiedOrActive) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_VERIFIED", recipient, {
+            studentId: input.member.studentId || previous.member?.studentId || "N/A",
+            department: input.member.department || previous.member?.department || "N/A",
+            portalUrl: `${SITE_URL.origin}/profile`,
+          })
+        } else if (
+          nextVerification === VerificationStatus.REJECTED &&
+          prevVerification !== VerificationStatus.REJECTED
+        ) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_REJECTED", recipient, {
+            rejectionReason: "Student ID details or verification documents could not be verified.",
+            supportEmail: "info@dpics.org",
+          })
+        } else if (
+          nextMemberStatus === MembershipStatus.SUSPENDED &&
+          prevMemberStatus !== MembershipStatus.SUSPENDED
+        ) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_SUSPENDED", recipient, {
+            suspensionReason: "Administrative policy review.",
+          })
+        } else if (
+          nextMemberStatus === MembershipStatus.CANCELLED &&
+          prevMemberStatus !== MembershipStatus.CANCELLED
+        ) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_SUSPENDED", recipient, {
+            suspensionReason: "Membership has been cancelled by administration.",
+          })
+        } else if (
+          nextMemberStatus === MembershipStatus.EXPIRED &&
+          prevMemberStatus !== MembershipStatus.EXPIRED
+        ) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_EXPIRED", recipient, {
+            studentId: input.member.studentId || previous.member?.studentId || "N/A",
+            renewalUrl: `${SITE_URL.origin}/profile`,
+          })
+        }
+
+        // Fee Payment Confirmation check
+        if (
+          input.member.hasPaidMembershipFee === true &&
+          !previous.member?.hasPaidMembershipFee
+        ) {
+          await EmailService.sendTemplatedEmail("MEMBERSHIP_FEE_CONFIRMED", recipient, {
+            studentId: input.member.studentId || previous.member?.studentId || "N/A",
+            department: input.member.department || previous.member?.department || "N/A",
+            paymentMethod: input.member.paymentMethod || "CASH",
+            transactionId: input.member.transactionId || "N/A",
+          })
+        }
+      }
+
+      // 2. Instructor Status changed
+      if (input.instructor) {
+        const prevInstructorStatus = previous.instructor?.status
+        const nextInstructorStatus = input.instructor.status
+
+        if (
+          nextInstructorStatus === InstructorStatus.ACTIVE &&
+          prevInstructorStatus !== InstructorStatus.ACTIVE
+        ) {
+          await EmailService.sendTemplatedEmail("INSTRUCTOR_APPROVED", recipient, {
+            instructorId: input.instructor.instructorId || previous.instructor?.instructorId || "N/A",
+          })
+        } else if (
+          nextInstructorStatus === InstructorStatus.REJECTED &&
+          prevInstructorStatus !== InstructorStatus.REJECTED
+        ) {
+          await EmailService.sendTemplatedEmail("INSTRUCTOR_REJECTED", recipient, {
+            reason: "Qualifications or teaching requirements could not be confirmed.",
+          })
+        }
+      }
+
+      // 3. User Activation Status changed
+      if (input.user && input.user.isActive !== undefined) {
+        if (previous.isActive && !input.user.isActive) {
+          await EmailService.sendTemplatedEmail("ACCOUNT_DEACTIVATED", recipient)
+        } else if (!previous.isActive && input.user.isActive) {
+          await EmailService.sendTemplatedEmail("ACCOUNT_REACTIVATED", recipient)
+        }
+      }
+    } catch (emailErr) {
+      console.error("[admin-user.service] Error triggering status email:", emailErr)
+    }
   }
 
   return getAdminUserDetail(id)

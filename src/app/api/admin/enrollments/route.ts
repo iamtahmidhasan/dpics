@@ -3,6 +3,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { toErrorResponse } from "@/lib/api-error"
 import { EnrollmentService } from "@/lib/services/enrollment.service"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 import { requireAdminApi } from "@/lib/session"
 import type { EnrollmentStatus, PaymentMethod } from "@/generated/prisma/enums"
 
@@ -66,6 +68,39 @@ export async function POST(request: NextRequest) {
         approvedById: enrollmentStatus === "ACTIVE" ? session.user.id : null,
       },
     })
+
+    // Dispatch enrollment notification email to student
+    try {
+      const [user, course] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        }),
+        prisma.course.findUnique({
+          where: { id: courseId },
+          select: { title: true, slug: true },
+        }),
+      ])
+
+      if (user?.email && course) {
+        const recipient = { email: user.email, name: user.name, userId }
+        if (enrollmentStatus === "ACTIVE") {
+          await EmailService.sendTemplatedEmail("COURSE_ENROLLMENT_ACTIVE", recipient, {
+            courseTitle: course.title,
+            courseUrl: `${SITE_URL.origin}/courses/${course.slug}`,
+          })
+        } else {
+          await EmailService.sendTemplatedEmail("COURSE_ENROLLMENT_SUBMITTED", recipient, {
+            courseTitle: course.title,
+            amountPaid: Number(amountPaid) || 0,
+            paymentMethod: paymentMethod || "CASH",
+            transactionId: "ADMIN-ENTRY",
+          })
+        }
+      }
+    } catch (emailErr) {
+      console.error("[admin.enrollments] Failed to send manual enrollment email:", emailErr)
+    }
 
     return NextResponse.json({ enrollment }, { status: 201 })
   } catch (error) {

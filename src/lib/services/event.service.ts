@@ -11,6 +11,8 @@ import {
   Shift,
 } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 import { deriveExcerpt } from "@/lib/markdown"
 import prisma from "@/lib/prisma"
 import { resolveUserImage } from "@/lib/user-image"
@@ -743,6 +745,9 @@ export async function registerForEvent(
       maxParticipants: true,
       isFree: true,
       registrationFee: true,
+      startDate: true,
+      venue: true,
+      onlineJoinUrl: true,
     },
   })
 
@@ -825,6 +830,42 @@ export async function registerForEvent(
       confirmedAt: initialStatus === EventRegistrationStatus.CONFIRMED ? new Date() : null,
     },
   })
+
+  // Dispatch confirmation or received email
+  if (reg.email) {
+    const recipient = { email: reg.email, name: reg.name, userId: reg.userId }
+    const eventDateStr = event.startDate
+      ? new Date(event.startDate).toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "TBD"
+    const venueStr = event.venue || event.onlineJoinUrl || "DPI Campus"
+    const ticketUrl = `${SITE_URL.origin}/events/tickets/${ticketCode}`
+
+    try {
+      if (initialStatus === EventRegistrationStatus.CONFIRMED) {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_CONFIRMED", recipient, {
+          eventTitle: event.title,
+          ticketCode,
+          eventDate: eventDateStr,
+          venue: venueStr,
+          ticketUrl,
+        })
+      } else {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_RECEIVED", recipient, {
+          eventTitle: event.title,
+          amountPaid: reg.amountPaid,
+          paymentMethod: reg.paymentMethod,
+          transactionId: reg.transactionId,
+        })
+      }
+    } catch (emailErr) {
+      console.error("[event.service] Error sending event registration email:", emailErr)
+    }
+  }
 
   return {
     id: reg.id,
@@ -971,7 +1012,16 @@ export async function updateEventRegistrationStatus(
 ): Promise<EventRegistrationSummary> {
   const current = await prisma.eventRegistration.findUnique({
     where: { id: registrationId },
-    include: { event: { select: { title: true } } },
+    include: {
+      event: {
+        select: {
+          title: true,
+          startDate: true,
+          venue: true,
+          onlineJoinUrl: true,
+        },
+      },
+    },
   })
   if (!current) throw ApiError.notFound("Registration not found")
 
@@ -987,6 +1037,49 @@ export async function updateEventRegistrationStatus(
       confirmedById: isConfirmedOrAttended ? adminId : current.confirmedById,
     },
   })
+
+  // Dispatch registration status email
+  if (updated.email) {
+    try {
+      const recipient = { email: updated.email, name: updated.name, userId: updated.userId }
+      const eventDateStr = current.event.startDate
+        ? new Date(current.event.startDate).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "TBD"
+
+      const venueStr = current.event.venue || current.event.onlineJoinUrl || "DPI Campus"
+      const ticketUrl = `${SITE_URL.origin}/events/tickets/${updated.ticketCode}`
+
+      if (status === EventRegistrationStatus.CONFIRMED) {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_CONFIRMED", recipient, {
+          eventTitle: current.event.title,
+          ticketCode: updated.ticketCode,
+          eventDate: eventDateStr,
+          venue: venueStr,
+          ticketUrl,
+        })
+      } else if (status === EventRegistrationStatus.REJECTED) {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_REJECTED", recipient, {
+          eventTitle: current.event.title,
+          notes: updated.notes || "Event capacity reached or verification incomplete.",
+        })
+      } else if (status === EventRegistrationStatus.CANCELLED) {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_CANCELLED", recipient, {
+          eventTitle: current.event.title,
+        })
+      } else if (status === EventRegistrationStatus.ATTENDED) {
+        await EmailService.sendTemplatedEmail("EVENT_REGISTRATION_ATTENDED", recipient, {
+          eventTitle: current.event.title,
+        })
+      }
+    } catch (err) {
+      console.error("[event.service] Failed to send registration email:", err)
+    }
+  }
 
   return {
     id: updated.id,

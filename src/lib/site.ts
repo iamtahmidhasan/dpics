@@ -28,14 +28,14 @@ if (
   console.warn(
     `[site] NEXT_PUBLIC_SITE_URL is not set — canonical urls, sitemap and ` +
       `Open Graph tags will point at ${SITE_URL.origin}. Set it to the ` +
-      `public production origin (e.g. https://dgpics.org) before building.`
+      `public production origin (e.g. https://dpics.org) before building.`
   )
 }
 
-export const SITE_NAME = "DPI Computing Society"
+export const SITE_NAME = "DPI Computing Society (DPICS)"
 
 export const SITE_DESCRIPTION =
-  "News, tutorials and write-ups from the DPI Computing Society — a student-led computing community."
+  "News, tutorials and write-ups from the DPI Computing Society (DPICS) — a student-led computing community."
 
 export const SITE_LOCALE = "en_US"
 

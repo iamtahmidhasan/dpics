@@ -3,6 +3,8 @@ import "server-only"
 import { Prisma } from "@/generated/prisma/client"
 import { PostStatus } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 import { deriveExcerpt, stripMarkdown } from "@/lib/markdown"
 import prisma from "@/lib/prisma"
 import { resolveUserImage } from "@/lib/user-image"
@@ -637,6 +639,27 @@ export async function updateAchievement(
     },
   })
 
+  // Dispatch email if status changed by admin
+  if (actor.isAdmin && input.status !== undefined && input.status !== current.status && row.author?.email) {
+    try {
+      const recipient = { email: row.author.email, name: row.author.name, userId: row.author.id }
+
+      if (input.status === PostStatus.PUBLISHED) {
+        await EmailService.sendTemplatedEmail("ACHIEVEMENT_PUBLISHED", recipient, {
+          achievementTitle: row.title,
+          achievementUrl: `${SITE_URL.origin}/achievements/${row.slug}`,
+        })
+      } else if (input.status === PostStatus.REJECTED) {
+        await EmailService.sendTemplatedEmail("ACHIEVEMENT_REJECTED", recipient, {
+          achievementTitle: row.title,
+          massageForAuthor: massageForAuthor || current.massageForAuthor || "Documentation could not be verified.",
+        })
+      }
+    } catch (emailErr) {
+      console.error("[achievement.service] Error sending status change email in updateAchievement:", emailErr)
+    }
+  }
+
   return mapDetail(row as AchievementRow)
 }
 
@@ -668,6 +691,19 @@ export async function submitAchievementForReview(
     },
   })
 
+  // Dispatch submission email
+  if (row.author?.email) {
+    try {
+      await EmailService.sendTemplatedEmail(
+        "ACHIEVEMENT_SUBMITTED",
+        { email: row.author.email, name: row.author.name, userId: row.author.id },
+        { achievementTitle: row.title }
+      )
+    } catch (err) {
+      console.error("[achievement.service] Failed to send submission email:", err)
+    }
+  }
+
   return mapDetail(row as AchievementRow)
 }
 
@@ -697,6 +733,27 @@ export async function reviewAchievement(
       author: { select: AUTHOR_SELECT },
     },
   })
+
+  // Dispatch review decision email
+  if (row.author?.email) {
+    try {
+      const recipient = { email: row.author.email, name: row.author.name, userId: row.author.id }
+
+      if (decision === "APPROVE") {
+        await EmailService.sendTemplatedEmail("ACHIEVEMENT_PUBLISHED", recipient, {
+          achievementTitle: row.title,
+          achievementUrl: `${SITE_URL.origin}/achievements/${row.slug}`,
+        })
+      } else {
+        await EmailService.sendTemplatedEmail("ACHIEVEMENT_REJECTED", recipient, {
+          achievementTitle: row.title,
+          massageForAuthor: massageForAuthor || "Documentation or milestone criteria could not be confirmed.",
+        })
+      }
+    } catch (err) {
+      console.error("[achievement.service] Failed to send review decision email:", err)
+    }
+  }
 
   return mapDetail(row as AchievementRow)
 }

@@ -13,32 +13,32 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String
   email         String
-  emailVerified Boolean
+  emailVerified Boolean   @default(true)
   image         String[]
-  selactedImg   String?     @default("0")
-  phone         String?     @unique
-  isActive      Boolean     @default(true)
+  selactedImg   String?   @default("0")
+  phone         String?   @unique
+  isActive      Boolean   @default(true)
   createdAt     DateTime
-  updatedAt     DateTime    @updatedAt
+  updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
   // System roles
-  roles         Role[]      @default([USER])
+  roles         Role[]    @default([USER])
 
   // Profile extensions
   address        String?
   bloodGroup     String?
-  coverImg       String?     @default("1")
+  coverImg       String?  @default("1")
   whatsappNumber String?
   bio            String?
-  skills         String[]    @default([])
+  skills         String[] @default([])
 
   // Optional profiles
-  member        Member?
-  instructor    Instructor?
+  member     Member?
+  instructor Instructor?
 
   // Committee roles
   committeeRoles UserCommitteeRole[]
@@ -116,7 +116,7 @@ model Instructor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonInstructors LessonInstructor[]
 }
 
@@ -326,6 +326,16 @@ model Setting {
   isAutoInstructorIdEnabled Boolean @default(true)
   instructorIdPrefix        String  @default("INS")
 
+  // SMTP / Email Settings
+  smtpHost        String?  @default("smtp.gmail.com")
+  smtpPort        Int?     @default(465)
+  smtpSecure      Boolean? @default(true)
+  smtpUser        String?
+  smtpPass        String?
+  smtpFromEmail   String?
+  smtpFromName    String?  @default("DPI Computing Society")
+  isEmailEnabled  Boolean  @default(true)
+
   updatedAt   DateTime @updatedAt
   updatedById String?
 
@@ -374,9 +384,9 @@ model Category {
 /// there, only an admin can turn PENDING into PUBLISHED or REJECTED, and an
 /// author can no longer edit or delete a post once it has left that queue.
 model Post {
-  id        String  @id @default(cuid())
-  title     String
-  titleBn   String?
+  id      String  @id @default(cuid())
+  title   String
+  titleBn String?
 
   slug      String  @unique
   excerpt   String?
@@ -390,17 +400,17 @@ model Post {
   ogImage    String?
 
   categoryId String?
-  category   Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  tags       String[]      @default([])
-  isFeatured Boolean      @default(false)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags       String[]  @default([])
+  isFeatured Boolean   @default(false)
 
   // ---- workflow (server managed) ----
   status           PostStatus @default(DRAFT)
   massageForAuthor String?
   submittedAt      DateTime?
-  reviewedAt      DateTime?
-  reviewedById    String?
-  publishedAt     DateTime?
+  reviewedAt       DateTime?
+  reviewedById     String?
+  publishedAt      DateTime?
 
   // ---- seo overrides ----
   seoTitle       String?
@@ -410,7 +420,7 @@ model Post {
   readingMinutes Int @default(1)
 
   authorId String
-  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -448,29 +458,29 @@ enum EnrollmentStatus {
 }
 
 model Course {
-  id             String             @id @default(cuid())
-  title          String
-  titleBn        String?
-  slug           String             @unique
-  excerpt        String?
-  excerptBn      String?
-  description    String?            @db.Text
-  descriptionBn  String?            @db.Text
-  thumbnail      String?
-  level          CourseLevel        @default(ALL_LEVELS)
-  isFree         Boolean            @default(true)
-  price          Int                @default(0)
-  discountPrice  Int?
-  isPublished    Boolean            @default(false)
-  featured       Boolean            @default(false)
-  tags           String[]           @default([])
+  id            String      @id @default(cuid())
+  title         String
+  titleBn       String?
+  slug          String      @unique
+  excerpt       String?
+  excerptBn     String?
+  description   String?     @db.Text
+  descriptionBn String?     @db.Text
+  thumbnail     String?
+  level         CourseLevel @default(ALL_LEVELS)
+  isFree        Boolean     @default(true)
+  price         Int         @default(0)
+  discountPrice Int?
+  isPublished   Boolean     @default(false)
+  featured      Boolean     @default(false)
+  tags          String[]    @default([])
 
-  sections       CourseSection[]
-  enrollments    CourseEnrollment[]
+  sections    CourseSection[]
+  enrollments CourseEnrollment[]
 
-  createdById    String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([isPublished, isFree])
   @@index([slug])
@@ -478,34 +488,34 @@ model Course {
 }
 
 model CourseSection {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   courseId      String
-  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course        Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title         String
   titleBn       String?
   description   String?
   descriptionBn String?
-  orderIndex    Int      @default(0)
+  orderIndex    Int     @default(0)
 
-  lessons       Lesson[]
+  lessons Lesson[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([courseId, orderIndex])
   @@map("course_section")
 }
 
 model Lesson {
-  id            String             @id @default(cuid())
+  id            String        @id @default(cuid())
   sectionId     String
-  section       CourseSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  section       CourseSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   title         String
   titleBn       String?
-  description   String?            @db.Text
-  descriptionBn String?            @db.Text
-  orderIndex    Int                @default(0)
-  isPreview     Boolean            @default(false)
+  description   String?       @db.Text
+  descriptionBn String?       @db.Text
+  orderIndex    Int           @default(0)
+  isPreview     Boolean       @default(false)
 
   // Video Content
   videoUrl      String?
@@ -519,11 +529,11 @@ model Lesson {
   resources     Json?
   externalLinks Json?
 
-  instructors   LessonInstructor[]
-  progress      LessonProgress[]
+  instructors LessonInstructor[]
+  progress    LessonProgress[]
 
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sectionId, orderIndex])
   @@map("course_lesson")
@@ -537,7 +547,7 @@ model LessonInstructor {
   instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   role         String?    @default("Instructor")
 
-  createdAt    DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([lessonId, instructorId])
   @@index([lessonId])
@@ -546,11 +556,11 @@ model LessonInstructor {
 }
 
 model CourseEnrollment {
-  id            String           @id @default(cuid())
-  courseId      String
-  course        Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status        EnrollmentStatus @default(PENDING)
   paymentMethod PaymentMethod?
@@ -559,12 +569,12 @@ model CourseEnrollment {
   amountPaid    Int              @default(0)
   adminNote     String?
 
-  enrolledAt    DateTime         @default(now())
-  approvedAt    DateTime?
-  approvedById  String?
+  enrolledAt   DateTime  @default(now())
+  approvedAt   DateTime?
+  approvedById String?
 
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([courseId, userId])
   @@index([courseId, status])
@@ -582,8 +592,8 @@ model LessonProgress {
   completed   Boolean   @default(false)
   completedAt DateTime?
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([lessonId, userId])
   @@index([lessonId])
@@ -596,43 +606,43 @@ model LessonProgress {
 // ============================================================
 
 model Achievement {
-  id               String      @id @default(cuid())
-  title            String
-  titleBn          String?
+  id      String  @id @default(cuid())
+  title   String
+  titleBn String?
 
-  slug             String      @unique
-  excerpt          String?
-  excerptBn        String?
+  slug      String  @unique
+  excerpt   String?
+  excerptBn String?
 
-  content          String      @db.Text
-  contentBn        String?     @db.Text
+  content   String  @db.Text
+  contentBn String? @db.Text
 
-  coverImage       String?
-  images           String[]    @default([])
+  coverImage String?
+  images     String[] @default([])
 
-  eventDate        DateTime?
-  organization     String?
-  organizationBn   String?
-  certificateUrl   String?
+  eventDate      DateTime?
+  organization   String?
+  organizationBn String?
+  certificateUrl String?
 
-  categoryId       String?
-  category         Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  tags             String[]    @default([])
-  isFeatured       Boolean     @default(false)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags       String[]  @default([])
+  isFeatured Boolean   @default(false)
 
   // Workflow (reusing PostStatus for consistent moderation)
-  status           PostStatus  @default(DRAFT)
+  status           PostStatus @default(DRAFT)
   massageForAuthor String?
   submittedAt      DateTime?
   reviewedAt       DateTime?
   reviewedById     String?
   publishedAt      DateTime?
 
-  authorId         String
-  author           User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status, publishedAt])
   @@index([categoryId])
@@ -646,25 +656,25 @@ model Achievement {
 // ============================================================
 
 model Media {
-  id           String   @id @default(cuid())
-  fileId       String   @unique
+  id           String  @id @default(cuid())
+  fileId       String  @unique
   name         String
   url          String
   thumbnailUrl String?
   filePath     String?
-  fileType     String?  @default("image")
+  fileType     String? @default("image")
   mimeType     String?
-  size         Int      @default(0)
+  size         Int     @default(0)
   width        Int?
   height       Int?
   alt          String?
-  folder       String?  @default("general")
+  folder       String? @default("general")
 
   uploadedById String?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([folder])
   @@index([fileType])
@@ -699,49 +709,49 @@ enum EventRegistrationStatus {
 }
 
 model Event {
-  id                   String      @id @default(cuid())
-  title                String
-  titleBn              String?
-  slug                 String      @unique
-  excerpt              String?
-  excerptBn            String?
-  content              String      @db.Text
-  contentBn            String?     @db.Text
-  coverImage           String?
-  images               String[]    @default([])
-  eventType            EventType   @default(IN_PERSON)
-  status               EventStatus @default(UPCOMING)
+  id         String      @id @default(cuid())
+  title      String
+  titleBn    String?
+  slug       String      @unique
+  excerpt    String?
+  excerptBn  String?
+  content    String      @db.Text
+  contentBn  String?     @db.Text
+  coverImage String?
+  images     String[]    @default([])
+  eventType  EventType   @default(IN_PERSON)
+  status     EventStatus @default(UPCOMING)
 
   startDate            DateTime
   endDate              DateTime?
   registrationDeadline DateTime?
 
-  venue                String?
-  venueBn              String?
-  locationMapUrl       String?
-  onlineJoinUrl        String?
+  venue          String?
+  venueBn        String?
+  locationMapUrl String?
+  onlineJoinUrl  String?
 
-  categoryId           String?
-  category             Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  tags                 String[]    @default([])
-  isFeatured           Boolean     @default(false)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags       String[]  @default([])
+  isFeatured Boolean   @default(false)
 
   // Registration & Capacity
-  isRegistrationOpen   Boolean     @default(true)
-  isFree               Boolean     @default(true)
-  registrationFee      Int         @default(0)
-  maxParticipants      Int?
+  isRegistrationOpen Boolean @default(true)
+  isFree             Boolean @default(true)
+  registrationFee    Int     @default(0)
+  maxParticipants    Int?
 
   // Structured Guest Speakers / Mentors
-  guestSpeakers        Json?
+  guestSpeakers Json?
 
-  authorId             String
-  author               User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  registrations        EventRegistration[]
+  registrations EventRegistration[]
 
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status, startDate])
   @@index([categoryId])
@@ -751,36 +761,36 @@ model Event {
 }
 
 model EventRegistration {
-  id            String                  @id @default(cuid())
-  eventId       String
-  event         Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId        String?
-  user          User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id      String  @id @default(cuid())
+  eventId String
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  name          String
-  email         String
-  phone         String
-  studentId     String?
-  department    Department?
-  semester      Semester?
-  shift         Shift?
-  institution   String?
+  name        String
+  email       String
+  phone       String
+  studentId   String?
+  department  Department?
+  semester    Semester?
+  shift       Shift?
+  institution String?
 
-  status        EventRegistrationStatus @default(PENDING)
-  ticketCode    String                  @unique
+  status     EventRegistrationStatus @default(PENDING)
+  ticketCode String                  @unique
 
   paymentMethod PaymentMethod?
   senderNumber  String?
   transactionId String?
-  amountPaid    Int                     @default(0)
+  amountPaid    Int            @default(0)
 
   notes         String?
-  registeredAt  DateTime                @default(now())
+  registeredAt  DateTime  @default(now())
   confirmedAt   DateTime?
   confirmedById String?
 
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime                @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([eventId, status])
   @@index([userId])
@@ -789,4 +799,69 @@ model EventRegistration {
   @@map("event_registration")
 }
 
+// ============================================================
+// EMAIL NOTIFICATIONS & BULK MAILING
+// ============================================================
 
+enum EmailLogStatus {
+  SENT
+  FAILED
+  QUEUED
+}
+
+enum EmailCategory {
+  ENROLLMENT
+  MEMBERSHIP
+  INSTRUCTOR
+  POST
+  ACHIEVEMENT
+  EVENT
+  ACCOUNT
+  BULK
+  SYSTEM
+}
+
+model EmailTemplate {
+  id          String        @id @default(cuid())
+  key         String        @unique
+  name        String
+  category    EmailCategory @default(SYSTEM)
+  description String?
+
+  subject     String
+  bodyHtml    String        @db.Text
+  bodyText    String?       @db.Text
+
+  variables   String[]      @default([])
+  isActive    Boolean       @default(true)
+  isSystem    Boolean       @default(false)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([category])
+  @@index([key])
+  @@map("email_template")
+}
+
+model EmailLog {
+  id           String         @id @default(cuid())
+  to           String
+  recipientName String?
+  userId       String?
+  templateKey  String?
+  subject      String
+  category     EmailCategory  @default(SYSTEM)
+  status       EmailLogStatus @default(SENT)
+  errorMessage String?        @db.Text
+  metadata     Json?
+  sentAt       DateTime?
+
+  createdAt    DateTime       @default(now())
+
+  @@index([to])
+  @@index([templateKey])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_log")
+}

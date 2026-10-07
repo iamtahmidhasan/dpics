@@ -2,6 +2,8 @@ import "server-only"
 
 import prisma from "@/lib/prisma"
 import type { EnrollmentStatus, PaymentMethod } from "@/generated/prisma/enums"
+import { EmailService } from "@/lib/services/email.service"
+import { SITE_URL } from "@/lib/site"
 
 export interface EnrollInput {
   courseId: string
@@ -27,6 +29,7 @@ export class EnrollmentService {
       select: {
         id: true,
         title: true,
+        slug: true,
         isFree: true,
         price: true,
         discountPrice: true,
@@ -91,7 +94,30 @@ export class EnrollmentService {
           amountPaid: 0,
           approvedAt: new Date(),
         },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
       })
+
+      // Dispatch free course enrollment approved email
+      try {
+        if (enrollment.user?.email) {
+          await EmailService.sendTemplatedEmail(
+            "COURSE_ENROLLMENT_ACTIVE",
+            {
+              email: enrollment.user.email,
+              name: enrollment.user.name,
+              userId: enrollment.user.id,
+            },
+            {
+              courseTitle: course.title,
+              courseUrl: `${SITE_URL.origin}/courses/${course.slug}`,
+            }
+          )
+        }
+      } catch (err) {
+        console.error("[EnrollmentService] Failed to send free course enrollment email:", err)
+      }
 
       return {
         success: true,
@@ -140,7 +166,32 @@ export class EnrollmentService {
         amountPaid: payableAmount,
         enrolledAt: new Date(),
       },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
     })
+
+    // Dispatch payment submitted confirmation email
+    try {
+      if (enrollment.user?.email) {
+        await EmailService.sendTemplatedEmail(
+          "COURSE_ENROLLMENT_SUBMITTED",
+          {
+            email: enrollment.user.email,
+            name: enrollment.user.name,
+            userId: enrollment.user.id,
+          },
+          {
+            courseTitle: course.title,
+            amountPaid: payableAmount,
+            paymentMethod,
+            transactionId: transactionId.trim().toUpperCase(),
+          }
+        )
+      }
+    } catch (err) {
+      console.error("[EnrollmentService] Failed to send submission email:", err)
+    }
 
     return {
       success: true,
@@ -247,7 +298,7 @@ export class EnrollmentService {
     adminId: string,
     adminNote?: string
   ) {
-    return prisma.courseEnrollment.update({
+    const updated = await prisma.courseEnrollment.update({
       where: { id: enrollmentId },
       data: {
         status: status as EnrollmentStatus,
@@ -255,7 +306,45 @@ export class EnrollmentService {
         approvedAt: status === "ACTIVE" ? new Date() : null,
         approvedById: status === "ACTIVE" ? adminId : null,
       },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        course: { select: { id: true, title: true, slug: true } },
+      },
     })
+
+    // Dispatch email notification to student
+    if (updated.user?.email) {
+      try {
+        const recipient = {
+          email: updated.user.email,
+          name: updated.user.name,
+          userId: updated.user.id,
+        }
+
+        const courseUrl = `${SITE_URL.origin}/courses/${updated.course.slug}`
+
+        if (status === "ACTIVE") {
+          await EmailService.sendTemplatedEmail("COURSE_ENROLLMENT_ACTIVE", recipient, {
+            courseTitle: updated.course.title,
+            courseUrl,
+          })
+        } else if (status === "REJECTED") {
+          await EmailService.sendTemplatedEmail("COURSE_ENROLLMENT_REJECTED", recipient, {
+            courseTitle: updated.course.title,
+            adminNote: adminNote || "Payment details could not be verified.",
+          })
+        } else if (status === "CANCELLED") {
+          await EmailService.sendTemplatedEmail("COURSE_ENROLLMENT_CANCELLED", recipient, {
+            courseTitle: updated.course.title,
+            reason: adminNote || "Enrollment cancelled by administration.",
+          })
+        }
+      } catch (err) {
+        console.error("[EnrollmentService] Failed to send enrollment status email:", err)
+      }
+    }
+
+    return updated
   }
 
   /**

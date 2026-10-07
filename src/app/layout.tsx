@@ -3,6 +3,7 @@ import { Geist_Mono, Hind_Siliguri, Inter } from "next/font/google";
 
 import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { getLang } from "@/lib/i18n-server";
 import {
   DEFAULT_OG_IMAGE,
@@ -92,6 +93,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <LanguageProvider lang={lang}>{children}</LanguageProvider>
+          <Toaster richColors closeButton position="top-right" />
         </ThemeProvider>
       </body>
     </html>

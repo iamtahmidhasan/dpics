@@ -45,6 +45,8 @@ const REQUIRED_MODELS = [
   "media",
   "event",
   "eventRegistration",
+  "emailTemplate",
+  "emailLog",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {
