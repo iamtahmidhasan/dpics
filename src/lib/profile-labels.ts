@@ -106,6 +106,7 @@ const ROLE_LABELS: Record<Role, LocalizedText> = {
   [Role.MEMBER]: { en: "Member", bn: "সদস্য" },
   [Role.INSTRUCTOR]: { en: "Instructor", bn: "শিক্ষক" },
   [Role.ADMIN]: { en: "Admin", bn: "প্রশাসক" },
+  [Role.SUPER_ADMIN]: { en: "Super Admin", bn: "সুপার অ্যাডমিন" },
 }
 
 export function departmentLabel(t: TFn): (value: Department) => string {

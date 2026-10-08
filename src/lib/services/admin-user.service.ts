@@ -13,6 +13,7 @@ import {
 } from "@/generated/prisma/enums"
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
+import { ActivityAction, ActivityLogService } from "@/lib/services/activity-log.service"
 import { EmailService } from "@/lib/services/email.service"
 import { SITE_URL } from "@/lib/site"
 import { resolveUserImage } from "@/lib/user-image"
@@ -588,28 +589,42 @@ function isUniqueViolation(error: unknown): boolean {
 export async function updateAdminUser(
   id: string,
   input: AdminUserInput,
-  actingAdminId: string
+  actingAdmin: { id: string; name?: string | null; email?: string | null; roles?: Role[] | null } | string
 ): Promise<AdminUserDetail> {
   if (!id) throw ApiError.badRequest("User id is required")
 
-  // An admin must not be able to lock themselves out of the panel.
-  if (id === actingAdminId && input.user) {
-    if (!input.user.roles.includes(Role.ADMIN)) {
-      throw ApiError.badRequest("You cannot remove your own admin access")
+  // Resolve acting admin details
+  let actingUser: { id: string; name?: string | null; email?: string | null; roles: Role[] }
+  if (typeof actingAdmin === "object" && actingAdmin !== null && "id" in actingAdmin) {
+    actingUser = {
+      id: actingAdmin.id,
+      name: actingAdmin.name,
+      email: actingAdmin.email,
+      roles: (actingAdmin.roles as Role[]) || [],
     }
-
-    if (!input.user.isActive) {
-      throw ApiError.badRequest("You cannot deactivate your own account")
+  } else {
+    const dbActor = await prisma.user.findUnique({
+      where: { id: String(actingAdmin) },
+      select: { id: true, name: true, email: true, roles: true },
+    })
+    actingUser = {
+      id: String(actingAdmin),
+      name: dbActor?.name,
+      email: dbActor?.email,
+      roles: (dbActor?.roles as Role[]) || [],
     }
   }
 
-  // Fetch previous state for change detection
+  const isActorSuperAdmin = actingUser.roles.includes(Role.SUPER_ADMIN)
+
+  // Fetch previous state for change detection and security verification
   const previous = await prisma.user.findUnique({
     where: { id },
     select: {
       id: true,
       name: true,
       email: true,
+      roles: true,
       isActive: true,
       member: {
         select: {
@@ -629,6 +644,37 @@ export async function updateAdminUser(
       },
     },
   })
+
+  if (!previous) throw ApiError.notFound("User not found")
+
+  const isTargetSuperAdmin = previous.roles.includes(Role.SUPER_ADMIN)
+
+  // 1. Super Admin Protection: Only a Super Admin can modify a Super Admin user
+  if (isTargetSuperAdmin && !isActorSuperAdmin) {
+    throw ApiError.forbidden("Only a Super Admin can modify or manage another Super Admin")
+  }
+
+  // 2. Super Admin Role Guard: Only Super Admins can assign or revoke the SUPER_ADMIN role
+  if (input.user && !isActorSuperAdmin) {
+    const wasSuperAdmin = previous.roles.includes(Role.SUPER_ADMIN)
+    const willBeSuperAdmin = input.user.roles.includes(Role.SUPER_ADMIN)
+    if (wasSuperAdmin !== willBeSuperAdmin) {
+      throw ApiError.forbidden("Only a Super Admin can assign or remove the Super Admin role")
+    }
+  }
+
+  // 3. Self-protection: An admin must not be able to lock themselves out of the panel.
+  if (id === actingUser.id && input.user) {
+    if (isActorSuperAdmin && !input.user.roles.includes(Role.SUPER_ADMIN)) {
+      throw ApiError.badRequest("You cannot remove your own Super Admin access")
+    }
+    if (!input.user.roles.includes(Role.ADMIN) && !input.user.roles.includes(Role.SUPER_ADMIN)) {
+      throw ApiError.badRequest("You cannot remove your own admin access")
+    }
+    if (!input.user.isActive) {
+      throw ApiError.badRequest("You cannot deactivate your own account")
+    }
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -812,23 +858,68 @@ export async function updateAdminUser(
     }
   }
 
+  // Audit trail logging
+  ActivityLogService.log({
+    actor: actingUser,
+    action: ActivityAction.UPDATE,
+    actionName: "USER_UPDATED",
+    entity: "User",
+    entityId: id,
+    description: `Updated profile, roles, or status for ${previous?.name || id}`,
+    oldData: previous,
+    newData: input,
+  })
+
   return getAdminUserDetail(id)
 }
 
-export async function deleteAdminUser(id: string, actingAdminId: string): Promise<void> {
+export async function deleteAdminUser(
+  id: string,
+  actingAdmin: { id: string; name?: string | null; email?: string | null; roles?: Role[] | null } | string
+): Promise<void> {
   if (!id) throw ApiError.badRequest("User id is required")
-  if (id === actingAdminId) {
+
+  const actingId = typeof actingAdmin === "object" ? actingAdmin?.id : actingAdmin
+  if (id === actingId) {
     throw ApiError.badRequest("You cannot delete your own account")
   }
 
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, name: true, email: true, roles: true },
   })
 
   if (!user) throw ApiError.notFound("User not found")
 
+  // Resolve acting user roles
+  let isActorSuperAdmin = false
+  if (typeof actingAdmin === "object" && actingAdmin?.roles) {
+    isActorSuperAdmin = (actingAdmin.roles as Role[]).includes(Role.SUPER_ADMIN)
+  } else if (actingId) {
+    const actor = await prisma.user.findUnique({
+      where: { id: actingId },
+      select: { roles: true },
+    })
+    isActorSuperAdmin = actor?.roles.includes(Role.SUPER_ADMIN) ?? false
+  }
+
+  // Super Admin protection: Only a Super Admin can delete a Super Admin
+  if (user.roles.includes(Role.SUPER_ADMIN) && !isActorSuperAdmin) {
+    throw ApiError.forbidden("Only a Super Admin can delete another Super Admin account")
+  }
+
   await prisma.user.delete({
     where: { id },
+  })
+
+  // Audit trail logging
+  ActivityLogService.log({
+    actor: typeof actingAdmin === "object" ? actingAdmin : { id: actingId },
+    action: ActivityAction.DELETE,
+    actionName: "USER_DELETED",
+    entity: "User",
+    entityId: id,
+    description: `Deleted account for user ${user.name} (${user.email})`,
+    oldData: user,
   })
 }

@@ -24,6 +24,7 @@ import type {
 type BadgeVariant = VariantProps<typeof badgeVariants>["variant"]
 
 const ROLE_BADGE_VARIANT: Record<Role, BadgeVariant> = {
+  [Role.SUPER_ADMIN]: "default",
   [Role.ADMIN]: "default",
   [Role.MEMBER]: "success",
   [Role.INSTRUCTOR]: "warning",

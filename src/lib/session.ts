@@ -5,17 +5,32 @@ import { redirect } from "next/navigation"
 
 import { auth, type AuthSession } from "@/lib/auth"
 import { ApiError } from "@/lib/api-error"
-import { canCreateAchievements, canWritePosts, isAdmin, isRole, type Role } from "@/lib/roles"
+import {
+  canCreateAchievements,
+  canWritePosts,
+  isAdmin,
+  isRole,
+  isSuperAdmin,
+  type Role,
+} from "@/lib/roles"
 
-export { ADMIN_ROLE, ROLES, getUserRoles, hasRole, isAdmin } from "@/lib/roles"
+export {
+  ADMIN_ROLE,
+  SUPER_ADMIN_ROLE,
+  ROLES,
+  getUserRoles,
+  hasRole,
+  isAdmin,
+  isSuperAdmin,
+} from "@/lib/roles"
+
+export { isRole }
+export type { Role }
 
 /** Read the current session from the request cookies. Null when signed out. */
 export async function getSession(): Promise<AuthSession | null> {
   return auth.api.getSession({ headers: await headers() })
 }
-
-export { isRole }
-export type { Role }
 
 /** Server component guard: signed in users only. */
 export async function requireUser(): Promise<AuthSession> {
@@ -26,11 +41,20 @@ export async function requireUser(): Promise<AuthSession> {
   return session
 }
 
-/** Server component guard: ADMIN role only. */
+/** Server component guard: ADMIN or SUPER_ADMIN role. */
 export async function requireAdmin(): Promise<AuthSession> {
   const session = await requireUser()
 
   if (!isAdmin(session.user)) redirect("/dashboard")
+
+  return session
+}
+
+/** Server component guard: SUPER_ADMIN role only. */
+export async function requireSuperAdmin(): Promise<AuthSession> {
+  const session = await requireUser()
+
+  if (!isSuperAdmin(session.user)) redirect("/admin")
 
   return session
 }
@@ -60,6 +84,17 @@ export async function requireAdminApi(): Promise<AuthSession> {
   if (!session?.user) throw ApiError.unauthorized()
 
   if (!isAdmin(session.user)) throw ApiError.forbidden("Admin access required")
+
+  return session
+}
+
+/** Route handler guard: SUPER_ADMIN role only. */
+export async function requireSuperAdminApi(): Promise<AuthSession> {
+  const session = await getSession()
+
+  if (!session?.user) throw ApiError.unauthorized()
+
+  if (!isSuperAdmin(session.user)) throw ApiError.forbidden("Super Admin access required")
 
   return session
 }
@@ -100,4 +135,3 @@ export async function requireAchievementCreatorApi(): Promise<AuthSession> {
 
   return session
 }
-

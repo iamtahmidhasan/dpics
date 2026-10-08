@@ -60,6 +60,9 @@ model User {
   events             Event[]
   eventRegistrations EventRegistration[]
 
+  // Activity Logs / Audit Trail
+  activityLogs       ActivityLog[]
+
   @@unique([email])
   @@map("user")
 }
@@ -233,6 +236,7 @@ enum Role {
   MEMBER
   INSTRUCTOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum MembershipStatus {
@@ -865,3 +869,53 @@ model EmailLog {
   @@index([createdAt])
   @@map("email_log")
 }
+
+// ============================================================
+// AUDIT TRAIL / ACTIVITY LOGS
+// ============================================================
+
+enum ActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  ROLE_CHANGE
+  VERIFICATION
+  ENROLLMENT
+  LOGIN
+  SETTINGS_CHANGE
+  BULK_ACTION
+  OTHER
+}
+
+model ActivityLog {
+  id           String         @id @default(cuid())
+  userId       String?
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName     String?
+  userEmail    String?
+  userRole     String?
+
+  action       ActivityAction @default(OTHER)
+  actionName   String         // e.g. "USER_UPDATED", "MEMBER_VERIFIED", "COURSE_ENROLLED", "ROLE_ASSIGNED"
+  entity       String         // e.g. "User", "Member", "Course", "Post", "Achievement", "Event", "Setting"
+  entityId     String?
+
+  description  String?        // Human-readable summary
+  oldData      Json?          // Snapshot before mutation
+  newData      Json?          // Snapshot after mutation
+  metadata     Json?          // Extra context (IP, user agent, filters, count, etc.)
+
+  ipAddress    String?
+  userAgent    String?
+
+  createdAt    DateTime       @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([actionName])
+  @@index([createdAt])
+  @@map("activity_log")
+}
+

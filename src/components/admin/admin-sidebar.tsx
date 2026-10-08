@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, Calendar, CreditCard, FileText, FolderTree, GraduationCap, Image as ImageIcon, Mail, Settings, Shield, Trophy, Users } from "lucide-react"
+import { Award, Calendar, CreditCard, FileText, FolderTree, GraduationCap, History, Image as ImageIcon, Mail, Settings, Shield, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -70,9 +70,19 @@ const NAV_ITEMS = [
   },
 ]
 
-export function AdminSidebar() {
+const SUPER_ADMIN_NAV_ITEMS = [
+  {
+    href: "/admin/activity-logs" as const,
+    label: { en: "Activity Logs", bn: "অ্যাক্টিভিটি লগ" },
+    icon: History,
+  },
+]
+
+export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname()
   const { t } = useLanguage()
+
+  const items = isSuperAdmin ? [...NAV_ITEMS, ...SUPER_ADMIN_NAV_ITEMS] : NAV_ITEMS
 
   return (
     <nav
@@ -80,7 +90,7 @@ export function AdminSidebar() {
       className="md:w-52 md:shrink-0"
     >
       <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon: Icon }) => {
           const isActive =
             href === "/admin" ? pathname === href : pathname.startsWith(href)
 

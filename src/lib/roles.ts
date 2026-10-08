@@ -5,6 +5,7 @@ export type { Role }
 export const ROLES = Object.values(Role) as Role[]
 
 export const ADMIN_ROLE = Role.ADMIN
+export const SUPER_ADMIN_ROLE = Role.SUPER_ADMIN
 
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as string[]).includes(value)
@@ -26,13 +27,17 @@ export function hasRole(
   return getUserRoles(user).includes(role)
 }
 
+export function isSuperAdmin(user: { roles?: unknown } | null | undefined): boolean {
+  return hasRole(user, SUPER_ADMIN_ROLE)
+}
+
 export function isAdmin(user: { roles?: unknown } | null | undefined): boolean {
-  return hasRole(user, ADMIN_ROLE)
+  return hasRole(user, ADMIN_ROLE) || hasRole(user, SUPER_ADMIN_ROLE)
 }
 
 /**
- * The roles an account may pick for itself during sign-up. `ADMIN` is absent on
- * purpose: it can only ever be granted by somebody who already holds it.
+ * The roles an account may pick for itself during sign-up. `ADMIN` and `SUPER_ADMIN` are absent on
+ * purpose: they can only ever be granted by somebody who already holds them.
  */
 export const SELF_ASSIGNABLE_ROLES = [Role.MEMBER, Role.INSTRUCTOR] as const
 
@@ -53,10 +58,9 @@ export function isSetupComplete(user: { roles?: unknown } | null | undefined): b
 }
 
 /**
- * Roles allowed to write posts. `ADMIN` is included because admins moderate
- * posts from the admin panel and can publish without going through review.
+ * Roles allowed to write posts.
  */
-export const POST_WRITER_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN] as const
+export const POST_WRITER_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN] as const
 
 export type PostWriterRole = (typeof POST_WRITER_ROLES)[number]
 
@@ -68,9 +72,9 @@ export function canWritePosts(user: { roles?: unknown } | null | undefined): boo
 }
 
 /**
- * Roles allowed to create and submit achievements. Member, Instructor, and Admin.
+ * Roles allowed to create and submit achievements. Member, Instructor, Admin, and Super Admin.
  */
-export const ACHIEVEMENT_CREATOR_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN] as const
+export const ACHIEVEMENT_CREATOR_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN] as const
 
 export type AchievementCreatorRole = (typeof ACHIEVEMENT_CREATOR_ROLES)[number]
 
@@ -80,4 +84,3 @@ export function canCreateAchievements(user: { roles?: unknown } | null | undefin
     (ACHIEVEMENT_CREATOR_ROLES as readonly Role[]).includes(role)
   )
 }
-

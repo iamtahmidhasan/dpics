@@ -9,6 +9,8 @@ import {
 } from "@/lib/services/admin-user.service"
 import { requireAdminApi } from "@/lib/session"
 
+import { getUserRoles } from "@/lib/roles"
+
 export async function GET(_request: NextRequest, context: RouteContext<"/api/admin/users/[id]">) {
   try {
     await requireAdminApi()
@@ -27,7 +29,14 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/ad
     const { id } = await context.params
     const input = parseAdminUserInput(await request.json())
 
-    return NextResponse.json(await updateAdminUser(id, input, session.user.id))
+    const actor = {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      roles: getUserRoles(session.user),
+    }
+
+    return NextResponse.json(await updateAdminUser(id, input, actor))
   } catch (error) {
     return toErrorResponse(error)
   }
@@ -38,7 +47,14 @@ export async function DELETE(_request: NextRequest, context: RouteContext<"/api/
     const session = await requireAdminApi()
     const { id } = await context.params
 
-    await deleteAdminUser(id, session.user.id)
+    const actor = {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+      roles: getUserRoles(session.user),
+    }
+
+    await deleteAdminUser(id, actor)
 
     return NextResponse.json({ success: true })
   } catch (error) {
