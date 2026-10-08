@@ -8,7 +8,7 @@ export interface ActivityLogActor {
   id?: string | null
   name?: string | null
   email?: string | null
-  roles?: string[] | null
+  roles?: string[] | null | string
 }
 
 export interface LogActivityParams {
@@ -47,15 +47,15 @@ export interface ActivityLogSummary {
   entity: string
   entityId: string | null
   description: string | null
-  oldData: Record<string, unknown> | null
-  newData: Record<string, unknown> | null
-  metadata: Record<string, unknown> | null
+  oldData: Record<string, unknown> | unknown | null
+  newData: Record<string, unknown> | unknown | null
+  metadata: Record<string, unknown> | unknown | null
   ipAddress: string | null
   userAgent: string | null
   createdAt: string
 }
 
-// Sensitive fields to strip before logging snapshots
+// Sensitive keys to strip before logging snapshots
 const SENSITIVE_KEYS = new Set([
   "password",
   "hash",
@@ -69,39 +69,92 @@ const SENSITIVE_KEYS = new Set([
   "refresh_token",
   "sessiontoken",
   "verificationtoken",
+  "authorization",
+  "cookie",
 ])
 
-function sanitizeData(data: unknown, depth = 0): unknown {
+/**
+ * Recursively sanitizes payloads for Prisma Json storage:
+ * - Redacts sensitive keys (passwords, tokens, secrets)
+ * - Safely handles circular references via WeakSet
+ * - Converts BigInt, Error, Map, Set, and Date to JSON-safe representations
+ * - Strips functions, symbols, and undefined
+ */
+function sanitizeData(data: unknown, depth = 0, visited = new WeakSet<object>()): unknown {
   if (depth > 6) return "[Truncated: Max Depth]"
   if (data === null || data === undefined) return null
 
+  // Primitive types
+  if (typeof data === "bigint") return data.toString()
+  if (typeof data === "function" || typeof data === "symbol") return undefined
+  if (typeof data !== "object") return data
+
+  // Date objects
   if (data instanceof Date) {
-    return data.toISOString()
+    return isNaN(data.getTime()) ? null : data.toISOString()
   }
+
+  // Error objects
+  if (data instanceof Error) {
+    return {
+      name: data.name,
+      message: data.message,
+      stack: data.stack ? data.stack.split("\n").slice(0, 3).join("\n") : undefined,
+    }
+  }
+
+  // Set / Map
+  if (data instanceof Set) {
+    return Array.from(data).map((item) => sanitizeData(item, depth + 1, visited))
+  }
+  if (data instanceof Map) {
+    const mapObj: Record<string, unknown> = {}
+    for (const [k, v] of data.entries()) {
+      mapObj[String(k)] = sanitizeData(v, depth + 1, visited)
+    }
+    return mapObj
+  }
+
+  // Prevent circular references
+  if (visited.has(data)) {
+    return "[Circular Reference]"
+  }
+  visited.add(data)
 
   if (Array.isArray(data)) {
-    return data.map((item) => sanitizeData(item, depth + 1))
+    return data
+      .map((item) => sanitizeData(item, depth + 1, visited))
+      .filter((item) => item !== undefined)
   }
 
-  if (typeof data === "object") {
-    const cleanObj: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-      const lowerKey = key.toLowerCase()
-      if (SENSITIVE_KEYS.has(lowerKey) || lowerKey.includes("password") || lowerKey.includes("secret")) {
-        cleanObj[key] = "[REDACTED]"
-      } else {
-        cleanObj[key] = sanitizeData(value, depth + 1)
-      }
+  // Plain objects
+  const cleanObj: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    if (value === undefined || typeof value === "function" || typeof value === "symbol") {
+      continue
     }
-    return cleanObj
+
+    const lowerKey = key.toLowerCase()
+    if (
+      SENSITIVE_KEYS.has(lowerKey) ||
+      lowerKey.includes("password") ||
+      lowerKey.includes("secret") ||
+      lowerKey.includes("token")
+    ) {
+      cleanObj[key] = "[REDACTED]"
+    } else {
+      cleanObj[key] = sanitizeData(value, depth + 1, visited)
+    }
   }
 
-  return data
+  return cleanObj
 }
 
 export class ActivityLogService {
   /**
-   * Records an activity log entry asynchronously without blocking or failing the main request.
+   * Records an activity log entry asynchronously and resiliently.
+   * If the actor's userId triggers a foreign-key error (e.g. non-existent user),
+   * it falls back to recording with userId: null so audit trails are never dropped.
    */
   static async log(params: LogActivityParams): Promise<void> {
     try {
@@ -115,24 +168,50 @@ export class ActivityLogService {
         ? params.actor?.roles
         : undefined
 
-      await prisma.activityLog.create({
-        data: {
-          userId: params.actor?.id || null,
-          userName: params.actor?.name || null,
-          userEmail: params.actor?.email || null,
-          userRole: userRoleStr || null,
-          action: params.action,
-          actionName: params.actionName,
-          entity: params.entity,
-          entityId: params.entityId ? String(params.entityId) : null,
-          description: params.description || null,
-          oldData: sanitizedOld,
-          newData: sanitizedNew,
-          metadata: sanitizedMeta,
-          ipAddress: params.ipAddress || null,
-          userAgent: params.userAgent || null,
-        },
-      })
+      const validUserId = params.actor?.id && typeof params.actor.id === "string" && params.actor.id.trim().length > 0
+        ? params.actor.id.trim()
+        : null
+
+      const baseData = {
+        userName: params.actor?.name || null,
+        userEmail: params.actor?.email || null,
+        userRole: userRoleStr || null,
+        action: params.action || ActivityAction.OTHER,
+        actionName: params.actionName || "ACTION",
+        entity: params.entity || "System",
+        entityId: params.entityId ? String(params.entityId).trim() : null,
+        description: params.description || null,
+        oldData: sanitizedOld,
+        newData: sanitizedNew,
+        metadata: sanitizedMeta,
+        ipAddress: params.ipAddress || null,
+        userAgent: params.userAgent || null,
+      }
+
+      try {
+        await prisma.activityLog.create({
+          data: {
+            userId: validUserId,
+            ...baseData,
+          },
+        })
+      } catch (innerError: any) {
+        // Fallback: If foreign key on userId failed (e.g. user does not exist in User table), retry with userId: null
+        if (validUserId && (innerError?.code === "P2003" || String(innerError?.message).includes("Foreign key constraint"))) {
+          await prisma.activityLog.create({
+            data: {
+              userId: null,
+              ...baseData,
+              metadata: {
+                ...((sanitizedMeta as Record<string, unknown>) || {}),
+                _unlinkedUserId: validUserId,
+              },
+            },
+          })
+        } else {
+          throw innerError
+        }
+      }
     } catch (error) {
       console.error("[ActivityLogService.log] Failed to write activity log:", error)
     }
@@ -155,25 +234,38 @@ export class ActivityLogService {
     const where: Prisma.ActivityLogWhereInput = {}
 
     // Action filter
-    if (params.action && params.action !== "ALL") {
-      where.action = params.action
+    if (params.action && params.action !== "ALL" && Object.values(ActivityAction).includes(params.action as ActivityAction)) {
+      where.action = params.action as ActivityAction
     }
 
     // Entity filter
-    if (params.entity && params.entity !== "ALL") {
-      where.entity = params.entity
+    if (params.entity && params.entity !== "ALL" && params.entity.trim()) {
+      where.entity = params.entity.trim()
     }
 
     // Specific actor
-    if (params.userId) {
-      where.userId = params.userId
+    if (params.userId && params.userId !== "ALL" && params.userId.trim()) {
+      where.userId = params.userId.trim()
     }
 
-    // Date range
+    // Date range with safety validation
     if (params.startDate || params.endDate) {
-      where.createdAt = {}
-      if (params.startDate) where.createdAt.gte = new Date(params.startDate)
-      if (params.endDate) where.createdAt.lte = new Date(params.endDate)
+      const dateCondition: Prisma.DateTimeFilter = {}
+      if (params.startDate) {
+        const start = new Date(params.startDate)
+        if (!isNaN(start.getTime())) {
+          dateCondition.gte = start
+        }
+      }
+      if (params.endDate) {
+        const end = new Date(params.endDate)
+        if (!isNaN(end.getTime())) {
+          dateCondition.lte = end
+        }
+      }
+      if (dateCondition.gte || dateCondition.lte) {
+        where.createdAt = dateCondition
+      }
     }
 
     // Text search (actor name, email, actionName, entity, entityId, description)
@@ -199,7 +291,7 @@ export class ActivityLogService {
       }),
     ])
 
-    const totalPages = Math.ceil(total / limit) || 1
+    const totalPages = Math.max(1, Math.ceil(total / limit))
 
     const logs: ActivityLogSummary[] = rows.map((r: {
       id: string
@@ -229,9 +321,9 @@ export class ActivityLogService {
       entity: r.entity,
       entityId: r.entityId,
       description: r.description,
-      oldData: (r.oldData as Record<string, unknown>) || null,
-      newData: (r.newData as Record<string, unknown>) || null,
-      metadata: (r.metadata as Record<string, unknown>) || null,
+      oldData: r.oldData as any,
+      newData: r.newData as any,
+      metadata: r.metadata as any,
       ipAddress: r.ipAddress,
       userAgent: r.userAgent,
       createdAt: r.createdAt.toISOString(),
@@ -256,11 +348,26 @@ export class ActivityLogService {
         distinct: ["entity"],
         orderBy: { entity: "asc" },
       })
+      const found = results.map((r: { entity: string }) => r.entity).filter(Boolean)
+      const standardEntities = [
+        "User",
+        "Member",
+        "MediaTemplate",
+        "MediaTemplateAssignment",
+        "Settings",
+        "Enrollment",
+        "Transaction",
+        "Course",
+        "Event",
+        "Post",
+        "Achievement",
+      ]
+      const combined = Array.from(new Set([...found, ...standardEntities])).sort()
       return {
-        entities: results.map((r: { entity: string }) => r.entity).filter(Boolean),
+        entities: combined,
       }
     } catch {
-      return { entities: [] }
+      return { entities: ["User", "Member", "MediaTemplate", "MediaTemplateAssignment", "Settings"] }
     }
   }
 }

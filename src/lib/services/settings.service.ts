@@ -3,6 +3,7 @@ import "server-only"
 import { Prisma } from "@/generated/prisma/client"
 import { ApiError } from "@/lib/api-error"
 import prisma from "@/lib/prisma"
+import { ActivityAction, ActivityLogService } from "@/lib/services/activity-log.service"
 import {
   MAX_PHONE_LENGTH,
   MAX_REGISTRATION_FEE,
@@ -243,6 +244,11 @@ export async function updateSettings(
     throw ApiError.badRequest("Settings database table is currently unavailable")
   }
 
+  const existing = await prisma.setting.findUnique({
+    where: { id: SETTING_ID },
+    select: settingSelect,
+  })
+
   const row = await prisma.setting.upsert({
     where: { id: SETTING_ID },
     create: {
@@ -256,6 +262,38 @@ export async function updateSettings(
     },
     select: settingSelect,
   })
+
+  // Log activity
+  try {
+    let actorObj = null
+    if (actingAdminId) {
+      const actorUser = await prisma.user.findUnique({
+        where: { id: actingAdminId },
+        select: { id: true, name: true, email: true, roles: true },
+      })
+      if (actorUser) {
+        actorObj = {
+          id: actorUser.id,
+          name: actorUser.name,
+          email: actorUser.email,
+          roles: actorUser.roles,
+        }
+      }
+    }
+
+    await ActivityLogService.log({
+      actor: actorObj || { id: actingAdminId },
+      action: ActivityAction.SETTINGS_CHANGE,
+      actionName: "SETTINGS_UPDATED",
+      entity: "Settings",
+      entityId: SETTING_ID,
+      description: "Updated global platform settings",
+      oldData: existing ? toMap(existing) : null,
+      newData: toMap(row),
+    })
+  } catch {
+    // Non-blocking log
+  }
 
   return toMap(row)
 }

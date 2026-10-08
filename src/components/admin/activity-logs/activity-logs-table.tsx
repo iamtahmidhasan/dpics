@@ -59,6 +59,23 @@ const ACTION_COLORS: Record<string, "default" | "success" | "warning" | "destruc
   OTHER: "muted",
 }
 
+function formatJsonData(data: unknown): string | null {
+  if (data === null || data === undefined) return null
+  if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data)
+      return JSON.stringify(parsed, null, 2)
+    } catch {
+      return data
+    }
+  }
+  try {
+    return JSON.stringify(data, null, 2)
+  } catch {
+    return String(data)
+  }
+}
+
 export function ActivityLogsTable() {
   const { t, lang } = useLanguage()
   const isBn = lang === "bn"
@@ -153,6 +170,10 @@ export function ActivityLogsTable() {
       second: "2-digit",
     })
   }
+
+  const oldDataFormatted = selectedLog ? formatJsonData(selectedLog.oldData) : null
+  const newDataFormatted = selectedLog ? formatJsonData(selectedLog.newData) : null
+  const metadataFormatted = selectedLog ? formatJsonData(selectedLog.metadata) : null
 
   return (
     <div className="space-y-4">
@@ -532,16 +553,11 @@ export function ActivityLogsTable() {
                       <span className="size-2 rounded-full bg-destructive inline-block" />
                       {t("Before (Old State)", "পূর্ববর্তী অবস্থা (Old Data)")}
                     </span>
-                    {Boolean(selectedLog.oldData) && (
+                    {oldDataFormatted && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          copyToClipboard(
-                            JSON.stringify(selectedLog.oldData, null, 2),
-                            "oldData"
-                          )
-                        }
+                        onClick={() => copyToClipboard(oldDataFormatted, "oldData")}
                         className="h-6 px-1.5 text-[10px] gap-1"
                       >
                         {copiedSection === "oldData" ? (
@@ -554,9 +570,7 @@ export function ActivityLogsTable() {
                     )}
                   </div>
                   <pre className="max-h-80 w-full overflow-auto rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
-                    {selectedLog.oldData
-                      ? JSON.stringify(selectedLog.oldData, null, 2)
-                      : t("No previous state recorded", "কোনো পূর্ববর্তী অবস্থা রেকর্ড নেই")}
+                    {oldDataFormatted || t("No previous state recorded", "কোনো পূর্ববর্তী অবস্থা রেকর্ড নেই")}
                   </pre>
                 </div>
 
@@ -567,16 +581,11 @@ export function ActivityLogsTable() {
                       <span className="size-2 rounded-full bg-success inline-block" />
                       {t("After (New State)", "পরবর্তী অবস্থা (New Data)")}
                     </span>
-                    {Boolean(selectedLog.newData) && (
+                    {newDataFormatted && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          copyToClipboard(
-                            JSON.stringify(selectedLog.newData, null, 2),
-                            "newData"
-                          )
-                        }
+                        onClick={() => copyToClipboard(newDataFormatted, "newData")}
                         className="h-6 px-1.5 text-[10px] gap-1"
                       >
                         {copiedSection === "newData" ? (
@@ -589,21 +598,19 @@ export function ActivityLogsTable() {
                     )}
                   </div>
                   <pre className="max-h-80 overflow-auto rounded-lg border border-success/20 bg-success/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
-                    {selectedLog.newData
-                      ? JSON.stringify(selectedLog.newData, null, 2)
-                      : t("No new state recorded", "কোনো নতুন অবস্থা রেকর্ড নেই")}
+                    {newDataFormatted || t("No new state recorded", "কোনো নতুন অবস্থা রেকর্ড নেই")}
                   </pre>
                 </div>
               </div>
 
               {/* Extra Metadata if present */}
-              {Boolean(selectedLog.metadata) && (
+              {metadataFormatted && (
                 <div className="space-y-1.5">
                   <span className="text-xs font-semibold text-muted-foreground">
                     {t("Additional Metadata", "অতিরিক্ত মেটাডেটা")}
                   </span>
                   <pre className="max-h-36 overflow-auto rounded-lg border border-border/60 bg-muted/40 p-3 text-[11px] font-mono text-foreground">
-                    {JSON.stringify(selectedLog.metadata, null, 2)}
+                    {metadataFormatted}
                   </pre>
                 </div>
               )}

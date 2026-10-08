@@ -38,19 +38,16 @@ export async function GET(
     const isDownload = searchParams.get("download") === "1" || searchParams.get("download") === "true"
     const ticketCode = searchParams.get("ticketCode") || undefined
     const eventId = searchParams.get("eventId") || undefined
+    const imageIndexParam = searchParams.get("imageIndex")
+    const imageIndex = imageIndexParam !== null ? parseInt(imageIndexParam, 10) : undefined
 
     const userIsAdmin = isAdmin(session.user)
 
-    // Default to current logged-in user if no specific target is requested
-    if (!targetUserId && !targetMemberId && !isPreview) {
-      targetUserId = session.user.id
-    }
-
     // Security / IDOR Protection:
-    // If not admin and not previewing own data, verify ownership
     if (!userIsAdmin) {
-      if (isPreview) {
-        throw ApiError.forbidden("Preview mode is only accessible to admins")
+      // Default to current user if not specified
+      if (!targetUserId && !targetMemberId) {
+        targetUserId = session.user.id
       }
 
       // Check if target user matches current user
@@ -69,12 +66,15 @@ export async function GET(
       }
     }
 
+    // Determine whether this is a generic mockup preview for the template editor sandbox
+    const isMockEditorPreview = isPreview && !targetUserId && !targetMemberId && userIsAdmin
+
     // Resolve dynamic data
     let resolvedData: Record<string, string> = {}
-    if (isPreview) {
-      // 1. Realistic fallback defaults
-      const defaultMockData: Record<string, string> = {
-        "member.name": session.user.name || "Tahmid Hasan",
+    if (isMockEditorPreview) {
+      // Template Editor Sandbox defaults (only used when designing a blank template without any user context)
+      resolvedData = {
+        "member.name": "Sample Member",
         "member.studentId": "DPI-2024-0012",
         "member.boardRoll": "612450",
         "member.department": "Computer Science and Technology",
@@ -82,49 +82,46 @@ export async function GET(
         "member.session": "2021-2022",
         "member.shift": "1st Shift",
         "member.bloodGroup": "B+",
-        "member.phone": session.user.phone || "+8801712345678",
-        "member.email": session.user.email || "member@dpics.org",
+        "member.phone": "+8801712345678",
+        "member.email": "member@dpics.org",
         "member.photo":
           "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20200%22%20fill%3D%22%23cbd5e1%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ccircle%20cx%3D%22100%22%20cy%3D%2275%22%20r%3D%2235%22%20fill%3D%22%2394a3b8%22%2F%3E%3Cpath%20d%3D%22M40%20170%20C40%20130%2C%2070%20120%2C%20100%20120%20C130%20120%2C%20160%20130%2C%20160%20170%20Z%22%20fill%3D%22%2394a3b8%22%2F%3E%3C%2Fsvg%3E",
-        "member.profileUrl": `https://dpics.org/u/${session.user.id}`,
-        "member.qrCode": `https://dpics.org/u/${session.user.id}`,
+        "member.profileUrl": `https://dpics.org`,
+        "member.qrCode": `https://dpics.org`,
         "member.joinDate": "15 Jan 2024",
         "member.validUntil": "31 Dec 2026",
+        "user.name": "Sample User",
+        "user.email": "user@dpics.org",
+        "user.phone": "+8801712345678",
         "event.title": "DPICS Intra Poly Tech Fest 2026",
-        "event.attendeeName": session.user.name || "Tahmid Hasan",
+        "event.attendeeName": "Sample Attendee",
         "event.ticketCode": "TKT-2026-8941",
         "event.venue": "DPI Campus Auditorium",
         "event.date": "24 Nov 2026",
         "event.qrCode": `https://dpics.org/verify/ticket/TKT-2026-8941`,
         "course.title": "Full-Stack Web Development with Next.js",
+        "course.studentName": "Sample Student",
         "course.instructor": "Engr. Monirul Islam",
+        "certificate.recipientName": "Sample Recipient",
         "certificate.issueDate": "08 Oct 2026",
         "certificate.certificateId": "CERT-DPICS-2026-0812",
         "certificate.qrCode": `https://dpics.org/verify/cert/CERT-DPICS-2026-0812`,
         "achievement.title": "National Skills Competition Champion 2026",
-        "achievement.winnerName": session.user.name || "Tahmid Hasan",
+        "achievement.winnerName": "Sample Winner",
         "dpics.name": "DPI Computing Society",
         "dpics.shortName": "DPICS",
         "dpics.website": "https://dpics.org",
         "dpics.logo": "/DPICS_logo_vector.svg",
       }
-
-      // 2. Fetch the builder/admin's real profile data (including selected avatar from User.image and User.selactedImg)
-      const realAdminData = await resolveTemplateData(template.type, {
-        userId: session.user.id,
-      })
-
-      // 3. Real profile data overrides defaults
-      resolvedData = {
-        ...defaultMockData,
-        ...realAdminData,
-      }
     } else {
+      // Resolve specific target user data
+      const effectiveUserId = targetUserId || (!targetMemberId ? session.user.id : undefined)
       resolvedData = await resolveTemplateData(template.type, {
-        userId: targetUserId || undefined,
+        userId: effectiveUserId,
         memberId: targetMemberId || undefined,
         ticketCode,
         eventId,
+        imageIndex,
       })
     }
 

@@ -2,6 +2,7 @@ import "server-only"
 
 import prisma from "@/lib/prisma"
 import { ApiError } from "@/lib/api-error"
+import { ActivityAction, ActivityLogService } from "@/lib/services/activity-log.service"
 import type { Prisma } from "@/generated/prisma/client"
 import type { MediaTemplateSummary, TemplateDesign, TemplateType } from "@/lib/template-engine/types"
 
@@ -241,7 +242,27 @@ export async function createMediaTemplate({
     },
   })
 
-  return serializeTemplate(created)
+  const serialized = serializeTemplate(created)
+
+  // Audit Log
+  await ActivityLogService.log({
+    actor: created.createdBy ? { id: created.createdBy.id, name: created.createdBy.name, email: created.createdBy.email } : null,
+    action: ActivityAction.CREATE,
+    actionName: "TEMPLATE_CREATED",
+    entity: "MediaTemplate",
+    entityId: created.id,
+    description: `Created template "${created.name}" (${created.type})`,
+    newData: {
+      id: created.id,
+      name: created.name,
+      type: created.type,
+      width: created.width,
+      height: created.height,
+      mediaId: created.mediaId,
+    },
+  })
+
+  return serialized
 }
 
 export async function updateMediaTemplate(
@@ -304,7 +325,33 @@ export async function updateMediaTemplate(
     },
   })
 
-  return serializeTemplate(updated)
+  const serialized = serializeTemplate(updated)
+
+  // Audit Log
+  await ActivityLogService.log({
+    actor: updated.createdBy ? { id: updated.createdBy.id, name: updated.createdBy.name, email: updated.createdBy.email } : null,
+    action: ActivityAction.UPDATE,
+    actionName: "TEMPLATE_UPDATED",
+    entity: "MediaTemplate",
+    entityId: updated.id,
+    description: `Updated template "${updated.name}" (${updated.type})`,
+    oldData: {
+      name: existing.name,
+      type: existing.type,
+      width: existing.width,
+      height: existing.height,
+      isActive: existing.isActive,
+    },
+    newData: {
+      name: updated.name,
+      type: updated.type,
+      width: updated.width,
+      height: updated.height,
+      isActive: updated.isActive,
+    },
+  })
+
+  return serialized
 }
 
 export async function deleteMediaTemplate(id: string): Promise<void> {
@@ -317,5 +364,19 @@ export async function deleteMediaTemplate(id: string): Promise<void> {
 
   await prisma.mediaTemplate.delete({
     where: { id },
+  })
+
+  // Audit Log
+  await ActivityLogService.log({
+    action: ActivityAction.DELETE,
+    actionName: "TEMPLATE_DELETED",
+    entity: "MediaTemplate",
+    entityId: id,
+    description: `Deleted template "${existing.name}"`,
+    oldData: {
+      id: existing.id,
+      name: existing.name,
+      type: existing.type,
+    },
   })
 }

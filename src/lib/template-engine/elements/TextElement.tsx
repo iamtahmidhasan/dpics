@@ -11,10 +11,12 @@ export function RenderTextElement({ element, resolvedData }: Props) {
   let text = element.content || ""
   if (element.field && resolvedData[element.field] !== undefined) {
     text = resolvedData[element.field]
+  } else if (text && text.includes("{")) {
+    text = text.replace(/\{([a-zA-Z0-9_.]+)\}/g, (_, key) => resolvedData[key] !== undefined ? resolvedData[key] : "")
   }
 
   // Handle case where text is empty
-  if (!text) text = " "
+  if (!text || !text.trim()) text = ""
 
   // Determine justify/alignment
   let justifyContent = "flex-start"

@@ -17,11 +17,22 @@ export default async function ProfileTemplatesPage() {
   const rawAssignments = await listUserTemplateAssignments(userId)
   const assignments = JSON.parse(JSON.stringify(rawAssignments))
 
-  // 2. If member, check if default active member card exists and include it if not already in assignments
-  const member = await prisma.member.findUnique({
-    where: { userId },
-    select: { id: true, status: true },
-  })
+  // 2. Fetch user images
+  const [member, userRecord] = await Promise.all([
+    prisma.member.findUnique({
+      where: { userId },
+      select: { id: true, status: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { image: true, selactedImg: true },
+    }),
+  ])
+
+  const userImages = userRecord?.image || []
+  const initialSelectedImageIndex = userRecord?.selactedImg
+    ? parseInt(userRecord.selactedImg, 10) || 0
+    : 0
 
   const assignedTemplateIds = new Set(assignments.map((a: any) => a.templateId))
 
@@ -60,6 +71,8 @@ export default async function ProfileTemplatesPage() {
       initialAssignments={assignments}
       userId={session.user.id}
       userName={session.user.name || "Member"}
+      userImages={userImages}
+      initialSelectedImageIndex={initialSelectedImageIndex}
     />
   )
 }

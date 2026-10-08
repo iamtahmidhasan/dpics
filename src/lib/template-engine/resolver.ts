@@ -14,6 +14,7 @@ export interface ResolveDataContext {
   ticketCode?: string
   courseEnrollmentId?: string
   achievementId?: string
+  imageIndex?: number
   customData?: Record<string, string>
 }
 
@@ -52,13 +53,26 @@ export async function resolveTemplateData(
     })
 
     if (user) {
-      const { avatar } = resolveUserImage(user.image, user.selactedImg)
+      let effectiveSelectedImg = user.selactedImg
+      if (context.imageIndex !== undefined && Number.isInteger(context.imageIndex)) {
+        effectiveSelectedImg = String(context.imageIndex)
+      }
+      const { avatar } = resolveUserImage(user.image, effectiveSelectedImg)
       const member = user.member
 
-      result["member.name"] = user.name || "Member"
+      result["member.name"] = user.name || ""
       result["member.email"] = user.email || ""
       result["member.phone"] = user.phone || ""
-      result["member.bloodGroup"] = user.bloodGroup || "—"
+      result["member.bloodGroup"] = user.bloodGroup || ""
+
+      // Generic user variables
+      result["user.name"] = user.name || ""
+      result["user.email"] = user.email || ""
+      result["user.phone"] = user.phone || ""
+      result["certificate.recipientName"] = user.name || ""
+      result["course.studentName"] = user.name || ""
+      result["event.attendeeName"] = user.name || ""
+      result["achievement.winnerName"] = user.name || ""
 
       let resolvedAvatar = avatar
       if (resolvedAvatar && !resolvedAvatar.startsWith("http") && !resolvedAvatar.startsWith("data:")) {
@@ -74,12 +88,12 @@ export async function resolveTemplateData(
       result["member.qrCode"] = profileUrl
 
       if (member) {
-        result["member.studentId"] = member.studentId || "—"
-        result["member.boardRoll"] = member.boardOrClassRoll || "—"
-        result["member.session"] = member.session || "—"
-        result["member.department"] = departmentLabel(tEn)(member.department)
-        result["member.semester"] = semesterLabel(tEn)(member.semester)
-        result["member.shift"] = shiftLabel(tEn)(member.shift)
+        result["member.studentId"] = member.studentId || ""
+        result["member.boardRoll"] = member.boardOrClassRoll || ""
+        result["member.session"] = member.session || ""
+        result["member.department"] = member.department ? departmentLabel(tEn)(member.department) : ""
+        result["member.semester"] = member.semester ? semesterLabel(tEn)(member.semester) : ""
+        result["member.shift"] = member.shift ? shiftLabel(tEn)(member.shift) : ""
         
         if (member.joinedAt) {
           result["member.joinDate"] = new Intl.DateTimeFormat("en-US", {
@@ -88,7 +102,7 @@ export async function resolveTemplateData(
             year: "numeric",
           }).format(new Date(member.joinedAt))
         } else {
-          result["member.joinDate"] = "—"
+          result["member.joinDate"] = ""
         }
 
         if (member.expiresAt) {
@@ -98,8 +112,17 @@ export async function resolveTemplateData(
             year: "numeric",
           }).format(new Date(member.expiresAt))
         } else {
-          result["member.validUntil"] = "31 Dec 2026"
+          result["member.validUntil"] = ""
         }
+      } else {
+        result["member.studentId"] = ""
+        result["member.boardRoll"] = ""
+        result["member.session"] = ""
+        result["member.department"] = ""
+        result["member.semester"] = ""
+        result["member.shift"] = ""
+        result["member.joinDate"] = ""
+        result["member.validUntil"] = ""
       }
     }
   }

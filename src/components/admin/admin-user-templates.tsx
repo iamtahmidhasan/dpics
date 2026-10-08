@@ -53,6 +53,33 @@ export function AdminUserTemplates({
   const [previewModalImage, setPreviewModalImage] = useState<string | null>(null)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(
+    user.selectedImageIndex ?? 0
+  )
+  const [isUpdatingImage, setIsUpdatingImage] = useState<boolean>(false)
+  const [renderCacheKey, setRenderCacheKey] = useState<number>(Date.now())
+
+  const handleSelectImage = async (index: number) => {
+    setSelectedImageIndex(index)
+    setIsUpdatingImage(true)
+    try {
+      await fetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: {
+            selectedImageIndex: index,
+          },
+        }),
+      })
+      setRenderCacheKey(Date.now())
+    } catch {
+      setRenderCacheKey(Date.now())
+    } finally {
+      setIsUpdatingImage(false)
+    }
+  }
+
   // Filter templates that are not yet assigned
   const assignedIds = new Set(assignments.map((a) => a.templateId))
   const unassignedTemplates = availableTemplates.filter((tpl) => !assignedIds.has(tpl.id))
@@ -126,7 +153,7 @@ export function AdminUserTemplates({
   const handleDownload = async (templateId: string, templateName: string) => {
     setDownloadingId(templateId)
     try {
-      const renderUrl = `/api/media/templates/${templateId}/render?userId=${user.id}&download=1`
+      const renderUrl = `/api/media/templates/${templateId}/render?userId=${user.id}&imageIndex=${selectedImageIndex}&download=1&_t=${renderCacheKey}`
       const res = await fetch(renderUrl)
       if (!res.ok) throw new Error("Failed to render card")
 
@@ -148,6 +175,37 @@ export function AdminUserTemplates({
 
   return (
     <div className="space-y-6">
+      {/* Photo Selector for Cards */}
+      {user.images && user.images.length > 1 && (
+        <div className="p-3.5 rounded-xl border border-border/70 bg-muted/20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-foreground">
+              {t("Active Photo on Cards:", "কার্ডে সক্রিয় ছবি:")}
+            </span>
+            {isUpdatingImage && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+          </div>
+          <div className="flex items-center gap-2">
+            {user.images.map((imgUrl: string, idx: number) => {
+              const isSelected = idx === selectedImageIndex
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectImage(idx)}
+                  className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/40 scale-105"
+                      : "border-border/60 opacity-60 hover:opacity-100"
+                  }`}
+                  title={`Select Photo #${idx + 1}`}
+                >
+                  <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -221,7 +279,7 @@ export function AdminUserTemplates({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assignments.map((assignment) => {
             const tpl = assignment.template
-            const renderUrl = `/api/media/templates/${tpl.id}/render?userId=${user.id}&preview=1`
+            const renderUrl = `/api/media/templates/${tpl.id}/render?userId=${user.id}&imageIndex=${selectedImageIndex}&preview=1&_t=${renderCacheKey}`
 
             return (
               <Card

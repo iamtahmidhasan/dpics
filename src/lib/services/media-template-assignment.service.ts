@@ -16,6 +16,7 @@ import type {
   TemplateAssignmentSummary,
   TemplateDesign,
 } from "@/lib/template-engine/types"
+import { ActivityAction, ActivityLogService } from "@/lib/services/activity-log.service"
 
 function serializeAssignment(item: {
   id: string
@@ -171,8 +172,12 @@ export function buildUserFilterFromCriteria(criteria: BulkAssignCriteria): Prism
     return where
   }
 
-  if (criteria.targetType === "specific_users" && criteria.userIds?.length) {
-    where.id = { in: criteria.userIds }
+  if (criteria.targetType === "specific_users") {
+    if (criteria.userIds && criteria.userIds.length > 0) {
+      where.id = { in: criteria.userIds }
+    } else {
+      where.id = { in: [] }
+    }
     return where
   }
 
@@ -239,36 +244,43 @@ export function buildUserFilterFromCriteria(criteria: BulkAssignCriteria): Prism
  * Count matching users for a given bulk assignment criteria
  */
 export async function countMatchingUsers(criteria: BulkAssignCriteria): Promise<{ count: number; sampleUsers: Array<{ id: string; name: string; email: string; department?: string; studentId?: string }> }> {
-  const where = buildUserFilterFromCriteria(criteria)
+  try {
+    const where = buildUserFilterFromCriteria(criteria)
 
-  const [count, users] = await Promise.all([
-    prisma.user.count({ where }),
-    prisma.user.findMany({
-      where,
-      take: 5,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        member: {
-          select: {
-            department: true,
-            studentId: true,
+    const [count, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          member: {
+            select: {
+              department: true,
+              studentId: true,
+            },
           },
         },
-      },
-    }),
-  ])
+      }),
+    ])
 
-  return {
-    count,
-    sampleUsers: users.map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      department: u.member?.department || undefined,
-      studentId: u.member?.studentId || undefined,
-    })),
+    return {
+      count,
+      sampleUsers: users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        department: u.member?.department || undefined,
+        studentId: u.member?.studentId || undefined,
+      })),
+    }
+  } catch {
+    return {
+      count: 0,
+      sampleUsers: [],
+    }
   }
 }
 
@@ -446,19 +458,42 @@ export async function assignTemplateToUsers({
 
   // Create activity log
   try {
-    await prisma.activityLog.create({
-      data: {
-        userId: assignedById,
-        actionName: "TEMPLATE_ASSIGNED",
-        entity: "MediaTemplate",
-        entityId: templateId,
-        description: `Assigned template "${template.name}" to ${assignedCount} user(s)`,
-        metadata: {
-          templateId,
-          templateName: template.name,
-          assignedCount,
-          userIds: successfulUserIds.slice(0, 50),
-        },
+    let actorObj = null
+    if (assignedById) {
+      const actorUser = await prisma.user.findUnique({
+        where: { id: assignedById },
+        select: { id: true, name: true, email: true, roles: true },
+      })
+      if (actorUser) {
+        actorObj = {
+          id: actorUser.id,
+          name: actorUser.name,
+          email: actorUser.email,
+          roles: actorUser.roles,
+        }
+      }
+    }
+
+    const isBulk = uniqueUserIds.length > 1
+    await ActivityLogService.log({
+      actor: actorObj,
+      action: isBulk ? ActivityAction.BULK_ACTION : ActivityAction.CREATE,
+      actionName: isBulk ? "TEMPLATE_BULK_ASSIGNED" : "TEMPLATE_ASSIGNED",
+      entity: "MediaTemplateAssignment",
+      entityId: templateId,
+      description: `Assigned template "${template.name}" to ${assignedCount} user(s)`,
+      newData: {
+        templateId,
+        templateName: template.name,
+        assignedCount,
+        userIds: successfulUserIds,
+        customData: customData || null,
+      },
+      metadata: {
+        templateId,
+        templateName: template.name,
+        assignedCount,
+        totalTargeted: uniqueUserIds.length,
       },
     })
   } catch {
@@ -529,10 +564,44 @@ export async function unassignTemplateFromUser({
   templateId: string
   userId: string
 }): Promise<void> {
+  const existing = await prisma.mediaTemplateAssignment.findUnique({
+    where: {
+      userId_templateId: {
+        userId,
+        templateId,
+      },
+    },
+    include: {
+      template: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true, email: true } },
+    },
+  })
+
   await prisma.mediaTemplateAssignment.deleteMany({
     where: {
       templateId,
       userId,
     },
   })
+
+  if (existing) {
+    try {
+      await ActivityLogService.log({
+        action: ActivityAction.DELETE,
+        actionName: "TEMPLATE_UNASSIGNED",
+        entity: "MediaTemplateAssignment",
+        entityId: templateId,
+        description: `Unassigned template "${existing.template.name}" from user "${existing.user.name}" (${existing.user.email})`,
+        oldData: {
+          templateId,
+          templateName: existing.template.name,
+          userId: existing.user.id,
+          userName: existing.user.name,
+          userEmail: existing.user.email,
+        },
+      })
+    } catch {
+      // Non-blocking log
+    }
+  }
 }
