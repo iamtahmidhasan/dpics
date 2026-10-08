@@ -44,6 +44,7 @@ const REQUIRED_MODELS = [
   "achievement",
   "media",
   "mediaTemplate",
+  "mediaTemplateAssignment",
   "event",
   "eventRegistration",
   "emailTemplate",

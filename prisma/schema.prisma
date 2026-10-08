@@ -57,7 +57,9 @@ model User {
   media Media[]
 
   // Media Templates
-  mediaTemplates MediaTemplate[]
+  mediaTemplates       MediaTemplate[]
+  templateAssignments  MediaTemplateAssignment[]
+  assignedToOthers     MediaTemplateAssignment[] @relation("AssignedMediaTemplates")
 
   // Events
   events             Event[]
@@ -728,6 +730,8 @@ model MediaTemplate {
   createdById String?
   createdBy   User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  assignments MediaTemplateAssignment[]
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -736,6 +740,29 @@ model MediaTemplate {
   @@index([createdById])
   @@index([isActive])
   @@map("media_template")
+}
+
+model MediaTemplateAssignment {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateId   String
+  template     MediaTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  assignedById String?
+  assignedBy   User?         @relation("AssignedMediaTemplates", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  customData   Json?
+  status       String        @default("ACTIVE")
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, templateId])
+  @@index([userId])
+  @@index([templateId])
+  @@index([status])
+  @@map("media_template_assignment")
 }
 
 // ============================================================

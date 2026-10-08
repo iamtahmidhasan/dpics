@@ -31,10 +31,12 @@ import { AdminUserOverview } from "./admin-user-overview"
 import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
 import { AdminUserAchievements } from "./admin-user-achievements"
 import { AdminUserMedia } from "./admin-user-media"
+import { AdminUserTemplates } from "./admin-user-templates"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 import type { AchievementPage, AdminAchievementSummary } from "@/lib/services/achievement.service"
+import type { MediaTemplateSummary, TemplateAssignmentSummary } from "@/lib/template-engine/types"
 
-const SECTIONS = ["overview", "account", "member", "instructor", "committee", "achievements", "posts", "courses", "media"] as const
+const SECTIONS = ["overview", "account", "member", "instructor", "committee", "achievements", "posts", "courses", "templates", "media"] as const
 
 type Section = (typeof SECTIONS)[number]
 
@@ -44,6 +46,8 @@ export function AdminUserDetailView({
   initialAchievements,
   initialEnrollments = [],
   availableCourses = [],
+  initialTemplateAssignments = [],
+  availableTemplates = [],
   isSelf,
 }: {
   initialUser: AdminUserDetail
@@ -51,6 +55,8 @@ export function AdminUserDetailView({
   initialAchievements?: AchievementPage<AdminAchievementSummary>
   initialEnrollments?: unknown[]
   availableCourses?: unknown[]
+  initialTemplateAssignments?: TemplateAssignmentSummary[]
+  availableTemplates?: MediaTemplateSummary[]
   isSelf: boolean
 }) {
   const { t } = useLanguage()
@@ -74,6 +80,7 @@ export function AdminUserDetailView({
     achievements: { en: "Achievements", bn: "অর্জনসমূহ" },
     posts: { en: "Posts", bn: "পোস্ট" },
     courses: { en: "Enrolled Courses", bn: "কোর্সসমূহ" },
+    templates: { en: "Cards & Templates", bn: "কার্ড ও টেমপ্লেট" },
     media: { en: "Media & Documents", bn: "মিডিয়া ও ডকুমেন্টস" },
   }
 
@@ -290,6 +297,14 @@ export function AdminUserDetailView({
           userName={user.name || user.email}
           initialEnrollments={initialEnrollments}
           availableCourses={availableCourses}
+        />
+      ) : null}
+
+      {section === "templates" ? (
+        <AdminUserTemplates
+          user={user}
+          initialAssignments={initialTemplateAssignments}
+          availableTemplates={availableTemplates}
         />
       ) : null}
 

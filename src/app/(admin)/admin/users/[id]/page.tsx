@@ -8,6 +8,8 @@ import { getAdminUserDetail } from "@/lib/services/admin-user.service"
 import { EnrollmentService } from "@/lib/services/enrollment.service"
 import { listPostsForAdmin } from "@/lib/services/post.service"
 import { listAchievementsForAdmin } from "@/lib/services/achievement.service"
+import { listUserTemplateAssignments } from "@/lib/services/media-template-assignment.service"
+import { listMediaTemplates } from "@/lib/services/media-template.service"
 import { requireAdmin } from "@/lib/session"
 
 export const metadata: Metadata = {
@@ -23,8 +25,18 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
   let achievements
   let enrollments
   let courses
+  let templateAssignments
+  let availableTemplates
   try {
-    const [fetchedUser, fetchedPosts, fetchedAchievements, fetchedEnrollments, availableCourses] = await Promise.all([
+    const [
+      fetchedUser,
+      fetchedPosts,
+      fetchedAchievements,
+      fetchedEnrollments,
+      availableCourses,
+      fetchedAssignments,
+      fetchedTemplates,
+    ] = await Promise.all([
       getAdminUserDetail(id),
       listPostsForAdmin({ authorId: id }),
       listAchievementsForAdmin({ authorId: id }),
@@ -40,12 +52,16 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
         },
         orderBy: { title: "asc" },
       }),
+      listUserTemplateAssignments(id),
+      listMediaTemplates({ isActiveOnly: true }),
     ])
     user = fetchedUser
     posts = fetchedPosts
     achievements = fetchedAchievements
     enrollments = JSON.parse(JSON.stringify(fetchedEnrollments))
     courses = JSON.parse(JSON.stringify(availableCourses))
+    templateAssignments = JSON.parse(JSON.stringify(fetchedAssignments))
+    availableTemplates = JSON.parse(JSON.stringify(fetchedTemplates))
   } catch (error) {
     // A missing user is a 404 page; anything else is a real failure.
     if (error instanceof ApiError && error.status === 404) notFound()
@@ -60,6 +76,8 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
       initialAchievements={achievements}
       initialEnrollments={enrollments}
       availableCourses={courses}
+      initialTemplateAssignments={templateAssignments}
+      availableTemplates={availableTemplates}
       isSelf={user.id === session.user.id}
     />
   )

@@ -128,4 +128,46 @@ export interface MediaTemplateSummary {
   } | null
   createdAt: string
   updatedAt: string
+  assignmentCount?: number
+}
+
+export interface TemplateAssignmentSummary {
+  id: string
+  userId: string
+  templateId: string
+  template: MediaTemplateSummary
+  user?: {
+    id: string
+    name: string
+    email: string
+    phone?: string | null
+    image?: string[]
+    roles?: string[]
+    member?: {
+      studentId?: string | null
+      department?: string | null
+      session?: string | null
+      shift?: string | null
+      semester?: string | null
+    } | null
+  } | null
+  assignedById?: string | null
+  assignedBy?: {
+    id: string
+    name: string
+  } | null
+  customData?: Record<string, unknown> | null
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BulkAssignCriteria {
+  targetType: "all_users" | "all_members" | "by_filter" | "specific_users"
+  roles?: string[]
+  departments?: string[]
+  sessions?: string[]
+  shifts?: string[]
+  semesters?: string[]
+  userIds?: string[]
 }

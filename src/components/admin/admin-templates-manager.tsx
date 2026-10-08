@@ -13,10 +13,12 @@ import {
   Search,
   Sparkles,
   Trash2,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { BulkAssignTemplateModal } from "./bulk-assign-template-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -85,6 +87,10 @@ export function AdminTemplatesManager({
 
   // Preview Modal state
   const [previewTemplate, setPreviewTemplate] = useState<MediaTemplateSummary | null>(null)
+
+  // Bulk Assign Modal state
+  const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState(false)
+  const [bulkAssignTemplateId, setBulkAssignTemplateId] = useState<string | null>(null)
 
   // Delete State
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -184,14 +190,29 @@ export function AdminTemplatesManager({
           </Select>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => setIsCreateOpen(true)}
-          className="gap-1.5 text-xs font-semibold"
-        >
-          <Plus className="size-4" />
-          <span>Create Template</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setBulkAssignTemplateId(null)
+              setBulkAssignModalOpen(true)
+            }}
+            className="gap-1.5 text-xs font-semibold"
+          >
+            <Users className="size-4 text-primary" />
+            <span>Bulk Assign</span>
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => setIsCreateOpen(true)}
+            className="gap-1.5 text-xs font-semibold"
+          >
+            <Plus className="size-4" />
+            <span>Create Template</span>
+          </Button>
+        </div>
       </div>
 
       {/* Templates Grid */}
@@ -231,6 +252,14 @@ export function AdminTemplatesManager({
                     loading="lazy"
                   />
 
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
+                    {template.assignmentCount !== undefined && template.assignmentCount > 0 && (
+                      <Badge variant="default" className="text-[10px] bg-primary/90 backdrop-blur-md">
+                        {template.assignmentCount} assigned
+                      </Badge>
+                    )}
+                  </div>
+
                   <div className="absolute top-2.5 right-2.5">
                     <Badge variant="secondary" className="text-[10px] backdrop-blur-md bg-background/80">
                       {TYPE_LABELS[template.type] || template.type}
@@ -262,6 +291,20 @@ export function AdminTemplatesManager({
                       title="Live Server Preview"
                     >
                       <Eye className="size-3.5 text-muted-foreground" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setBulkAssignTemplateId(template.id)
+                        setBulkAssignModalOpen(true)
+                      }}
+                      className="h-7 text-xs gap-1"
+                      title="Assign to Users"
+                    >
+                      <Users className="size-3 text-primary" />
+                      <span>Assign</span>
                     </Button>
 
                     <Link href={`/admin/templates/${template.id}/edit`}>
@@ -396,6 +439,15 @@ export function AdminTemplatesManager({
           template={previewTemplate}
         />
       )}
+
+      {/* Bulk Assign Modal */}
+      <BulkAssignTemplateModal
+        open={bulkAssignModalOpen}
+        onOpenChange={setBulkAssignModalOpen}
+        templates={templates}
+        selectedTemplateId={bulkAssignTemplateId}
+        onSuccess={() => router.refresh()}
+      />
     </div>
   )
 }

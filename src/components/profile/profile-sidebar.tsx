@@ -1,6 +1,6 @@
 "use client"
 
-import { Award, BadgeCheck, FileText, GraduationCap, PenSquare, UserCog, Wrench } from "lucide-react"
+import { Award, BadgeCheck, FileBadge, FileText, GraduationCap, IdCard, PenSquare, UserCog, Wrench } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -20,6 +20,12 @@ const NAV_ITEMS: {
     href: "/profile",
     label: { en: "General", bn: "সাধারণ" },
     icon: UserCog,
+    roles: null,
+  },
+  {
+    href: "/profile/templates",
+    label: { en: "Cards & Certificates", bn: "কার্ড ও সনদ" },
+    icon: IdCard,
     roles: null,
   },
   {

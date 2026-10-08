@@ -29,6 +29,9 @@ function serializeTemplate(item: {
     name: string
     email: string
   } | null
+  _count?: {
+    assignments: number
+  } | null
   createdAt: Date
   updatedAt: Date
 }): MediaTemplateSummary {
@@ -71,6 +74,7 @@ function serializeTemplate(item: {
       : null,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
+    assignmentCount: item._count?.assignments ?? 0,
   }
 }
 
@@ -107,6 +111,9 @@ export async function listMediaTemplates({
     where: andConditions.length > 0 ? { AND: andConditions } : undefined,
     orderBy: { updatedAt: "desc" },
     include: {
+      _count: {
+        select: { assignments: true },
+      },
       media: {
         select: {
           id: true,
