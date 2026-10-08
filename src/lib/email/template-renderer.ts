@@ -27,7 +27,7 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
   }
 
   const origin = SITE_URL.origin
-  const logoUrl = `${origin}/dpicslogo.png`
+  const logoUrl = `${origin}/DPICS_logo_vector.svg`
   const year = new Date().getFullYear()
 
   return `<!DOCTYPE html>
@@ -75,9 +75,10 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
     .header-logo {
       display: inline-block;
       vertical-align: middle;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      height: 38px;
+      max-height: 38px;
+      width: auto;
+      max-width: 140px;
     }
     .header-title {
       display: inline-block;
@@ -147,8 +148,8 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <img src="${logoUrl}" alt="DPICS Logo" class="header-logo" width="36" height="36" style="display:inline-block;" />
-                <div style="display:inline-block; vertical-align:middle; margin-left:10px;">
+                <img src="${logoUrl}" alt="DPICS Logo" class="header-logo" height="38" style="display:inline-block; vertical-align:middle; height:38px; width:auto; max-width:140px;" />
+                <div style="display:inline-block; vertical-align:middle; margin-left:12px;">
                   <span class="header-title">${SITE_NAME}</span>
                   <span class="header-tagline">Dhaka Polytechnic Institute</span>
                 </div>

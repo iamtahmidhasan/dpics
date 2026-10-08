@@ -38,7 +38,7 @@ const SITE = {
     en: 'Learn, build, and grow together',
     bn: 'শিখুন, তৈরি করুন, একসাথে এগিয়ে যান',
   } satisfies LocalizedText,
-  logo: '/dpicslogo.png',
+  logo: '/DPICS_logo_vector.svg',
 }
 
 const BANNER = {
@@ -394,17 +394,17 @@ export function Header() {
             <Image
               src={SITE.logo}
               alt={SITE.title}
-              width={32}
-              height={32}
-              className="size-8 rounded-lg"
+              width={64}
+              height={64}
+              className="h-8 w-auto max-w-30 object-contain"
             />
-            <span className="flex flex-col leading-tight">
+            {/* <span className="flex flex-col leading-tight">
               <span className="text-sm hidden sm:block">{SITE.title}</span>
               <span className="text-sm sm:hidden">DPICS</span>
               <span className="text-[10px] font-normal text-muted-foreground">
                 {t(SITE.tagline)}
               </span>
-            </span>
+            </span> */}
           </Link>
 
           <DesktopNav items={NAV_ITEMS} hidden={isHidden} />
@@ -499,7 +499,7 @@ export function Header() {
                     alt={SITE.title}
                     width={28}
                     height={28}
-                    className="size-7 rounded-lg"
+                    className="h-7 w-auto max-w-10 object-contain"
                   />
                   <div>
                     <SheetTitle className="text-base font-bold text-sidebar-foreground">

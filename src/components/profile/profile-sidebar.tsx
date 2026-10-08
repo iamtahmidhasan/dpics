@@ -70,7 +70,7 @@ export function ProfileSidebar({ roles }: { roles: RoleType[] }) {
 
   return (
     <nav aria-label={t("Profile navigation", "প্রোফাইল নেভিগেশন")} className="md:w-52 md:shrink-0">
-      <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+      <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible md:sticky md:top-20">
         {items.map(({ href, label, icon: Icon }) => {
           const isActive = href === "/profile" ? pathname === href : pathname.startsWith(href)
 

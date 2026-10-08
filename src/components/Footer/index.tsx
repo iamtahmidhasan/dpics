@@ -18,7 +18,7 @@ const BRAND = {
     en: "A student-led computing community where we learn, build, and grow together through workshops, events, and collaboration.",
     bn: "একটি শিক্ষার্থী-পরিচালিত কম্পিউটিং কমিউনিটি, যেখানে ওয়ার্কশপ, ইভেন্ট ও সহযোগিতার মাধ্যমে আমরা শিখি, তৈরি করি এবং একসাথে এগিয়ে যাই।",
   } satisfies LocalizedText,
-  logo: "/dpicslogo.png",
+  logo: "/DPICS_logo_vector.svg",
 }
 
 type FooterLink = {
@@ -94,13 +94,6 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-              <Image
-                src={BRAND.logo}
-                alt={BRAND.title}
-                width={32}
-                height={32}
-                className="size-8 rounded-lg"
-              />
               <span className="flex flex-col leading-tight">
                 <span className="text-base">{BRAND.title}</span>
                 <span className="text-[10px] font-normal text-muted-foreground">

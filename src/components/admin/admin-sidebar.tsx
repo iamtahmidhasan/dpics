@@ -89,7 +89,7 @@ export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
       aria-label={t("Admin navigation", "অ্যাডমিন নেভিগেশন")}
       className="md:w-52 md:shrink-0"
     >
-      <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+      <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible md:sticky md:top-20">
         {items.map(({ href, label, icon: Icon }) => {
           const isActive =
             href === "/admin" ? pathname === href : pathname.startsWith(href)

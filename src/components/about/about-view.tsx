@@ -45,7 +45,7 @@ export function AboutView({ stats, committee }: AboutViewProps) {
       id: "leader-1",
       name: "Engr. Advisor Panel",
       role: t("Chief Faculty Advisor", "প্রধান শিক্ষক উপদেষ্টা"),
-      avatar: "/dpicslogo.png",
+      avatar: "/DPICS_logo_vector.svg",
       initials: "FA",
     },
     {

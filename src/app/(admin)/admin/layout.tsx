@@ -29,13 +29,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <header className="sticky top-0 z-40 border-b border-border bg-background">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
           <div className="flex items-center gap-3">
-            <Image
-              src="/dpicslogo.png"
-              alt={t("DPI Computing Society", "ডিপিআই কম্পিউটিং সোসাইটি")}
-              width={28}
-              height={28}
-              className="size-7 rounded-lg"
-            />
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-bold tracking-tight">
                 {t("Admin Panel", "অ্যাডমিন প্যানেল")}

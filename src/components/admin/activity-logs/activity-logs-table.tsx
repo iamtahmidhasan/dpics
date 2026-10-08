@@ -553,7 +553,7 @@ export function ActivityLogsTable() {
                       </Button>
                     )}
                   </div>
-                  <pre className="max-h-60 overflow-auto rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
+                  <pre className="max-h-80 w-full overflow-auto rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
                     {selectedLog.oldData
                       ? JSON.stringify(selectedLog.oldData, null, 2)
                       : t("No previous state recorded", "কোনো পূর্ববর্তী অবস্থা রেকর্ড নেই")}
@@ -588,7 +588,7 @@ export function ActivityLogsTable() {
                       </Button>
                     )}
                   </div>
-                  <pre className="max-h-60 overflow-auto rounded-lg border border-success/20 bg-success/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
+                  <pre className="max-h-80 overflow-auto rounded-lg border border-success/20 bg-success/5 p-3 text-[11px] font-mono text-foreground leading-relaxed">
                     {selectedLog.newData
                       ? JSON.stringify(selectedLog.newData, null, 2)
                       : t("No new state recorded", "কোনো নতুন অবস্থা রেকর্ড নেই")}

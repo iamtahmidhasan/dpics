@@ -13,9 +13,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#ffffff",
     icons: [
       {
-        src: "/dpicslogo.png",
-        sizes: "640x640",
-        type: "image/png",
+        src: "/DPICS_logo_vector.svg",
+        sizes: "any",
+        type: "image/svg+xml",
       },
     ],
   }
