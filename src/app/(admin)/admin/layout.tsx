@@ -4,6 +4,8 @@ import Link from "next/link"
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { SignOutButton } from "@/components/admin/sign-out-button"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 import { requireAdmin } from "@/lib/session"
@@ -43,6 +45,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <span className="hidden max-w-40 truncate text-xs text-muted-foreground sm:inline">
               {user.name || user.email}
             </span>
+            <ThemeSwitcher className="size-8" />
+            {/* <LanguageSwitcher /> */}
             <Link
               href="/"
               className="rounded-md border border-border px-2 py-1 text-xs/relaxed transition-colors hover:bg-muted"

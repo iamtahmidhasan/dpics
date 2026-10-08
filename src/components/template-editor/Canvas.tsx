@@ -1,7 +1,7 @@
 "use client"
 
 import * as fabric from "fabric"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   createFabricObjectFromElement,
   exportCanvasToDesign,
@@ -12,6 +12,9 @@ import type { TemplateDesign } from "@/lib/template-engine/types"
 interface CanvasProps {
   design: TemplateDesign
   zoom: number
+  onZoomChange?: (newZoom: number) => void
+  toolMode?: "select" | "hand"
+  onToolModeChange?: (mode: "select" | "hand") => void
   showGrid: boolean
   snapToGrid: boolean
   sampleData?: Record<string, string>
@@ -24,6 +27,9 @@ interface CanvasProps {
 export function Canvas({
   design,
   zoom,
+  onZoomChange,
+  toolMode = "select",
+  onToolModeChange,
   showGrid,
   snapToGrid,
   sampleData,
@@ -40,6 +46,10 @@ export function Canvas({
   // Keep refs for callback handlers to prevent stale closures without re-subscribing
   const designRef = useRef(design)
   designRef.current = design
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+  const onZoomChangeRef = useRef(onZoomChange)
+  onZoomChangeRef.current = onZoomChange
   const sampleDataRef = useRef(sampleData)
   sampleDataRef.current = sampleData
   const onDesignChangeRef = useRef(onDesignChange)
@@ -51,6 +61,18 @@ export function Canvas({
   const onImageDimensionsDetectedRef = useRef(onImageDimensionsDetected)
   onImageDimensionsDetectedRef.current = onImageDimensionsDetected
 
+  // Tool mode, pan offset and shortcut refs
+  const toolModeRef = useRef(toolMode)
+  toolModeRef.current = toolMode
+  const onToolModeChangeRef = useRef(onToolModeChange)
+  onToolModeChangeRef.current = onToolModeChange
+  const isSpacePressedRef = useRef(false)
+
+  // 2D Pan Offset state
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const panOffsetRef = useRef({ x: 0, y: 0 })
+  panOffsetRef.current = panOffset
+
   // 1. Initialize Fabric Canvas once on mount
   useEffect(() => {
     if (!canvasElRef.current || isInitializedRef.current) return
@@ -61,7 +83,7 @@ export function Canvas({
       height: design.height,
       backgroundColor: design.backgroundColor || "#ffffff",
       preserveObjectStacking: true,
-      selection: true,
+      selection: toolModeRef.current !== "hand",
     })
 
     fabricRef.current = canvas
@@ -179,7 +201,25 @@ export function Canvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 2. React to canvas width/height changes dynamically
+  // 2. React to toolMode changes (Hand vs Select)
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+
+    const isHand = toolMode === "hand"
+    canvas.selection = !isHand
+    canvas.defaultCursor = isHand ? "grab" : "default"
+    canvas.hoverCursor = isHand ? "grab" : "move"
+
+    if (isHand) {
+      canvas.discardActiveObject()
+      canvas.requestRenderAll()
+    } else {
+      canvas.calcOffset()
+    }
+  }, [toolMode])
+
+  // 3. React to canvas width/height changes dynamically
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
@@ -209,7 +249,7 @@ export function Canvas({
     canvas.requestRenderAll()
   }, [design.width, design.height])
 
-  // 3. React to background media URL changes
+  // 4. React to background media URL changes
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas || !isInitializedRef.current) return
@@ -273,7 +313,7 @@ export function Canvas({
       })
   }, [design.backgroundMediaUrl, design.width, design.height])
 
-  // 4. React to background color changes
+  // 5. React to background color changes
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
@@ -281,10 +321,167 @@ export function Canvas({
     canvas.requestRenderAll()
   }, [design.backgroundColor])
 
+  // 6. Desktop Mouse Wheel Zoom, Spacebar Shortcuts & Hand Pan Tool (Direct Translation)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    let isPanning = false
+    let startX = 0
+    let startY = 0
+    let initialPanX = 0
+    let initialPanY = 0
+
+    const isHandActive = () =>
+      toolModeRef.current === "hand" || isSpacePressedRef.current
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!onZoomChangeRef.current) return
+      e.preventDefault()
+
+      const step = e.ctrlKey ? 0.02 : 0.05
+      const delta = e.deltaY < 0 ? step : -step
+      const currentZoom = zoomRef.current
+      const nextZoom = Math.min(Math.max(0.15, Math.round((currentZoom + delta) * 100) / 100), 3.0)
+      onZoomChangeRef.current(nextZoom)
+    }
+
+    const startPan = (clientX: number, clientY: number) => {
+      isPanning = true
+      startX = clientX
+      startY = clientY
+      initialPanX = panOffsetRef.current.x
+      initialPanY = panOffsetRef.current.y
+      container.style.cursor = "grabbing"
+      if (fabricRef.current) {
+        fabricRef.current.defaultCursor = "grabbing"
+      }
+    }
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Pan on: Hand tool active OR Middle click (button 1) OR Alt+LeftClick OR Spacebar+LeftClick
+      if (
+        isHandActive() ||
+        e.button === 1 ||
+        (e.button === 0 && (e.altKey || isSpacePressedRef.current))
+      ) {
+        startPan(e.clientX, e.clientY)
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isPanning) return
+      e.preventDefault()
+      const dx = e.clientX - startX
+      const dy = e.clientY - startY
+      const nextPan = { x: initialPanX + dx, y: initialPanY + dy }
+      panOffsetRef.current = nextPan
+      setPanOffset(nextPan)
+    }
+
+    const handleMouseUp = () => {
+      if (isPanning) {
+        isPanning = false
+        const cursor = isHandActive() ? "grab" : "default"
+        container.style.cursor = cursor
+        if (fabricRef.current) {
+          fabricRef.current.defaultCursor = cursor
+          fabricRef.current.calcOffset()
+        }
+      }
+    }
+
+    // Touch support for Hand tool / Panning on mobile
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isHandActive() && e.touches.length === 1) {
+        const touch = e.touches[0]
+        startPan(touch.clientX, touch.clientY)
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isPanning || e.touches.length !== 1) return
+      const touch = e.touches[0]
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      const nextPan = { x: initialPanX + dx, y: initialPanY + dy }
+      panOffsetRef.current = nextPan
+      setPanOffset(nextPan)
+    }
+
+    const handleTouchEnd = () => {
+      isPanning = false
+      if (fabricRef.current) {
+        fabricRef.current.calcOffset()
+      }
+    }
+
+    // Keyboard shortcuts (Space to pan, H for hand tool, V for select tool)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement?.tagName || "").toLowerCase()
+      if (activeTag === "input" || activeTag === "textarea" || (document.activeElement as HTMLElement)?.isContentEditable) {
+        return
+      }
+
+      if (e.code === "Space" && !e.repeat) {
+        isSpacePressedRef.current = true
+        container.style.cursor = "grab"
+        if (fabricRef.current) {
+          fabricRef.current.defaultCursor = "grab"
+        }
+        e.preventDefault()
+      } else if ((e.key === "h" || e.key === "H") && onToolModeChangeRef.current) {
+        onToolModeChangeRef.current("hand")
+      } else if ((e.key === "v" || e.key === "V") && onToolModeChangeRef.current) {
+        onToolModeChangeRef.current("select")
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        isSpacePressedRef.current = false
+        const cursor = toolModeRef.current === "hand" ? "grab" : "default"
+        container.style.cursor = cursor
+        if (fabricRef.current) {
+          fabricRef.current.defaultCursor = cursor
+          fabricRef.current.calcOffset()
+        }
+      }
+    }
+
+    container.addEventListener("wheel", handleWheel, { passive: false })
+    container.addEventListener("mousedown", handleMouseDown, { capture: true })
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+    container.addEventListener("touchstart", handleTouchStart, { passive: true })
+    window.addEventListener("touchmove", handleTouchMove, { passive: true })
+    window.addEventListener("touchend", handleTouchEnd)
+    window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("keyup", handleKeyUp)
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel)
+      container.removeEventListener("mousedown", handleMouseDown, { capture: true })
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+      container.removeEventListener("touchstart", handleTouchStart)
+      window.removeEventListener("touchmove", handleTouchMove)
+      window.removeEventListener("touchend", handleTouchEnd)
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keyup", handleKeyUp)
+    }
+  }, [])
+
+  const isHand = toolMode === "hand"
+
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-1 items-center justify-center overflow-auto bg-muted/40 p-12 select-none min-h-0"
+      className={`relative flex flex-1 items-center justify-center overflow-hidden bg-muted/40 p-4 sm:p-8 select-none min-h-0 w-full h-full ${
+        isHand ? "cursor-grab" : ""
+      }`}
       style={{
         backgroundImage: showGrid
           ? "radial-gradient(circle, var(--border) 1px, transparent 1px)"
@@ -293,24 +490,28 @@ export function Canvas({
       }}
     >
       <div
+        className="relative flex items-center justify-center m-auto shrink-0"
         style={{
-          width: `${design.width * zoom}px`,
-          height: `${design.height * zoom}px`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          width: `${Math.round(design.width * zoom)}px`,
+          height: `${Math.round(design.height * zoom)}px`,
+          transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0)`,
+          willChange: "transform",
         }}
       >
         <div
-          className="relative transition-transform duration-75 ease-out shadow-2xl rounded-sm overflow-hidden bg-background border border-border/80 shrink-0"
+          className="relative shadow-2xl rounded-sm overflow-hidden bg-background border border-border/80 shrink-0 origin-center"
           style={{
             width: `${design.width}px`,
             height: `${design.height}px`,
             transform: `scale(${zoom})`,
-            transformOrigin: "center center",
           }}
         >
           <canvas ref={canvasElRef} />
+
+          {/* Invisible event shield when Hand tool is active to prevent Fabric objects from blocking pan gestures */}
+          {isHand && (
+            <div className="absolute inset-0 z-50 cursor-grab active:cursor-grabbing" />
+          )}
         </div>
       </div>
     </div>

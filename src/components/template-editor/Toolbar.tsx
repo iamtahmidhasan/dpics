@@ -2,12 +2,15 @@
 
 import {
   ArrowLeft,
-  Check,
   Eye,
   Grid,
+  Hand,
   Loader2,
   Magnet,
   Maximize2,
+  MousePointer2,
+  PanelRight,
+  PanelRightClose,
   Redo2,
   Save,
   Undo2,
@@ -25,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 import type { TemplateType } from "@/lib/template-engine/types"
 
 interface ToolbarProps {
@@ -32,6 +36,8 @@ interface ToolbarProps {
   onNameChange: (val: string) => void
   type: TemplateType
   onTypeChange: (val: TemplateType) => void
+  toolMode?: "select" | "hand"
+  onToolModeChange?: (mode: "select" | "hand") => void
   width: number
   height: number
   zoom: number
@@ -49,6 +55,8 @@ interface ToolbarProps {
   onSave: () => void
   isSaving: boolean
   hasUnsavedChanges: boolean
+  isPropertiesOpen?: boolean
+  onToggleProperties?: () => void
 }
 
 const TEMPLATE_TYPES: { value: TemplateType; label: string }[] = [
@@ -67,6 +75,8 @@ export function Toolbar({
   onNameChange,
   type,
   onTypeChange,
+  toolMode = "select",
+  onToolModeChange,
   width,
   height,
   zoom,
@@ -84,29 +94,31 @@ export function Toolbar({
   onSave,
   isSaving,
   hasUnsavedChanges,
+  isPropertiesOpen,
+  onToggleProperties,
 }: ToolbarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-background px-4">
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-background px-2.5 sm:px-4 gap-1.5 sm:gap-2">
       {/* Left section: Back & Template metadata */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
         <Link
           href="/admin/templates"
-          className="flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="Back to Templates"
         >
           <ArrowLeft className="size-4" />
         </Link>
 
-        <div className="flex items-center gap-2">
-          <Input
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Template Name"
-            className="h-8 w-44 text-sm font-semibold tracking-tight md:w-56"
-          />
+        <Input
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          placeholder="Template Name"
+          className="h-8 w-24 xs:w-32 sm:w-44 md:w-52 text-xs sm:text-sm font-semibold tracking-tight shrink-0"
+        />
 
+        <div className="hidden sm:block">
           <Select value={type} onValueChange={(val) => onTypeChange((val as TemplateType) || "MEMBER_CARD")}>
-            <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectTrigger className="h-8 w-32 md:w-40 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -117,27 +129,52 @@ export function Toolbar({
               ))}
             </SelectContent>
           </Select>
-
-          <div className="hidden lg:flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] font-mono text-muted-foreground bg-muted/30">
-            <span>{width}</span>
-            <span>×</span>
-            <span>{height}px</span>
-          </div>
-
-          {hasUnsavedChanges ? (
-            <Badge variant="warning" className="text-[10px] hidden sm:inline-flex">
-              Unsaved
-            </Badge>
-          ) : (
-            <Badge variant="muted" className="text-[10px] hidden sm:inline-flex">
-              Saved
-            </Badge>
-          )}
         </div>
+
+        <div className="hidden xl:flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] font-mono text-muted-foreground bg-muted/30 shrink-0">
+          <span>{width}</span>
+          <span>×</span>
+          <span>{height}px</span>
+        </div>
+
+        {hasUnsavedChanges ? (
+          <Badge variant="warning" className="text-[10px] hidden md:inline-flex shrink-0">
+            Unsaved
+          </Badge>
+        ) : (
+          <Badge variant="muted" className="text-[10px] hidden md:inline-flex shrink-0">
+            Saved
+          </Badge>
+        )}
       </div>
 
-      {/* Center section: Canvas tools */}
-      <div className="flex items-center gap-1">
+      {/* Center section: Tool mode, Undo/Redo & Zoom controls */}
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        {onToolModeChange && (
+          <div className="flex items-center rounded-md border border-border bg-muted/40 p-0.5">
+            <Button
+              variant={toolMode === "select" ? "secondary" : "ghost"}
+              size="icon-xs"
+              onClick={() => onToolModeChange("select")}
+              title="Select tool (V)"
+              className="h-6 w-6"
+            >
+              <MousePointer2 className="size-3.5" />
+            </Button>
+            <Button
+              variant={toolMode === "hand" ? "secondary" : "ghost"}
+              size="icon-xs"
+              onClick={() => onToolModeChange("hand")}
+              title="Hand tool - pan canvas (H or hold Spacebar)"
+              className="h-6 w-6"
+            >
+              <Hand className="size-3.5" />
+            </Button>
+          </div>
+        )}
+
+        <div className="mx-0.5 h-4 w-px bg-border" />
+
         <Button
           variant="ghost"
           size="icon-xs"
@@ -157,13 +194,14 @@ export function Toolbar({
           <Redo2 className="size-3.5" />
         </Button>
 
-        <div className="mx-1 h-4 w-px bg-border" />
+        <div className="hidden lg:block mx-1 h-4 w-px bg-border" />
 
         <Button
           variant={showGrid ? "secondary" : "ghost"}
           size="icon-xs"
           onClick={onToggleGrid}
           title="Toggle Grid"
+          className="hidden lg:inline-flex"
         >
           <Grid className="size-3.5" />
         </Button>
@@ -173,37 +211,41 @@ export function Toolbar({
           size="icon-xs"
           onClick={onToggleSnap}
           title="Snap to Grid"
+          className="hidden lg:inline-flex"
         >
           <Magnet className="size-3.5" />
         </Button>
 
-        <div className="mx-1 h-4 w-px bg-border" />
+        <div className="hidden sm:block mx-1 h-4 w-px bg-border" />
 
         {/* Zoom controls */}
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => onZoomChange(Math.max(0.15, zoom - 0.1))}
-          title="Zoom Out"
-        >
-          <ZoomOut className="size-3.5" />
-        </Button>
-        <button
-          type="button"
-          onClick={onFitZoom}
-          className="w-14 text-center text-xs text-muted-foreground font-mono hover:text-foreground"
-          title="Click to Fit Screen"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => onZoomChange(Math.min(2.5, zoom + 0.1))}
-          title="Zoom In"
-        >
-          <ZoomIn className="size-3.5" />
-        </Button>
+        <div className="hidden sm:flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => onZoomChange(Math.max(0.15, zoom - 0.1))}
+            title="Zoom Out"
+          >
+            <ZoomOut className="size-3.5" />
+          </Button>
+          <button
+            type="button"
+            onClick={onFitZoom}
+            className="w-12 text-center text-xs text-muted-foreground font-mono hover:text-foreground"
+            title="Click to Fit Screen"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => onZoomChange(Math.min(3.0, zoom + 0.1))}
+            title="Zoom In"
+          >
+            <ZoomIn className="size-3.5" />
+          </Button>
+        </div>
+
         <Button
           variant="ghost"
           size="icon-xs"
@@ -215,22 +257,37 @@ export function Toolbar({
       </div>
 
       {/* Right section: Preview & Save */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onOpenPreview} className="gap-1.5 text-xs">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <ThemeSwitcher className="size-8" />
+
+        <Button variant="outline" size="sm" onClick={onOpenPreview} className="gap-1 sm:gap-1.5 text-xs h-8 px-2 sm:px-3">
           <Eye className="size-3.5" />
-          <span>Preview</span>
+          <span className="hidden sm:inline">Preview</span>
         </Button>
 
         <Button
           size="sm"
           onClick={onSave}
           disabled={isSaving}
-          className="gap-1.5 text-xs font-semibold"
+          className="gap-1 sm:gap-1.5 text-xs font-semibold h-8 px-2.5 sm:px-3"
         >
           {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          <span>{isSaving ? "Saving..." : "Save Template"}</span>
+          <span className="hidden xs:inline">{isSaving ? "Saving..." : "Save"}</span>
         </Button>
+
+        {onToggleProperties && (
+          <Button
+            variant={isPropertiesOpen ? "secondary" : "outline"}
+            size="icon-xs"
+            onClick={onToggleProperties}
+            title={isPropertiesOpen ? "Hide Properties" : "Show Properties"}
+            className="hidden sm:inline-flex lg:hidden shrink-0 size-8"
+          >
+            {isPropertiesOpen ? <PanelRightClose className="size-4" /> : <PanelRight className="size-4" />}
+          </Button>
+        )}
       </div>
     </header>
   )
 }
+

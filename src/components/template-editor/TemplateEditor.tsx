@@ -4,11 +4,12 @@ import * as fabric from "fabric"
 import { useState, useRef, useEffect, useCallback } from "react"
 import {
   Boxes,
-  ChevronLeft,
-  ChevronRight,
   Database,
+  Hand,
   Layers,
-  Sparkles,
+  Maximize2,
+  SlidersHorizontal,
+  X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -37,6 +38,7 @@ interface TemplateEditorProps {
 }
 
 type SidebarTab = "fields" | "elements" | "layers"
+type MobileSheetTab = "fields" | "elements" | "layers" | "properties" | null
 
 export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorProps) {
   const router = useRouter()
@@ -56,6 +58,8 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
   // Editor states
   const [activeTab, setActiveTab] = useState<SidebarTab>("fields")
   const [isDrawerOpen, setIsDrawerOpen] = useState(true)
+  const [toolMode, setToolMode] = useState<"select" | "hand">("select")
+  const [mobileSheetTab, setMobileSheetTab] = useState<MobileSheetTab>(null)
   const [selectedObject, setSelectedObject] = useState<FabricCustomObject | null>(null)
   const [canvasObjects, setCanvasObjects] = useState<FabricCustomObject[]>([])
   const [zoom, setZoom] = useState(0.8)
@@ -75,8 +79,11 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
   // Auto-fit zoom calculation based on available viewport space
   const handleFitZoom = useCallback(() => {
     if (!canvasAreaRef.current) return
-    const containerW = canvasAreaRef.current.clientWidth - 64
-    const containerH = canvasAreaRef.current.clientHeight - 64
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768
+    const padX = isMobile ? 24 : 48
+    const padY = isMobile ? 80 : 48
+    const containerW = canvasAreaRef.current.clientWidth - padX
+    const containerH = canvasAreaRef.current.clientHeight - padY
     if (containerW <= 0 || containerH <= 0) return
 
     const scaleW = containerW / (canvasWidth || 1080)
@@ -87,7 +94,7 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
 
   // Fit zoom on initial load and resize
   useEffect(() => {
-    const timer = setTimeout(handleFitZoom, 50)
+    const timer = setTimeout(handleFitZoom, 100)
     window.addEventListener("resize", handleFitZoom)
     return () => {
       clearTimeout(timer)
@@ -571,8 +578,82 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
     }
   }
 
+  const renderDrawerContent = () => (
+    <>
+      {activeTab === "fields" && (
+        <FieldsPanel
+          type={type}
+          sampleData={sampleData}
+          onInsertField={handleInsertField}
+        />
+      )}
+      {activeTab === "elements" && (
+        <ElementsPanel
+          onAddText={handleAddText}
+          onAddShape={handleAddShape}
+          onAddImage={handleAddImage}
+          onAddQRCode={handleAddQRCode}
+        />
+      )}
+      {activeTab === "layers" && (
+        <LayersPanel
+          objects={canvasObjects}
+          selectedObject={selectedObject}
+          onSelectObject={(obj) => {
+            if (fabricCanvasRef.current) {
+              fabricCanvasRef.current.setActiveObject(obj)
+              fabricCanvasRef.current.renderAll()
+              setSelectedObject(obj)
+            }
+          }}
+          onToggleVisibility={(obj) => {
+            obj.set("visible", !obj.visible)
+            fabricCanvasRef.current?.renderAll()
+            setCanvasObjects([...canvasObjects])
+          }}
+          onToggleLock={(obj) => {
+            const locked = !obj.lockMovementX
+            obj.set({
+              lockMovementX: locked,
+              lockMovementY: locked,
+              lockRotation: locked,
+              lockScalingX: locked,
+              lockScalingY: locked,
+            })
+            fabricCanvasRef.current?.renderAll()
+            setCanvasObjects([...canvasObjects])
+          }}
+          onDeleteObject={(obj) => {
+            fabricCanvasRef.current?.remove(obj)
+            fabricCanvasRef.current?.renderAll()
+            if (selectedObject === obj) setSelectedObject(null)
+          }}
+          onToggleBehindTemplate={handleToggleBehindTemplate}
+        />
+      )}
+    </>
+  )
+
+  const renderPropertiesContent = () => (
+    <PropertiesPanel
+      selectedObject={selectedObject}
+      canvasWidth={canvasWidth}
+      canvasHeight={canvasHeight}
+      naturalImageWidth={naturalImageSize?.width}
+      naturalImageHeight={naturalImageSize?.height}
+      onUpdateCanvasDimensions={handleUpdateCanvasDimensions}
+      onAdaptToImageSize={handleAdaptToImageSize}
+      onUpdateProperty={handleUpdateProperty}
+      onDuplicate={handleDuplicate}
+      onDelete={handleDelete}
+      onBringForward={handleBringForward}
+      onSendBackward={handleSendBackward}
+      onToggleBehindTemplate={(behind) => handleToggleBehindTemplate(undefined, behind)}
+    />
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-background">
+    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-background pb-16 md:pb-0">
       {/* Top Toolbar */}
       <Toolbar
         name={name}
@@ -585,6 +666,8 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
           setType(val)
           setHasUnsavedChanges(true)
         }}
+        toolMode={toolMode}
+        onToolModeChange={setToolMode}
         width={canvasWidth}
         height={canvasHeight}
         zoom={zoom}
@@ -621,12 +704,14 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
         onSave={handleSave}
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
+        isPropertiesOpen={mobileSheetTab === "properties"}
+        onToggleProperties={() => setMobileSheetTab(mobileSheetTab === "properties" ? null : "properties")}
       />
 
       {/* Main Workbench Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sub-Navigation Bar */}
-        <aside className="flex w-14 flex-col items-center gap-2 border-r border-border bg-card py-4 z-20 shrink-0">
+      <div className="relative flex flex-1 overflow-hidden min-h-0">
+        {/* Left Sub-Navigation Bar (Desktop only) */}
+        <aside className="hidden md:flex w-14 flex-col items-center gap-2 border-r border-border bg-card py-4 z-30 shrink-0">
           <button
             type="button"
             onClick={() => handleTabClick("fields")}
@@ -670,68 +755,21 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
           </button>
         </aside>
 
-        {/* Left Tab Drawer Panel (Collapsible) */}
+        {/* Desktop Left Tab Drawer (In-flow flex item) */}
         {isDrawerOpen && (
-          <aside className="w-72 border-r border-border bg-background flex flex-col z-10 shrink-0">
-            {activeTab === "fields" && (
-              <FieldsPanel
-                type={type}
-                sampleData={sampleData}
-                onInsertField={handleInsertField}
-              />
-            )}
-            {activeTab === "elements" && (
-              <ElementsPanel
-                onAddText={handleAddText}
-                onAddShape={handleAddShape}
-                onAddImage={handleAddImage}
-                onAddQRCode={handleAddQRCode}
-              />
-            )}
-            {activeTab === "layers" && (
-              <LayersPanel
-                objects={canvasObjects}
-                selectedObject={selectedObject}
-                onSelectObject={(obj) => {
-                  if (fabricCanvasRef.current) {
-                    fabricCanvasRef.current.setActiveObject(obj)
-                    fabricCanvasRef.current.renderAll()
-                    setSelectedObject(obj)
-                  }
-                }}
-                onToggleVisibility={(obj) => {
-                  obj.set("visible", !obj.visible)
-                  fabricCanvasRef.current?.renderAll()
-                  setCanvasObjects([...canvasObjects])
-                }}
-                onToggleLock={(obj) => {
-                  const locked = !obj.lockMovementX
-                  obj.set({
-                    lockMovementX: locked,
-                    lockMovementY: locked,
-                    lockRotation: locked,
-                    lockScalingX: locked,
-                    lockScalingY: locked,
-                  })
-                  fabricCanvasRef.current?.renderAll()
-                  setCanvasObjects([...canvasObjects])
-                }}
-                onDeleteObject={(obj) => {
-                  fabricCanvasRef.current?.remove(obj)
-                  fabricCanvasRef.current?.renderAll()
-                  if (selectedObject === obj) setSelectedObject(null)
-                }}
-                onToggleBehindTemplate={handleToggleBehindTemplate}
-              />
-            )}
+          <aside className="hidden md:flex w-72 border-r border-border bg-background flex-col z-10 shrink-0">
+            {renderDrawerContent()}
           </aside>
         )}
 
         {/* Interactive Full Viewport Canvas Area */}
-        <main ref={canvasAreaRef} className="flex-1 flex overflow-hidden min-w-0">
+        <main ref={canvasAreaRef} className="flex-1 flex overflow-hidden min-w-0 min-h-0 bg-muted/30">
           <Canvas
             design={{ ...design, width: canvasWidth, height: canvasHeight }}
             zoom={zoom}
+            onZoomChange={setZoom}
+            toolMode={toolMode}
+            onToolModeChange={setToolMode}
             showGrid={showGrid}
             snapToGrid={snapToGrid}
             sampleData={sampleData}
@@ -742,25 +780,176 @@ export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorPr
           />
         </main>
 
-        {/* Right Properties Panel */}
-        <aside className="w-80 border-l border-border bg-background flex flex-col z-10 shrink-0">
-          <PropertiesPanel
-            selectedObject={selectedObject}
-            canvasWidth={canvasWidth}
-            canvasHeight={canvasHeight}
-            naturalImageWidth={naturalImageSize?.width}
-            naturalImageHeight={naturalImageSize?.height}
-            onUpdateCanvasDimensions={handleUpdateCanvasDimensions}
-            onAdaptToImageSize={handleAdaptToImageSize}
-            onUpdateProperty={handleUpdateProperty}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
-            onBringForward={handleBringForward}
-            onSendBackward={handleSendBackward}
-            onToggleBehindTemplate={(behind) => handleToggleBehindTemplate(undefined, behind)}
-          />
+        {/* Desktop Right Properties Panel (Always in-flow on desktop lg screens) */}
+        <aside className="hidden lg:flex w-80 border-l border-border bg-background flex-col z-10 shrink-0">
+          {renderPropertiesContent()}
         </aside>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Phone/Tablet) */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around z-30 px-2 shadow-lg md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileSheetTab(mobileSheetTab === "fields" ? null : "fields")}
+          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors ${
+            mobileSheetTab === "fields" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Database className="size-5" />
+          <span>Fields</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSheetTab(mobileSheetTab === "elements" ? null : "elements")}
+          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors ${
+            mobileSheetTab === "elements" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Boxes className="size-5" />
+          <span>Elements</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSheetTab(mobileSheetTab === "layers" ? null : "layers")}
+          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors relative ${
+            mobileSheetTab === "layers" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Layers className="size-5" />
+          <span>Layers</span>
+          {canvasObjects.length > 0 && (
+            <span className="absolute top-0 right-1 size-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center font-bold">
+              {canvasObjects.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setToolMode(toolMode === "hand" ? "select" : "hand")}
+          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors ${
+            toolMode === "hand" ? "text-primary font-semibold bg-primary/10" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Hand className="size-5" />
+          <span>{toolMode === "hand" ? "Pan On" : "Pan"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileSheetTab(mobileSheetTab === "properties" ? null : "properties")}
+          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium transition-colors relative ${
+            mobileSheetTab === "properties" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <SlidersHorizontal className="size-5" />
+          <span>Edit</span>
+          {selectedObject && (
+            <span className="absolute top-1 right-3 size-2 rounded-full bg-blue-500 animate-pulse" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleFitZoom}
+          className="flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          title="Fit Canvas"
+        >
+          <Maximize2 className="size-5" />
+          <span>Fit</span>
+        </button>
+      </nav>
+
+      {/* Mobile Bottom Sheet Drawer Modal (Phone/Tablet) */}
+      {mobileSheetTab && (
+        <div className="md:hidden">
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={() => setMobileSheetTab(null)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 max-h-[82vh] h-[75vh] z-50 flex flex-col bg-background rounded-t-2xl border-t border-border shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
+            {/* Sheet Handle & Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/40 shrink-0">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                {mobileSheetTab === "fields" && (
+                  <>
+                    <Database className="size-4 text-primary" />
+                    <span>Dynamic Database Fields</span>
+                  </>
+                )}
+                {mobileSheetTab === "elements" && (
+                  <>
+                    <Boxes className="size-4 text-primary" />
+                    <span>Static Elements & Shapes</span>
+                  </>
+                )}
+                {mobileSheetTab === "layers" && (
+                  <>
+                    <Layers className="size-4 text-primary" />
+                    <span>Layers Manager</span>
+                  </>
+                )}
+                {mobileSheetTab === "properties" && (
+                  <>
+                    <SlidersHorizontal className="size-4 text-primary" />
+                    <span>{selectedObject ? "Element Properties" : "Template Settings"}</span>
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileSheetTab(null)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Sheet Body */}
+            <div className="flex-1 overflow-y-auto min-h-0 pb-6">
+              {mobileSheetTab === "properties" ? (
+                renderPropertiesContent()
+              ) : (
+                <>
+                  {mobileSheetTab === "fields" && (
+                    <FieldsPanel
+                      type={type}
+                      sampleData={sampleData}
+                      onInsertField={(field) => {
+                        handleInsertField(field)
+                        setMobileSheetTab(null)
+                      }}
+                    />
+                  )}
+                  {mobileSheetTab === "elements" && (
+                    <ElementsPanel
+                      onAddText={(t) => {
+                        handleAddText(t)
+                        setMobileSheetTab(null)
+                      }}
+                      onAddShape={(s) => {
+                        handleAddShape(s)
+                        setMobileSheetTab(null)
+                      }}
+                      onAddImage={() => {
+                        handleAddImage()
+                        setMobileSheetTab(null)
+                      }}
+                      onAddQRCode={() => {
+                        handleAddQRCode()
+                        setMobileSheetTab(null)
+                      }}
+                    />
+                  )}
+                  {mobileSheetTab === "layers" && renderDrawerContent()}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Live Server Preview Modal */}
       {showPreviewModal && (
