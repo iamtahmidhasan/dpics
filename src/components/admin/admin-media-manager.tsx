@@ -23,7 +23,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useMemo, useRef, useState } from "react"
-
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -71,6 +72,7 @@ export function AdminMediaManager({
   initialStats,
 }: AdminMediaManagerProps) {
   const { t } = useLanguage()
+  const router = useRouter()
 
   const [mediaList, setMediaList] = useState<MediaItemSummary[]>(initialMedia)
   const [stats, setStats] = useState<MediaStats>(initialStats)
@@ -124,6 +126,27 @@ export function AdminMediaManager({
       document.body.removeChild(textArea)
       setCopiedKey(key)
       setTimeout(() => setCopiedKey(null), 2000)
+    }
+  }
+
+  // Create template helper
+  async function handleCreateTemplateFromMedia(item: MediaItemSummary) {
+    try {
+      const res = await fetch("/api/media/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${item.name.replace(/\.[^/.]+$/, "")} Template`,
+          type: "MEMBER_CARD",
+          mediaId: item.id,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to create template")
+      const created = await res.json()
+      toast.success(t("Opening Template Editor...", "টেমপ্লেট এডিটর লোড হচ্ছে..."))
+      router.push(`/admin/templates/${created.id}/edit`)
+    } catch {
+      toast.error(t("Could not create template", "টেমপ্লেট তৈরি করা যায়নি"))
     }
   }
 
@@ -804,6 +827,18 @@ export function AdminMediaManager({
                     >
                       <Edit3 className="size-3.5" />
                     </Button>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="size-7 rounded-full shadow-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCreateTemplateFromMedia(item)
+                      }}
+                      title={t("Create Template", "টেমপ্লেট তৈরি")}
+                    >
+                      <Folder className="size-3.5 text-primary" />
+                    </Button>
                   </div>
 
                   {/* Size & Folder Badges */}
@@ -1136,6 +1171,19 @@ export function AdminMediaManager({
                   {t("Open Original in Tab", "ট্যাবে খুলুন")}
                 </Button>
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      if (inspectingItem) {
+                        handleCreateTemplateFromMedia(inspectingItem)
+                      }
+                    }}
+                  >
+                    <Folder className="mr-1.5 size-3.5 text-primary" />
+                    {t("Create Template", "টেমপ্লেট তৈরি")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

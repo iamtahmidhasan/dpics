@@ -25,6 +25,7 @@ import {
   membershipStatusLabel,
 } from "@/lib/profile-labels"
 import { resolveCoverImage } from "@/lib/cover-images"
+import { MemberIdCard } from "@/components/profile/member-id-card"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 
 type BadgeVariant = VariantProps<typeof badgeVariants>["variant"]
@@ -194,28 +195,40 @@ export function AdminUserOverview({
           </CardHeader>
           <CardContent>
             {user.member ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <DetailRow
-                  label={t("Status", "অবস্থা")}
-                  value={<Badge variant="outline">{membershipStatusLabel(t)(user.member.status)}</Badge>}
-                />
-                <DetailRow
-                  label={t("Verification", "যাচাই")}
-                  value={<VerificationBadge status={user.member.verificationStatus} />}
-                />
-                <DetailRow label={t("Student id", "শিক্ষা আইডি")} value={user.member.studentId} />
-                <DetailRow label={t("Board / Class Roll", "বোর্ড / ক্লাস রোল")} value={user.member.boardOrClassRoll} />
-                <DetailRow label={t("Department", "বিভাগ")} value={user.member.department} />
-                <DetailRow label={t("Session", "সেশন")} value={user.member.session} />
-                <DetailRow label={t("Semester", "সেমিস্টার")} value={user.member.semester} />
-                <DetailRow label={t("Shift", "শিফট")} value={user.member.shift} />
-                <DetailRow label={t("Fee paid", "ফি পরিশোধ")} value={user.member.hasPaidMembershipFee ? t("Yes", "হ্যাঁ") : t("No", "না")} />
-                <DetailRow label={t("Payment method", "পেমেন্ট পদ্ধতি")} value={user.member.paymentMethod} />
-                <DetailRow label={t("Sender number", "প্রেরক নম্বর")} value={user.member.senderNumber} />
-                <DetailRow label={t("Transaction id", "ট্রানজেকশন আইডি")} value={user.member.transactionId} mono />
-                <DetailRow label={t("Joined at", "যোগদানের তারিখ")} value={formatDate(user.member.joinedAt)} />
-                <DetailRow label={t("Expires at", "মেয়াদ শেষ")} value={formatDate(user.member.expiresAt)} />
-                <DetailRow label={t("Verified at", "যাচাইয়ের সময়")} value={formatDate(user.member.verifiedAt)} />
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <DetailRow
+                    label={t("Status", "অবস্থা")}
+                    value={<Badge variant="outline">{membershipStatusLabel(t)(user.member.status)}</Badge>}
+                  />
+                  <DetailRow
+                    label={t("Verification", "যাচাই")}
+                    value={<VerificationBadge status={user.member.verificationStatus} />}
+                  />
+                  <DetailRow label={t("Student id", "শিক্ষা আইডি")} value={user.member.studentId} />
+                  <DetailRow label={t("Board / Class Roll", "বোর্ড / ক্লাস রোল")} value={user.member.boardOrClassRoll} />
+                  <DetailRow label={t("Department", "বিভাগ")} value={user.member.department} />
+                  <DetailRow label={t("Session", "সেশন")} value={user.member.session} />
+                  <DetailRow label={t("Semester", "সেমিস্টার")} value={user.member.semester} />
+                  <DetailRow label={t("Shift", "শিফট")} value={user.member.shift} />
+                  <DetailRow label={t("Fee paid", "ফি পরিশোধ")} value={user.member.hasPaidMembershipFee ? t("Yes", "হ্যাঁ") : t("No", "না")} />
+                  <DetailRow label={t("Payment method", "পেমেন্ট পদ্ধতি")} value={user.member.paymentMethod} />
+                  <DetailRow label={t("Sender number", "প্রেরক নম্বর")} value={user.member.senderNumber} />
+                  <DetailRow label={t("Transaction id", "ট্রানজেকশন আইডি")} value={user.member.transactionId} mono />
+                  <DetailRow label={t("Joined at", "যোগদানের তারিখ")} value={formatDate(user.member.joinedAt)} />
+                  <DetailRow label={t("Expires at", "মেয়াদ শেষ")} value={formatDate(user.member.expiresAt)} />
+                  <DetailRow label={t("Verified at", "যাচাইয়ের সময়")} value={formatDate(user.member.verifiedAt)} />
+                </div>
+                <div className="pt-2 border-t border-border/60">
+                  <MemberIdCard
+                    userId={user.id}
+                    memberId={user.member.id}
+                    userName={user.name}
+                    studentId={user.member.studentId}
+                    department={user.member.department}
+                    isVerified={user.member.verificationStatus === "VERIFIED"}
+                  />
+                </div>
               </div>
             ) : (
               <p className="text-muted-foreground">{t("No membership record", "কোনো সদস্যপদ রেকর্ড নেই")}</p>

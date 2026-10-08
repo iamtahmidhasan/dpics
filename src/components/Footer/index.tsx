@@ -43,7 +43,7 @@ const INVOLVE_LINKS: FooterLink[] = [
 ]
 
 const CONTACT = {
-  email: "info@dpics.org",
+  email: "info@dgpics.org",
   address: "Dhaka Polytechnic Institute",
 }
 

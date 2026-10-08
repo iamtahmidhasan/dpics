@@ -85,7 +85,7 @@ export async function getSmtpConfig(): Promise<SmtpConfig> {
     setting?.smtpFromEmail?.trim() ||
     process.env.SMTP_FROM_EMAIL?.trim() ||
     user ||
-    "noreply@dpics.org"
+    "noreply@dgpics.org"
 
   const fromName =
     setting?.smtpFromName?.trim() ||

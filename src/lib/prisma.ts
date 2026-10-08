@@ -43,6 +43,7 @@ const REQUIRED_MODELS = [
   "lessonProgress",
   "achievement",
   "media",
+  "mediaTemplate",
   "event",
   "eventRegistration",
   "emailTemplate",

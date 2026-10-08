@@ -783,7 +783,7 @@ export async function updateAdminUser(
         ) {
           await EmailService.sendTemplatedEmail("MEMBERSHIP_REJECTED", recipient, {
             rejectionReason: "Student ID details or verification documents could not be verified.",
-            supportEmail: "info@dpics.org",
+            supportEmail: "info@dgpics.org",
           })
         } else if (
           nextMemberStatus === MembershipStatus.SUSPENDED &&

@@ -266,7 +266,7 @@ export function AdminSmtpSettings() {
               type="email"
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
-              placeholder="noreply@dpics.org"
+              placeholder="noreply@dgpics.org"
               className="text-xs font-mono"
             />
           </div>

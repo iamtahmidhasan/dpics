@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 
-const CONTACT_EMAIL = "info@dpics.org"
+const CONTACT_EMAIL = "info@dgpics.org"
 
 export function NotFoundContent() {
   const { t } = useLanguage()

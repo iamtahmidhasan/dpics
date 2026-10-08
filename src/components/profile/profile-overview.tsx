@@ -14,6 +14,7 @@ import {
   paymentMethodLabel,
   verificationStatusLabel,
 } from "@/lib/profile-labels"
+import { MemberIdCard } from "@/components/profile/member-id-card"
 import type {
   CommitteeRoleSummary,
   InstructorProfile,
@@ -301,6 +302,16 @@ export function ProfileOverview({ profile }: { profile: Profile }) {
 
   return (
     <div className="space-y-3">
+      {profile.member && (
+        <MemberIdCard
+          userId={profile.id}
+          memberId={profile.member.id}
+          userName={profile.name}
+          studentId={profile.member.studentId}
+          department={profile.member.department}
+          isVerified={profile.member.verificationStatus === "VERIFIED"}
+        />
+      )}
       <AccountSection profile={profile} />
       {profile.member ? <MembershipSection member={profile.member} /> : null}
       {profile.instructor ? <InstructorSection instructor={profile.instructor} /> : null}

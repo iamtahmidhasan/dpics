@@ -19,7 +19,7 @@ export const metadata: Metadata = websiteMetadata({
 })
 
 // Keep in sync with the footer's contact block.
-const EMAIL = "info@dpics.org"
+const EMAIL = "info@dgpics.org"
 const ADDRESS = "Dhaka Polytechnic Institute"
 
 const QUICK_LINKS = [

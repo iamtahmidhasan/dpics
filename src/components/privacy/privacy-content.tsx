@@ -227,11 +227,11 @@ export function PrivacyContent() {
                   )}
                 </p>
                 <a
-                  href="mailto:info@dpics.org"
+                  href="mailto:info@dgpics.org"
                   className="mt-3 inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
                 >
                   <Mail className="size-3" />
-                  <span>info@dpics.org</span>
+                  <span>info@dgpics.org</span>
                 </a>
               </Card>
             </div>
@@ -559,8 +559,8 @@ export function PrivacyContent() {
                   <span>
                     <strong className="text-foreground">{t("Data Deletion Request", "অ্যাকাউন্ট ও তথ্য মুছে ফেলা")}:</strong>{" "}
                     {t(
-                      "You can request deletion of your account and personal profile data by contacting info@dpics.org.",
-                      "আপনার অ্যাকাউন্ট বা ব্যক্তিগত তথ্য মুছে ফেলতে info@dpics.org ঠিকানায় যোগাযোগ করতে পারেন।"
+                      "You can request deletion of your account and personal profile data by contacting info@dgpics.org.",
+                      "আপনার অ্যাকাউন্ট বা ব্যক্তিগত তথ্য মুছে ফেলতে info@dgpics.org ঠিকানায় যোগাযোগ করতে পারেন।"
                     )}
                   </span>
                 </li>
@@ -614,8 +614,8 @@ export function PrivacyContent() {
                   </p>
                   <p className="flex items-center gap-2 pt-1 text-sm text-primary">
                     <Mail className="size-4" />
-                    <a href="mailto:info@dpics.org" className="underline hover:text-primary/80">
-                      info@dpics.org
+                    <a href="mailto:info@dgpics.org" className="underline hover:text-primary/80">
+                      info@dgpics.org
                     </a>
                   </p>
                 </div>

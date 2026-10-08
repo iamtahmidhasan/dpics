@@ -59,6 +59,11 @@ const NAV_ITEMS = [
     icon: ImageIcon,
   },
   {
+    href: "/admin/templates" as const,
+    label: { en: "Templates", bn: "টেমপ্লেট" },
+    icon: FolderTree,
+  },
+  {
     href: "/admin/emails" as const,
     label: { en: "Emails", bn: "ইমেইল" },
     icon: Mail,
