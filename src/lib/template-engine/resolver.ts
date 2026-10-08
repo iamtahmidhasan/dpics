@@ -59,8 +59,14 @@ export async function resolveTemplateData(
       result["member.email"] = user.email || ""
       result["member.phone"] = user.phone || ""
       result["member.bloodGroup"] = user.bloodGroup || "—"
+
+      let resolvedAvatar = avatar
+      if (resolvedAvatar && !resolvedAvatar.startsWith("http") && !resolvedAvatar.startsWith("data:")) {
+        resolvedAvatar = `${siteOrigin}${resolvedAvatar.startsWith("/") ? "" : "/"}${resolvedAvatar}`
+      }
+
       result["member.photo"] =
-        avatar ||
+        resolvedAvatar ||
         "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20200%20200%22%20fill%3D%22%23cbd5e1%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ccircle%20cx%3D%22100%22%20cy%3D%2275%22%20r%3D%2235%22%20fill%3D%22%2394a3b8%22%2F%3E%3Cpath%20d%3D%22M40%20170%20C40%20130%2C%2070%20120%2C%20100%20120%20C130%20120%2C%20160%20130%2C%20160%20170%20Z%22%20fill%3D%22%2394a3b8%22%2F%3E%3C%2Fsvg%3E"
       
       const profileUrl = `${siteOrigin}/u/${user.id}`

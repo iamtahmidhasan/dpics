@@ -10,10 +10,11 @@ import type { DynamicFieldDefinition, TemplateType } from "@/lib/template-engine
 
 interface FieldsPanelProps {
   type: TemplateType
+  sampleData?: Record<string, string>
   onInsertField: (field: DynamicFieldDefinition) => void
 }
 
-export function FieldsPanel({ type, onInsertField }: FieldsPanelProps) {
+export function FieldsPanel({ type, sampleData, onInsertField }: FieldsPanelProps) {
   const [search, setSearch] = useState("")
 
   const allFields = useMemo(() => getFieldsForTemplateType(type), [type])

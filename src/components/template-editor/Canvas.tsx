@@ -14,6 +14,7 @@ interface CanvasProps {
   zoom: number
   showGrid: boolean
   snapToGrid: boolean
+  sampleData?: Record<string, string>
   onSelectionChange: (obj: FabricCustomObject | null) => void
   onDesignChange: (design: TemplateDesign) => void
   onCanvasReady: (canvas: fabric.Canvas) => void
@@ -25,6 +26,7 @@ export function Canvas({
   zoom,
   showGrid,
   snapToGrid,
+  sampleData,
   onSelectionChange,
   onDesignChange,
   onCanvasReady,
@@ -38,6 +40,8 @@ export function Canvas({
   // Keep refs for callback handlers to prevent stale closures without re-subscribing
   const designRef = useRef(design)
   designRef.current = design
+  const sampleDataRef = useRef(sampleData)
+  sampleDataRef.current = sampleData
   const onDesignChangeRef = useRef(onDesignChange)
   onDesignChangeRef.current = onDesignChange
   const onSelectionChangeRef = useRef(onSelectionChange)
@@ -101,11 +105,13 @@ export function Canvas({
 
     // Load initial background image & elements
     const loadInitialState = async () => {
+      let frameObj: (fabric.FabricImage & { isTemplateFrame?: boolean }) | null = null
+
       if (design.backgroundMediaUrl) {
         try {
-          const bgImg = await fabric.FabricImage.fromURL(design.backgroundMediaUrl, {
+          const bgImg = (await fabric.FabricImage.fromURL(design.backgroundMediaUrl, {
             crossOrigin: "anonymous",
-          })
+          })) as fabric.FabricImage & { isTemplateFrame?: boolean }
 
           const naturalW = bgImg.width || design.width
           const naturalH = bgImg.height || design.height
@@ -123,24 +129,44 @@ export function Canvas({
             scaleY: design.height / naturalH,
             selectable: false,
             evented: false,
+            hasControls: false,
+            lockMovementX: true,
+            lockMovementY: true,
+            hoverCursor: "default",
           })
-
-          canvas.backgroundImage = bgImg
-          canvas.requestRenderAll()
+          bgImg.isTemplateFrame = true
+          frameObj = bgImg
         } catch (err) {
           console.warn("Failed to load initial background image:", err)
         }
       }
 
-      if (design.elements && design.elements.length > 0) {
-        for (const el of design.elements) {
-          const obj = await createFabricObjectFromElement(el)
-          if (obj) {
-            canvas.add(obj)
-          }
+      const elements = design.elements || []
+      const underElements = elements.filter((el) => el.behindTemplate)
+      const overElements = elements.filter((el) => !el.behindTemplate)
+
+      // 1. Add under-frame elements first
+      for (const el of underElements) {
+        const obj = await createFabricObjectFromElement(el, sampleDataRef.current)
+        if (obj) {
+          canvas.add(obj)
         }
-        canvas.requestRenderAll()
       }
+
+      // 2. Add template frame image in middle
+      if (frameObj) {
+        canvas.add(frameObj)
+      }
+
+      // 3. Add over-frame elements on top
+      for (const el of overElements) {
+        const obj = await createFabricObjectFromElement(el, sampleDataRef.current)
+        if (obj) {
+          canvas.add(obj)
+        }
+      }
+
+      canvas.requestRenderAll()
     }
 
     loadInitialState()
@@ -163,11 +189,14 @@ export function Canvas({
       height: design.height,
     })
 
-    if (canvas.backgroundImage && canvas.backgroundImage instanceof fabric.FabricObject) {
-      const bg = canvas.backgroundImage as fabric.FabricImage
-      const naturalW = bg.width || design.width
-      const naturalH = bg.height || design.height
-      bg.set({
+    const frameObj = canvas
+      .getObjects()
+      .find((o) => (o as FabricCustomObject).isTemplateFrame) as fabric.FabricImage | undefined
+
+    if (frameObj) {
+      const naturalW = frameObj.width || design.width
+      const naturalH = frameObj.height || design.height
+      frameObj.set({
         left: 0,
         top: 0,
         originX: "left",
@@ -185,8 +214,14 @@ export function Canvas({
     const canvas = fabricRef.current
     if (!canvas || !isInitializedRef.current) return
 
+    const existingFrame = canvas
+      .getObjects()
+      .find((o) => (o as FabricCustomObject).isTemplateFrame)
+    if (existingFrame) {
+      canvas.remove(existingFrame)
+    }
+
     if (!design.backgroundMediaUrl) {
-      canvas.backgroundImage = undefined
       canvas.requestRenderAll()
       return
     }
@@ -203,7 +238,8 @@ export function Canvas({
           onImageDimensionsDetectedRef.current(naturalW, naturalH)
         }
 
-        bgImg.set({
+        const frameObj = bgImg as fabric.FabricImage & { isTemplateFrame?: boolean }
+        frameObj.set({
           left: 0,
           top: 0,
           originX: "left",
@@ -212,9 +248,24 @@ export function Canvas({
           scaleY: design.height / naturalH,
           selectable: false,
           evented: false,
+          hasControls: false,
+          lockMovementX: true,
+          lockMovementY: true,
+          hoverCursor: "default",
         })
+        frameObj.isTemplateFrame = true
 
-        canvas.backgroundImage = bgImg
+        // Insert frame above all behindTemplate elements
+        const objects = canvas.getObjects() as FabricCustomObject[]
+        const firstFrontIndex = objects.findIndex(
+          (o) => !o.isTemplateFrame && !o.customData?.behindTemplate
+        )
+        if (firstFrontIndex !== -1) {
+          canvas.insertAt(firstFrontIndex, frameObj)
+        } else {
+          canvas.add(frameObj)
+        }
+
         canvas.requestRenderAll()
       })
       .catch((err) => {

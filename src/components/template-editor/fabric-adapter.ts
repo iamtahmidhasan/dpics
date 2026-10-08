@@ -17,6 +17,7 @@ export interface CustomFabricData {
   field?: string
   content?: string
   name?: string
+  behindTemplate?: boolean
   borderRadius?: number
   borderWidth?: number
   borderColor?: string
@@ -27,6 +28,7 @@ export interface CustomFabricData {
 
 export type FabricCustomObject = fabric.FabricObject & {
   customData?: CustomFabricData
+  isTemplateFrame?: boolean
 }
 
 /**
@@ -40,6 +42,7 @@ export async function createFabricObjectFromElement(
     id: element.id,
     type: element.type,
     name: element.name,
+    behindTemplate: element.behindTemplate,
     field: "field" in element ? element.field : undefined,
   }
 
@@ -251,6 +254,8 @@ export function extractElementFromFabricObject(
   obj: FabricCustomObject,
   zIndex: number
 ): TemplateElement | null {
+  if (obj.isTemplateFrame || (obj as unknown as { isGuide?: boolean }).isGuide) return null
+
   const custom = obj.customData || {
     id: `el_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     type: "rectangle" as const,
@@ -266,6 +271,7 @@ export function extractElementFromFabricObject(
     rotation: Math.round(obj.angle || 0),
     opacity: obj.opacity ?? 1,
     zIndex,
+    behindTemplate: Boolean(custom.behindTemplate),
     locked: Boolean(obj.lockMovementX),
     hidden: !obj.visible,
   }

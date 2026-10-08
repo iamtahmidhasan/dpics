@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Download, ExternalLink, Loader2, RefreshCw, Share2, Sparkles, User } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Download, Loader2, RefreshCw, Share2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,32 +22,84 @@ interface PreviewModalProps {
 
 export function PreviewModal({ open, onOpenChange, template }: PreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true)
-  const [previewKey, setPreviewKey] = useState(Date.now())
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
 
-  const renderUrl = `/api/media/templates/${template.id}/render?preview=1&_t=${previewKey}`
-  const downloadUrl = `/api/media/templates/${template.id}/render?preview=1&download=1`
-
-  const handleRefresh = () => {
+  const fetchLivePreview = async () => {
     setIsLoading(true)
-    setPreviewKey(Date.now())
+    try {
+      const res = await fetch(`/api/media/templates/${template.id}/render?preview=1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          width: template.width,
+          height: template.height,
+          type: template.type,
+          design: template.design,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error("Server returned error during image render")
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return url
+      })
+    } catch (err) {
+      console.error("Live preview error:", err)
+      toast.error("Failed to render server image preview.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (open) {
+      fetchLivePreview()
+    }
+    return () => {
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return null
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, template.design, template.width, template.height])
+
+  const handleDownload = () => {
+    if (!previewBlobUrl) return
+    const a = document.createElement("a")
+    a.href = previewBlobUrl
+    const sanitizedName = template.name.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
+    a.download = `${sanitizedName}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   const handleShare = async () => {
-    if (navigator.share) {
+    if (previewBlobUrl && navigator.share) {
       try {
+        const res = await fetch(previewBlobUrl)
+        const blob = await res.blob()
+        const file = new File([blob], `${template.name}.png`, { type: "image/png" })
         await navigator.share({
           title: template.name,
           text: `Check out ${template.name} generated dynamically on DPICS!`,
-          url: window.location.origin + renderUrl,
+          files: [file],
         })
         toast.success("Shared successfully")
+        return
       } catch {
-        // User cancelled or share error
+        // Fallback below
       }
-    } else {
-      navigator.clipboard.writeText(window.location.origin + renderUrl)
-      toast.success("Direct image render URL copied to clipboard")
     }
+    const publicUrl = `${window.location.origin}/api/media/templates/${template.id}/render?preview=1`
+    navigator.clipboard.writeText(publicUrl)
+    toast.success("Direct image render URL copied to clipboard")
   }
 
   return (
@@ -61,10 +113,10 @@ export function PreviewModal({ open, onOpenChange, template }: PreviewModalProps
                 <span>Live Server Render Preview</span>
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Generated via Next.js <code className="text-[11px] bg-muted px-1 rounded">ImageResponse</code> with dynamic database fields & zero asset storage.
+                Rendered live with Next.js <code className="text-[11px] bg-muted px-1 rounded">ImageResponse</code> using current canvas edits & dynamic data.
               </DialogDescription>
             </div>
-            <Button variant="ghost" size="icon-xs" onClick={handleRefresh} title="Reload render">
+            <Button variant="ghost" size="icon-xs" onClick={fetchLivePreview} title="Reload render">
               <RefreshCw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
           </div>
@@ -75,22 +127,18 @@ export function PreviewModal({ open, onOpenChange, template }: PreviewModalProps
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10 gap-2">
               <Loader2 className="size-6 animate-spin text-primary" />
-              <span className="text-xs text-muted-foreground">Rendering PNG with Unicode & Fonts...</span>
+              <span className="text-xs text-muted-foreground">Rendering exact PNG with Unicode & Fonts...</span>
             </div>
           )}
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={previewKey}
-            src={renderUrl}
-            alt={template.name}
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
-              setIsLoading(false)
-              toast.error("Failed to render server image. Check template elements.")
-            }}
-            className="max-h-[500px] w-auto rounded shadow-lg object-contain"
-          />
+          {previewBlobUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={previewBlobUrl}
+              alt={template.name}
+              className="max-h-[500px] w-auto rounded shadow-lg object-contain"
+            />
+          )}
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
@@ -104,15 +152,19 @@ export function PreviewModal({ open, onOpenChange, template }: PreviewModalProps
               <span>Share</span>
             </Button>
 
-            <a href={downloadUrl} download>
-              <Button size="sm" className="gap-1.5 text-xs font-semibold">
-                <Download className="size-3.5" />
-                <span>Download PNG</span>
-              </Button>
-            </a>
+            <Button
+              size="sm"
+              onClick={handleDownload}
+              disabled={!previewBlobUrl}
+              className="gap-1.5 text-xs font-semibold"
+            >
+              <Download className="size-3.5" />
+              <span>Download PNG</span>
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
+

@@ -23,6 +23,7 @@ interface LayersPanelProps {
   onToggleVisibility: (obj: FabricCustomObject) => void
   onToggleLock: (obj: FabricCustomObject) => void
   onDeleteObject: (obj: FabricCustomObject) => void
+  onToggleBehindTemplate?: (obj: FabricCustomObject, behind: boolean) => void
 }
 
 export function LayersPanel({
@@ -32,6 +33,7 @@ export function LayersPanel({
   onToggleVisibility,
   onToggleLock,
   onDeleteObject,
+  onToggleBehindTemplate,
 }: LayersPanelProps) {
   const getIcon = (type?: string) => {
     switch (type) {
@@ -48,15 +50,16 @@ export function LayersPanel({
     }
   }
 
-  // Reverse list so top layers appear first in UI
-  const reversed = [...objects].reverse()
+  // Filter out the internal frame object and reverse list so top layers appear first
+  const userObjects = objects.filter((o) => !o.isTemplateFrame)
+  const reversed = [...userObjects].reverse()
 
   return (
     <div className="flex h-full flex-col space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
           <Layers className="size-3.5" />
-          <span>Layers ({objects.length})</span>
+          <span>Layers ({userObjects.length})</span>
         </h3>
       </div>
 
@@ -71,6 +74,7 @@ export function LayersPanel({
             const isSelected = selectedObject === obj
             const isLocked = Boolean(obj.lockMovementX)
             const isVisible = obj.visible !== false
+            const isBehind = Boolean(custom.behindTemplate)
 
             let label = custom.name || custom.type
             if (custom.field) {
@@ -91,12 +95,37 @@ export function LayersPanel({
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {getIcon(custom.type)}
-                  <span className="truncate max-w-[110px] text-xs">
-                    {label}
-                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate max-w-[110px] text-xs">
+                      {label}
+                    </span>
+                    {isBehind && (
+                      <span className="text-[9px] font-mono text-blue-500 font-normal">
+                        Behind Frame
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {onToggleBehindTemplate && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleBehindTemplate(obj, !isBehind)
+                      }}
+                      title={isBehind ? "Click to bring in front of template frame" : "Click to place behind template frame"}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                        isBehind
+                          ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
+                          : "text-muted-foreground border-transparent hover:border-border hover:bg-muted"
+                      }`}
+                    >
+                      {isBehind ? "Behind" : "Front"}
+                    </button>
+                  )}
+
                   <Button
                     variant="ghost"
                     size="icon-xs"

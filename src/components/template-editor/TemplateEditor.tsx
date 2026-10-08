@@ -33,11 +33,12 @@ import type {
 
 interface TemplateEditorProps {
   initialTemplate: MediaTemplateSummary
+  sampleData?: Record<string, string>
 }
 
 type SidebarTab = "fields" | "elements" | "layers"
 
-export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
+export function TemplateEditor({ initialTemplate, sampleData }: TemplateEditorProps) {
   const router = useRouter()
 
   const [template, setTemplate] = useState<MediaTemplateSummary>(initialTemplate)
@@ -282,7 +283,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
     const newObj = await createFabricObjectFromElement({
       id: `el_qr_${Date.now()}`,
       type: "qr",
-      data: "https://dgpics.org",
+      data: "https://dpics.org",
       x: 100,
       y: 100,
       width: 120,
@@ -305,13 +306,15 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
     const canvas = fabricCanvasRef.current
     if (!canvas) return
 
+    const sampleVal = sampleData?.[field.key] || field.exampleValue
+
     let elementData
     if (field.type === "image") {
       elementData = {
         id: `el_field_${field.key}_${Date.now()}`,
         type: "image" as const,
         field: field.key,
-        src: field.exampleValue,
+        src: sampleVal,
         x: 100,
         y: 100,
         width: 160,
@@ -325,7 +328,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
         id: `el_field_${field.key}_${Date.now()}`,
         type: "qr" as const,
         field: field.key,
-        data: field.exampleValue,
+        data: sampleVal,
         x: 100,
         y: 100,
         width: 120,
@@ -354,7 +357,8 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
     }
 
     const newObj = await createFabricObjectFromElement(elementData, {
-      [field.key]: field.exampleValue,
+      ...sampleData,
+      [field.key]: sampleVal,
     })
 
     if (newObj) {
@@ -426,7 +430,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
       zIndex: canvasObjects.length + 1,
     }
 
-    const clonedObj = await createFabricObjectFromElement(clonedEl)
+    const clonedObj = await createFabricObjectFromElement(clonedEl, sampleData)
     if (clonedObj) {
       canvas.add(clonedObj)
       canvas.setActiveObject(clonedObj)
@@ -461,6 +465,67 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
     canvas.sendObjectBackwards(selectedObject)
     canvas.renderAll()
     pushHistory(exportCanvasToDesign(canvas, design))
+  }
+
+  const handleToggleBehindTemplate = (targetObj?: FabricCustomObject, behind?: boolean) => {
+    const canvas = fabricCanvasRef.current
+    const obj = targetObj || selectedObject
+    if (!canvas || !obj) return
+
+    const isBehind = behind !== undefined ? behind : !obj.customData?.behindTemplate
+
+    obj.customData = {
+      id: obj.customData?.id || `el_${Date.now()}`,
+      type: obj.customData?.type || "rectangle",
+      ...obj.customData,
+      behindTemplate: isBehind,
+    }
+
+    const frameObj = canvas
+      .getObjects()
+      .find((o) => (o as FabricCustomObject).isTemplateFrame)
+
+    if (isBehind) {
+      canvas.sendObjectToBack(obj)
+    } else {
+      canvas.bringObjectToFront(obj)
+    }
+
+    // Keep frameObj placed between all behind objects and all front objects
+    if (frameObj) {
+      const objects = canvas.getObjects() as FabricCustomObject[]
+      const firstFrontIndex = objects.findIndex(
+        (o) => !o.isTemplateFrame && !o.customData?.behindTemplate
+      )
+      const currentFrameIndex = objects.indexOf(frameObj as FabricCustomObject)
+
+      if (firstFrontIndex !== -1 && currentFrameIndex > firstFrontIndex) {
+        while (canvas.getObjects().indexOf(frameObj) > firstFrontIndex) {
+          canvas.sendObjectBackwards(frameObj)
+        }
+      }
+    }
+
+    canvas.requestRenderAll()
+    if (selectedObject === obj) {
+      setSelectedObject(obj)
+    }
+    setCanvasObjects(
+      canvas.getObjects().filter((o) => !(o as FabricCustomObject).isTemplateFrame) as FabricCustomObject[]
+    )
+    const updated = exportCanvasToDesign(canvas, {
+      width: canvasWidth,
+      height: canvasHeight,
+      backgroundMediaId: template.mediaId,
+      backgroundMediaUrl: template.media?.url,
+    })
+    setDesign(updated)
+    pushHistory(updated)
+    toast.success(
+      isBehind
+        ? "Element placed behind template frame"
+        : "Element placed in front of template frame"
+    )
   }
 
   // --- Save / Persist ---
@@ -541,7 +606,18 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
             setHistoryIndex(historyIndex + 1)
           }
         }}
-        onOpenPreview={() => setShowPreviewModal(true)}
+        onOpenPreview={() => {
+          if (fabricCanvasRef.current) {
+            const currentDesign = exportCanvasToDesign(fabricCanvasRef.current, {
+              width: canvasWidth,
+              height: canvasHeight,
+              backgroundMediaId: template.mediaId,
+              backgroundMediaUrl: template.media?.url,
+            })
+            setDesign(currentDesign)
+          }
+          setShowPreviewModal(true)
+        }}
         onSave={handleSave}
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
@@ -598,7 +674,11 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
         {isDrawerOpen && (
           <aside className="w-72 border-r border-border bg-background flex flex-col z-10 shrink-0">
             {activeTab === "fields" && (
-              <FieldsPanel type={type} onInsertField={handleInsertField} />
+              <FieldsPanel
+                type={type}
+                sampleData={sampleData}
+                onInsertField={handleInsertField}
+              />
             )}
             {activeTab === "elements" && (
               <ElementsPanel
@@ -641,6 +721,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
                   fabricCanvasRef.current?.renderAll()
                   if (selectedObject === obj) setSelectedObject(null)
                 }}
+                onToggleBehindTemplate={handleToggleBehindTemplate}
               />
             )}
           </aside>
@@ -653,6 +734,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
             zoom={zoom}
             showGrid={showGrid}
             snapToGrid={snapToGrid}
+            sampleData={sampleData}
             onSelectionChange={handleSelectionChange}
             onDesignChange={handleDesignChange}
             onCanvasReady={handleCanvasReady}
@@ -675,6 +757,7 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
             onDelete={handleDelete}
             onBringForward={handleBringForward}
             onSendBackward={handleSendBackward}
+            onToggleBehindTemplate={(behind) => handleToggleBehindTemplate(undefined, behind)}
           />
         </aside>
       </div>
@@ -688,7 +771,14 @@ export function TemplateEditor({ initialTemplate }: TemplateEditorProps) {
             ...template,
             width: canvasWidth,
             height: canvasHeight,
-            design: { ...design, width: canvasWidth, height: canvasHeight },
+            design: fabricCanvasRef.current
+              ? exportCanvasToDesign(fabricCanvasRef.current, {
+                  width: canvasWidth,
+                  height: canvasHeight,
+                  backgroundMediaId: template.mediaId,
+                  backgroundMediaUrl: template.media?.url,
+                })
+              : { ...design, width: canvasWidth, height: canvasHeight },
           }}
         />
       )}

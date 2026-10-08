@@ -70,9 +70,48 @@ export async function prepareTemplate(
 export function TemplateRootView({ prepared }: { prepared: PreparedTemplate }) {
   const { design, resolvedData, qrCodes } = prepared
 
-  const sortedElements = [...(design.elements || [])]
+  const allElements = [...(design.elements || [])]
     .filter((el) => !el.hidden)
     .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+
+  const underElements = allElements.filter((el) => el.behindTemplate === true)
+  const overElements = allElements.filter((el) => !el.behindTemplate)
+
+  const renderSingleElement = (el: TemplateElement) => {
+    switch (el.type) {
+      case "text":
+        return (
+          <RenderTextElement
+            key={el.id}
+            element={el}
+            resolvedData={resolvedData}
+          />
+        )
+      case "image":
+        return (
+          <RenderImageElement
+            key={el.id}
+            element={el}
+            resolvedData={resolvedData}
+          />
+        )
+      case "qr":
+        return (
+          <RenderQRCodeElement
+            key={el.id}
+            element={el}
+            qrDataUrl={qrCodes.get(el.id) || ""}
+          />
+        )
+      case "rectangle":
+      case "circle":
+        return <RenderShapeElement key={el.id} element={el} />
+      case "line":
+        return <RenderLineElement key={el.id} element={el} />
+      default:
+        return null
+    }
+  }
 
   return (
     <div
@@ -85,12 +124,15 @@ export function TemplateRootView({ prepared }: { prepared: PreparedTemplate }) {
         overflow: "hidden",
       }}
     >
-      {/* Background Image Layer */}
+      {/* 1. Layers placed BEHIND the template frame (e.g. member photos under transparent PNG cutouts) */}
+      {underElements.map(renderSingleElement)}
+
+      {/* 2. Main Template Frame Asset */}
       {design.backgroundMediaUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={design.backgroundMediaUrl}
-          alt="Background"
+          alt="Template Frame"
           width={design.width}
           height={design.height}
           style={{
@@ -104,42 +146,9 @@ export function TemplateRootView({ prepared }: { prepared: PreparedTemplate }) {
         />
       ) : null}
 
-      {/* Elements Layer */}
-      {sortedElements.map((el) => {
-        switch (el.type) {
-          case "text":
-            return (
-              <RenderTextElement
-                key={el.id}
-                element={el}
-                resolvedData={resolvedData}
-              />
-            )
-          case "image":
-            return (
-              <RenderImageElement
-                key={el.id}
-                element={el}
-                resolvedData={resolvedData}
-              />
-            )
-          case "qr":
-            return (
-              <RenderQRCodeElement
-                key={el.id}
-                element={el}
-                qrDataUrl={qrCodes.get(el.id) || ""}
-              />
-            )
-          case "rectangle":
-          case "circle":
-            return <RenderShapeElement key={el.id} element={el} />
-          case "line":
-            return <RenderLineElement key={el.id} element={el} />
-          default:
-            return null
-        }
-      })}
+      {/* 3. Layers placed IN FRONT OF the template frame (e.g. text labels, badges on top) */}
+      {overElements.map(renderSingleElement)}
     </div>
   )
 }
+

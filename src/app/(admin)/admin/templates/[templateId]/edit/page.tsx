@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { TemplateEditor } from "@/components/template-editor/TemplateEditor"
 import { getMediaTemplateById } from "@/lib/services/media-template.service"
+import { resolveTemplateData } from "@/lib/template-engine/resolver"
 import { requireAdmin } from "@/lib/session"
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default async function TemplateEditorPage({
 }: {
   params: Promise<{ templateId: string }>
 }) {
-  await requireAdmin()
+  const session = await requireAdmin()
   const { templateId } = await params
 
   const template = await getMediaTemplateById(templateId)
@@ -21,5 +22,10 @@ export default async function TemplateEditorPage({
     notFound()
   }
 
-  return <TemplateEditor initialTemplate={template} />
+  // Resolve builder's real profile data so the editor renders their actual avatar & member details
+  const sampleData = await resolveTemplateData(template.type, {
+    userId: session.user.id,
+  })
+
+  return <TemplateEditor initialTemplate={template} sampleData={sampleData} />
 }

@@ -15,6 +15,7 @@ export interface BaseElement {
   rotation?: number   // Degrees 0-360
   opacity?: number    // 0 to 1
   zIndex: number      // Stacking order
+  behindTemplate?: boolean // If true, renders underneath the main template PNG image (for transparent cutouts)
   locked?: boolean    // Prevent accidental move/resize in editor
   hidden?: boolean    // Hide from canvas/rendering
 }

@@ -41,6 +41,7 @@ interface PropertiesPanelProps {
   onDelete: () => void
   onBringForward: () => void
   onSendBackward: () => void
+  onToggleBehindTemplate?: (behind: boolean) => void
 }
 
 const FONTS = [
@@ -72,6 +73,7 @@ export function PropertiesPanel({
   onDelete,
   onBringForward,
   onSendBackward,
+  onToggleBehindTemplate,
 }: PropertiesPanelProps) {
   // If no object is selected, render Canvas & Background Settings
   if (!selectedObject) {
@@ -494,11 +496,20 @@ export function PropertiesPanel({
         </div>
       </div>
 
-      {/* Layer Stacking Order */}
-      <div className="p-3 space-y-2">
-        <Label className="text-[11px] font-semibold text-muted-foreground uppercase">
-          Layer Ordering
-        </Label>
+      {/* Layer Stacking Order & Frame Placement */}
+      <div className="p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-[11px] font-semibold text-muted-foreground uppercase">
+            Layer Ordering
+          </Label>
+          <Badge
+            variant={selectedObject.customData?.behindTemplate ? "secondary" : "outline"}
+            className="text-[10px]"
+          >
+            {selectedObject.customData?.behindTemplate ? "Behind Frame" : "In Front"}
+          </Badge>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" size="sm" onClick={onBringForward} className="text-xs h-8">
             Bring Forward
@@ -506,6 +517,39 @@ export function PropertiesPanel({
           <Button variant="outline" size="sm" onClick={onSendBackward} className="text-xs h-8">
             Send Backward
           </Button>
+        </div>
+
+        {/* Send behind / in front of template frame */}
+        <div className="rounded-md border border-border/80 bg-muted/30 p-2.5 space-y-2">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-medium text-foreground">
+              Template Frame Placement
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              Place photos or shapes behind transparent PNG cutouts so the frame naturally clips them.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
+            <Button
+              type="button"
+              variant={selectedObject.customData?.behindTemplate ? "default" : "outline"}
+              size="sm"
+              onClick={() => onToggleBehindTemplate?.(true)}
+              className="text-xs h-8 font-normal"
+            >
+              ⬇️ Behind Frame
+            </Button>
+            <Button
+              type="button"
+              variant={!selectedObject.customData?.behindTemplate ? "default" : "outline"}
+              size="sm"
+              onClick={() => onToggleBehindTemplate?.(false)}
+              className="text-xs h-8 font-normal"
+            >
+              ⬆️ In Front
+            </Button>
+          </div>
         </div>
       </div>
     </div>
