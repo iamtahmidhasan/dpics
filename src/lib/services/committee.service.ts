@@ -589,11 +589,14 @@ export async function searchAssignableUsers(query?: string | null): Promise<Assi
 
 export type AboutLeader = {
   id: string
+  userId: string
   name: string
   role: string
   roleSlug: string
   avatar: string | null
   initials: string
+  slug?: string
+  department?: string | null
 }
 
 export type AboutCommitteeData = {
@@ -621,6 +624,17 @@ export async function getActiveCommitteeForAbout(): Promise<AboutCommitteeData |
                   email: true,
                   image: true,
                   selactedImg: true,
+                  member: {
+                    select: {
+                      studentId: true,
+                      department: true,
+                    },
+                  },
+                  instructor: {
+                    select: {
+                      instructorId: true,
+                    },
+                  },
                 },
               },
             },
@@ -645,13 +659,21 @@ export async function getActiveCommitteeForAbout(): Promise<AboutCommitteeData |
         .slice(0, 2)
         .toUpperCase()
 
+      const slug =
+        userRole.user.member?.studentId ||
+        userRole.user.instructor?.instructorId ||
+        userRole.user.id
+
       members.push({
         id: userRole.id,
+        userId: userRole.user.id,
         name: userRole.user.name,
         role: role.name,
         roleSlug: role.slug,
         avatar,
         initials: initials || "DP",
+        slug,
+        department: userRole.user.member?.department ?? null,
       })
     }
   }

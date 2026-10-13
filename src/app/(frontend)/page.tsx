@@ -9,6 +9,7 @@ import { PostsSection } from '@/components/home/PostsSection'
 import { listPublishedAchievements } from '@/lib/services/achievement.service'
 import { listPublishedEvents } from '@/lib/services/event.service'
 import { listPublishedPosts } from '@/lib/services/post.service'
+import { getHomeHeroData } from '@/lib/services/home.service'
 import { websiteMetadata } from '@/lib/seo'
 import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/site'
 
@@ -20,7 +21,8 @@ export const metadata = websiteMetadata({
 })
 
 export default async function Home() {
-  const [featuredAchievements, latestAchievements, postsData, eventsData] = await Promise.all([
+  const [heroData, featuredAchievements, latestAchievements, postsData, eventsData] = await Promise.all([
+    getHomeHeroData(),
     listPublishedAchievements({ isFeatured: true, pageSize: 6 }),
     listPublishedAchievements({ pageSize: 6 }),
     listPublishedPosts({ pageSize: 3 }),
@@ -29,7 +31,11 @@ export default async function Home() {
 
   return (
     <>
-      <HeroSection />
+      <HeroSection
+        stats={heroData.stats}
+        recentMembers={heroData.recentMembers}
+        highlight={heroData.highlight}
+      />
       <FeaturesSection />
       <AchievementsSection
         featured={featuredAchievements.achievements}
@@ -37,7 +43,7 @@ export default async function Home() {
       />
       <EventsSection events={eventsData.events} />
       <PostsSection posts={postsData.posts} />
-      <TestimonialsSection />
+      {/* <TestimonialsSection /> */}
       <JoinSection />
       <CTASection />
     </>

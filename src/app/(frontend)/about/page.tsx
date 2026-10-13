@@ -16,22 +16,62 @@ export const metadata: Metadata = websiteMetadata({
 })
 
 export default async function AboutPage() {
-  const [membersCount, eventsCount, coursesCount, achievementsCount, committeeData] = await Promise.all([
-    prisma.user.count(),
-    prisma.event.count({ where: { status: { not: EventStatus.DRAFT } } }),
-    prisma.course.count({ where: { isPublished: true } }),
-    prisma.achievement.count({ where: { status: PostStatus.PUBLISHED } }),
+  const [
+    totalUsers,
+    activeMembers,
+    sessionsGroup,
+    eventsCount,
+    postsCount,
+    coursesCount,
+    achievementsCount,
+    departmentsGroup,
+    committeeData,
+  ] = await Promise.all([
+    prisma.user.count({ where: { isActive: true } }),
+    prisma.member.count({ where: { status: "ACTIVE" } }),
+    prisma.member.groupBy({
+      by: ["session"],
+      where: { session: { not: "" } },
+    }),
+    prisma.event.count({
+      where: { status: { in: ["UPCOMING", "ONGOING", "COMPLETED"] } },
+    }),
+    prisma.post.count({
+      where: { status: "PUBLISHED" },
+    }),
+    prisma.course.count({
+      where: { isPublished: true },
+    }),
+    prisma.achievement.count({
+      where: { status: "PUBLISHED" },
+    }),
+    prisma.member.groupBy({
+      by: ["department"],
+    }),
     getActiveCommitteeForAbout(),
   ])
+
+  const sessions = sessionsGroup
+    .map((s) => s.session)
+    .filter((s): s is string => Boolean(s && s.trim()))
+
+  const departments = departmentsGroup
+    .map((d) => d.department)
+    .filter(Boolean)
 
   return (
     <div className="w-full">
       <AboutView
         stats={{
-          membersCount,
+          membersCount: totalUsers,
+          verifiedMembersCount: activeMembers,
+          batchesCount: sessions.length,
+          batches: sessions,
           eventsCount,
+          postsCount,
           coursesCount,
           achievementsCount,
+          departmentsCount: departments.length,
         }}
         committee={committeeData}
       />

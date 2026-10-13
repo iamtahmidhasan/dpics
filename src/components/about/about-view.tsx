@@ -13,17 +13,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export interface AboutStats {
   membersCount: number
+  verifiedMembersCount?: number
+  batchesCount?: number
+  batches?: string[]
   eventsCount: number
+  postsCount?: number
   coursesCount: number
   achievementsCount: number
+  departmentsCount?: number
 }
 
 export interface CommitteeLeaderItem {
   id: string
+  userId?: string
   name: string
   role: string
   avatar: string | null
   initials: string
+  slug?: string
+  department?: string | null
 }
 
 export interface CommitteeData {
@@ -225,25 +233,43 @@ export function AboutView({ stats, committee }: AboutViewProps) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {leaders.map((member) => (
-                <Card
-                  key={member.id}
-                  className="items-center border-0 bg-card text-center shadow-none ring-1 ring-border/80"
-                >
-                  <CardContent className="flex flex-col items-center gap-3 p-6">
-                    <Avatar className="size-16 sm:size-20 border border-border">
-                      <AvatarImage src={member.avatar || undefined} alt={member.name} />
-                      <AvatarFallback className="font-semibold text-sm">
-                        {member.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col gap-0.5">
-                      <p className="font-medium text-sm text-foreground">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">{member.role}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {leaders.map((member) => {
+                const card = (
+                  <Card
+                    className="group flex h-full flex-col items-center border-0 bg-card text-center shadow-none ring-1 ring-border/80 transition-all hover:ring-primary/50 hover:shadow-xs"
+                  >
+                    <CardContent className="flex flex-col items-center gap-3 p-6">
+                      <Avatar className="size-16 sm:size-20 shrink-0 border border-border transition-transform group-hover:scale-105">
+                        <AvatarImage src={member.avatar || undefined} alt={member.name} className="size-full object-cover" />
+                        <AvatarFallback className="font-semibold text-sm bg-primary/10 text-primary">
+                          {member.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="font-medium text-sm text-foreground transition-colors group-hover:text-primary">
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{member.role}</p>
+                        {member.department ? (
+                          <p className="text-[10px] text-muted-foreground/75 mt-0.5 truncate max-w-[150px]">
+                            {member.department.replace(/_/g, " ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+
+                return member.slug ? (
+                  <Link key={member.id} href={`/profile/${member.slug}`} className="block h-full">
+                    {card}
+                  </Link>
+                ) : (
+                  <div key={member.id} className="h-full">
+                    {card}
+                  </div>
+                )
+              })}
             </div>
 
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -281,34 +307,41 @@ export function AboutView({ stats, committee }: AboutViewProps) {
             </Link>
           </div>
 
-          <div className="mt-12 grid gap-x-6 gap-y-10 grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-4 grid-cols-2 lg:grid-cols-4">
             {[
               {
                 id: "stat-1",
-                value: `${Math.max(stats.membersCount, 250)}+`,
-                label: t("Active registered student members", "নিবন্ধিত সক্রিয় শিক্ষার্থী সদস্য"),
+                value: `${stats.membersCount || 40}+`,
+                label: t("Community Members & Students", "নিবন্ধিত শিক্ষার্থী ও কমিউনিটি সদস্য"),
+                sublabel: stats.verifiedMembersCount ? `${stats.verifiedMembersCount} verified members` : undefined,
               },
               {
                 id: "stat-2",
-                value: `${Math.max(stats.eventsCount, 30)}+`,
-                label: t("Workshops, bootcamps & contests hosted", "আয়োজিত কর্মশালা, বুটক্যাম্প ও প্রতিযোগিতা"),
+                value: `${stats.batchesCount || 5}+`,
+                label: t("Academic Batches Enrolled", "যুক্ত থাকা ডিপ্লোমা ব্যাচ ও সেশন"),
+                sublabel: stats.batches && stats.batches.length > 0 ? `Sessions ${stats.batches.slice(0, 3).join(', ')}...` : undefined,
               },
               {
                 id: "stat-3",
-                value: `${Math.max(stats.coursesCount, 8)}+`,
-                label: t("Hands-on curriculum tracks & courses", "বাস্তবধর্মী লার্নিং ট্র্যাক ও কোর্স"),
+                value: `${stats.postsCount || (stats.coursesCount > 0 ? stats.coursesCount : 2)}+`,
+                label: t("Tech Articles & Resources", "প্রযুক্তি নিবন্ধ ও রিসোর্স"),
+                sublabel: t("Student-authored publications", "টিউটোরিয়াল ও নির্দেশিকা"),
               },
               {
                 id: "stat-4",
-                value: `${Math.max(stats.achievementsCount, 40)}+`,
-                label: t("Student awards & competitive milestones", "শিক্ষার্থীদের প্রতিযোগিতা সাফল্য ও স্বীকৃতি"),
+                value: `${stats.eventsCount > 0 ? `${stats.eventsCount}+` : (stats.achievementsCount > 0 ? `${stats.achievementsCount}+` : '0')}`,
+                label: t("Workshops & Milestone Events", "আয়োজিত কর্মশালা ও মাইলফলক"),
+                sublabel: t("Seminars, hackathons & meetups", "সেমিনার, হ্যাকাথন ও মিটআপ"),
               },
             ].map((stat) => (
-              <div key={stat.id} className="flex flex-col gap-2">
-                <div className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+              <div key={stat.id} className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/60 p-5 shadow-2xs backdrop-blur-sm sm:p-6 transition-all hover:border-primary/40">
+                <div className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
                   {stat.value}
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-xs sm:text-sm font-medium text-foreground">{stat.label}</p>
+                {stat.sublabel ? (
+                  <p className="text-[11px] text-muted-foreground">{stat.sublabel}</p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -347,7 +380,10 @@ export function AboutView({ stats, committee }: AboutViewProps) {
                     {t("General Member", "সাধারণ সদস্য")}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t("Available to any student registering an account.", "ওয়েবসাইটে ফ্রি অ্যাকাউন্ট তৈরি করা যেকোনো শিক্ষার্থীর জন্য।")}
+                    {t(
+                      `Available to any student registering an account (${stats.membersCount || 40}+ registered).`,
+                      `ওয়েবসাইটে ফ্রি অ্যাকাউন্ট তৈরি করা যেকোনো শিক্ষার্থীর জন্য (${stats.membersCount || 40}+ নিবন্ধিত)।`
+                    )}
                   </p>
                 </div>
 
@@ -364,7 +400,7 @@ export function AboutView({ stats, committee }: AboutViewProps) {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="size-3.5 text-primary shrink-0" />
-                    <span>{t("Community discussion & updates", "কমিউনিটি নোটিশ ও আপডেট")}</span>
+                    <span>{t("Community discussion & updates", "কমিউনিটি নোটিউট ও আপডেট")}</span>
                   </li>
                 </ul>
               </div>
@@ -390,7 +426,10 @@ export function AboutView({ stats, committee }: AboutViewProps) {
                     {t("Verified Student Member", "যাচাইকৃত শিক্ষার্থী সদস্য")}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t("For enrolled DPI students who verify their roll and department in profile.", "প্রোফাইলে ডিপিআই রোল, শিফট ও বিভাগ যাচাইকৃত শিক্ষার্থী।")}
+                    {t(
+                      `For enrolled DPI students (${stats.verifiedMembersCount || 15}+ verified across ${stats.batchesCount || 5} batches).`,
+                      `ডিপিআই শিক্ষার্থীদের জন্য (${stats.batchesCount || 5}টি ব্যাচে ${stats.verifiedMembersCount || 15}+ ভেরিফাইড সদস্য)।`
+                    )}
                   </p>
                 </div>
 
