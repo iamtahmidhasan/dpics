@@ -21,23 +21,12 @@ import {
   getPublishedPostBySlug,
   listPublishedPosts,
 } from "@/lib/services/post.service"
-import { breadcrumbJsonLd } from "@/lib/seo"
-import { postPath, SITE_NAME, SITE_URL } from "@/lib/site"
+import { breadcrumbJsonLd, NOINDEX } from "@/lib/seo"
+import { postPath, postUrl, SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "cn"
 
-type PostPageProps = PageProps<"/posts/[slug]">
-
-/** A published post either renders or 404s, so it is safe to cache. */
-export const revalidate = 300
-
-export async function generateStaticParams() {
-  try {
-    const page = await listPublishedPosts({ page: 1, pageSize: 50 })
-    return page.posts.map((post) => ({ slug: post.slug }))
-  } catch (error) {
-    console.warn("generateStaticParams failed to fetch posts for static pre-rendering:", error)
-    return []
-  }
+type PostPageProps = {
+  params: Promise<{ slug: string }>
 }
 
 function buildDescription(post: {
@@ -89,7 +78,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       },
     }
   } catch {
-    return { title: "Post not found" }
+    return { title: "Post not found", robots: NOINDEX }
   }
 }
 
@@ -126,12 +115,17 @@ export default async function PostDetailPage({ params }: PostPageProps) {
   })
 
   // The related block is whatever else is published, most recent first.
-  const related = await listPublishedPosts({
-    page: 1,
-    pageSize: 4,
-    category: post.category?.slug ?? post.categoryId ?? undefined,
-  })
-  const relatedPosts = related.posts.filter((item) => item.id !== post.id).slice(0, 3)
+  let relatedPosts: Awaited<ReturnType<typeof listPublishedPosts>>["posts"] = []
+  try {
+    const related = await listPublishedPosts({
+      page: 1,
+      pageSize: 4,
+      category: post.category?.slug ?? post.categoryId ?? undefined,
+    })
+    relatedPosts = related.posts.filter((item) => item.id !== post.id).slice(0, 3)
+  } catch (error) {
+    console.error("Failed to fetch related posts:", error)
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -155,7 +149,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": new URL(postPath(post.slug), SITE_URL).toString(),
+      "@id": postUrl(post.slug),
     },
     keywords: post.tags.length > 0 ? post.tags.join(", ") : undefined,
     articleSection: categoryName ?? undefined,
@@ -216,7 +210,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
                   {post.author.avatar ? (
                     <AvatarImage src={post.author.avatar} alt={post.author.name} />
                   ) : null}
-                  <AvatarFallback>{post.author.name.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{(post.author.name || "?").trim().charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <span className="text-foreground font-medium group-hover:text-primary transition-colors">{post.author.name}</span>
               </Link>

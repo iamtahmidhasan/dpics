@@ -34,16 +34,6 @@ type AchievementPageProps = {
   params: Promise<{ slug: string }>
 }
 
-export const revalidate = 300
-
-export async function generateStaticParams() {
-  try {
-    const page = await listPublishedAchievements({ page: 1, pageSize: 50 })
-    return page.achievements.map((item) => ({ slug: item.slug }))
-  } catch {
-    return []
-  }
-}
 
 export async function generateMetadata({
   params,
