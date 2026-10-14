@@ -208,22 +208,6 @@ export function HeroSection({
               animate="show"
               className="mb-6"
             >
-              <Link
-                href={highlight.href}
-                className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-200 shadow-xs backdrop-blur-md transition-all hover:border-emerald-500/50 hover:bg-white/10"
-              >
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-                </span>
-                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
-                  {highlight.type === 'EVENT' ? 'Upcoming Event' : 'Latest Story'}
-                </span>
-                <span className="max-w-[210px] truncate font-medium text-slate-300 group-hover:text-white sm:max-w-xs">
-                  {highlight.title}
-                </span>
-                <ArrowRight className="size-3 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-400" />
-              </Link>
             </motion.div>
           ) : (
             <motion.div
@@ -234,7 +218,6 @@ export function HeroSection({
               className="mb-6"
             >
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400 backdrop-blur-md shadow-xs">
-                <Sparkles className="size-3.5 animate-pulse text-emerald-400" />
                 <span>Dhaka Polytechnic Institute Computing Society</span>
                 {batchesCount > 0 ? (
                   <span className="text-slate-400 hidden sm:inline">· {batchesCount} Active Batches</span>
@@ -243,30 +226,26 @@ export function HeroSection({
             </motion.div>
           )}
 
-          {/* Headline */}
+          {/* Headline - Creative, attractive, minimal sentence, strictly white text */}
           <motion.h1
             custom={1}
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="max-w-4xl text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl"
+            className="max-w-2xl text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl"
           >
-            Learn, build, and{' '}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              grow together
-            </span>
+            Engineering tomorrow’s software frontier.
           </motion.h1>
 
-          {/* Subtext */}
+          {/* Subtext - Creative, attractive, minimal sentence, strictly white text */}
           <motion.p
             custom={2}
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="mx-auto mt-5 max-w-2xl text-sm text-slate-300/80 sm:text-base md:text-lg"
+            className="mx-auto mt-3.5 max-w-lg text-xs font-normal text-white sm:text-sm md:text-base"
           >
-            The official tech community of Dhaka Polytechnic Institute — empowering student engineers
-            through hands-on workshops, hackathons, and collaborative open-source projects.
+            Dhaka Polytechnic Institute’s premier launchpad for software craftsmanship and competitive engineering.
           </motion.p>
 
           {/* Dynamic Social Proof Pile (Real Member Avatars from Database) */}
