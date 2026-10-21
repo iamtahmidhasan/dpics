@@ -137,6 +137,14 @@ const NAV_ITEMS: NavItem[] = [
               bn: 'সোসাইটির সাথে যোগাযোগ করুন',
             },
           },
+          {
+            label: { en: 'Verify Credential', bn: 'সনদপত্র যাচাই' },
+            href: '/verify',
+            description: {
+              en: 'Authenticate member IDs, passes & certificates',
+              bn: 'আইডি কার্ড, এন্ট্রি পাস ও সার্টিফিকেট যাচাই',
+            },
+          },
         ],
       },
     ],
@@ -270,6 +278,11 @@ const NAV_ITEMS: NavItem[] = [
   {
     label: { en: 'Achievements', bn: 'অর্জন' },
     href: '/achievements',
+    columns: [],
+  },
+  {
+    label: { en: 'Projects', bn: 'প্রজেক্ট' },
+    href: '/projects',
     columns: [],
   },
 ]

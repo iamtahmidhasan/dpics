@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
 import type { AchievementPage, AdminAchievementSummary } from "@/lib/services/achievement.service"
+import type { ProjectListResult } from "@/lib/services/project.service"
 import type { MediaTemplateSummary, TemplateAssignmentSummary } from "@/lib/template-engine/types"
 import type { UserPostsPayload } from "@/components/admin/admin-user-posts"
 
@@ -25,6 +26,7 @@ interface AdminUserContextType {
   isActorSuperAdmin: boolean
   posts?: UserPostsPayload
   achievements?: AchievementPage<AdminAchievementSummary>
+  projects?: ProjectListResult
   enrollments: unknown[]
   availableCourses: unknown[]
   templateAssignments: TemplateAssignmentSummary[]
@@ -38,6 +40,7 @@ export function AdminUserProvider({
   initialUser,
   initialPosts,
   initialAchievements,
+  initialProjects,
   initialEnrollments = [],
   availableCourses = [],
   initialTemplateAssignments = [],
@@ -49,6 +52,7 @@ export function AdminUserProvider({
   initialUser: AdminUserDetail
   initialPosts?: UserPostsPayload
   initialAchievements?: AchievementPage<AdminAchievementSummary>
+  initialProjects?: ProjectListResult
   initialEnrollments?: unknown[]
   availableCourses?: unknown[]
   initialTemplateAssignments?: TemplateAssignmentSummary[]
@@ -139,6 +143,7 @@ export function AdminUserProvider({
         isActorSuperAdmin,
         posts: initialPosts,
         achievements: initialAchievements,
+        projects: initialProjects,
         enrollments: initialEnrollments,
         availableCourses,
         templateAssignments: initialTemplateAssignments,

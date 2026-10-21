@@ -114,7 +114,7 @@ export function AdminEventRegistrationsTable({
 
   return (
     <div className="space-y-4">
-      {/* Back button & Title */}
+      {/* Back button & Action Toolbar */}
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
@@ -125,6 +125,16 @@ export function AdminEventRegistrationsTable({
         >
           <ArrowLeft className="size-3.5" />
           {t({ en: "Back to Events", bn: "ইভেন্টে ফিরুন" })}
+        </Button>
+
+        <Button
+          size="sm"
+          nativeButton={false}
+          render={<Link href={`/admin/events/${eventId}/scanner`} />}
+          className="gap-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+        >
+          <UserCheck className="size-3.5" />
+          {t({ en: "Launch Live Scanner", bn: "লাইভ স্ক্যানার চালু করুন" })}
         </Button>
       </div>
 

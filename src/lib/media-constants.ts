@@ -12,6 +12,7 @@ export const ALLOWED_IMAGE_MIME_TYPES = [
 
 export const MEDIA_FOLDERS = [
   { id: "all", name: "All Media", nameBn: "সব মিডিয়া", path: "" },
+  { id: "projects", name: "Projects", nameBn: "প্রজেক্ট", path: "/dpics/projects" },
   { id: "posts", name: "Posts", nameBn: "পোস্ট", path: "/dpics/posts" },
   { id: "achievements", name: "Achievements", nameBn: "অর্জনসমূহ", path: "/dpics/achievements" },
   { id: "courses", name: "Courses", nameBn: "কোর্স", path: "/dpics/courses" },

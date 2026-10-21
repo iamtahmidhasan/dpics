@@ -84,3 +84,34 @@ export function canCreateAchievements(user: { roles?: unknown } | null | undefin
     (ACHIEVEMENT_CREATOR_ROLES as readonly Role[]).includes(role)
   )
 }
+
+/**
+ * Roles allowed to create and submit projects. Member, Instructor, Admin, and Super Admin.
+ * Accounts with only USER role cannot submit projects until verified/onboarded.
+ */
+export const PROJECT_CREATOR_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN] as const
+
+export type ProjectCreatorRole = (typeof PROJECT_CREATOR_ROLES)[number]
+
+/** True when the account may open `/profile/projects/new` and submit projects. */
+export function canCreateProjects(user: { roles?: unknown } | null | undefined): boolean {
+  return getUserRoles(user).some((role) =>
+    (PROJECT_CREATOR_ROLES as readonly Role[]).includes(role)
+  )
+}
+
+/**
+ * Roles allowed to access the media manager. Member, Instructor, Admin, and Super Admin.
+ * Accounts with only USER role cannot access media gallery.
+ */
+export const MEDIA_ACCESS_ROLES = [Role.MEMBER, Role.INSTRUCTOR, Role.ADMIN, Role.SUPER_ADMIN] as const
+
+export type MediaAccessRole = (typeof MEDIA_ACCESS_ROLES)[number]
+
+/** True when the account may open `/profile/media` and manage uploaded images. */
+export function canAccessMedia(user: { roles?: unknown } | null | undefined): boolean {
+  return getUserRoles(user).some((role) =>
+    (MEDIA_ACCESS_ROLES as readonly Role[]).includes(role)
+  )
+}
+

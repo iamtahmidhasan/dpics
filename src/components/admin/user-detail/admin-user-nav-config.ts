@@ -2,6 +2,7 @@ import {
   Award,
   BadgeCheck,
   FileText,
+  FolderGit2,
   FolderTree,
   GraduationCap,
   IdCard,
@@ -19,6 +20,7 @@ export const SECTIONS = [
   "instructor",
   "committee",
   "achievements",
+  "projects",
   "posts",
   "courses",
   "templates",
@@ -122,6 +124,20 @@ export const SECTION_CONFIG: SectionMeta[] = [
     colorClass: {
       bg: "bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400",
       text: "text-yellow-600 dark:text-yellow-400",
+    },
+  },
+  {
+    id: "projects",
+    slug: "projects",
+    label: { en: "Projects", bn: "প্রজেক্টসমূহ" },
+    description: {
+      en: "Student showcase projects, hardware & software repositories",
+      bn: "প্রজেক্ট প্রদর্শনী, হার্ডওয়্যার ও সফটওয়্যার রিপোজিটরি",
+    },
+    icon: FolderGit2,
+    colorClass: {
+      bg: "bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-400",
+      text: "text-cyan-600 dark:text-cyan-400",
     },
   },
   {

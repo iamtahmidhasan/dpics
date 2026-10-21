@@ -340,6 +340,56 @@ export const DEFAULT_EMAIL_TEMPLATES: SystemTemplateDefinition[] = [
   },
 
   // ==========================================
+  // E2. PROJECTS & SHOWCASE
+  // ==========================================
+  {
+    key: "PROJECT_SUBMITTED",
+    name: "Project Submitted for Review",
+    category: EmailCategory.POST,
+    description: "Sent to author when their student project is submitted for review",
+    subject: "Project Received for Review: '{{projectTitle}}'",
+    variables: ["userName", "projectTitle", "siteUrl"],
+    bodyHtml: `
+<p>Hello <strong>{{userName}}</strong>,</p>
+<p>Your project <strong>"{{projectTitle}}"</strong> has been submitted to the DPICS project committee for moderation.</p>
+<p>Our team will test your live/GitHub links and review the technical details before publishing it to the student showcase.</p>
+    `,
+  },
+  {
+    key: "PROJECT_PUBLISHED",
+    name: "Project Approved & Showcased",
+    category: EmailCategory.POST,
+    description: "Sent to author when their project goes live on the showcase",
+    subject: "Your project '{{projectTitle}}' is now live on the DPICS Showcase!",
+    variables: ["userName", "projectTitle", "projectUrl", "siteUrl"],
+    bodyHtml: `
+<p>Hello <strong>{{userName}}</strong>,</p>
+<p>Awesome work! Your project <strong>"{{projectTitle}}"</strong> has been reviewed, approved, and published on the DPI Computing Society Project Showcase.</p>
+<p style="margin: 24px 0;">
+  <a href="{{projectUrl}}" class="button">View Project Showcase</a>
+</p>
+<p>Keep innovating and inspiring fellow polytechnic engineers!</p>
+    `,
+  },
+  {
+    key: "PROJECT_REJECTED",
+    name: "Project Review Feedback",
+    category: EmailCategory.POST,
+    description: "Sent to author when changes are requested or project is rejected",
+    subject: "Feedback on your project: '{{projectTitle}}'",
+    variables: ["userName", "projectTitle", "massageForAuthor", "siteUrl"],
+    bodyHtml: `
+<p>Hello <strong>{{userName}}</strong>,</p>
+<p>The review committee has reviewed your project <strong>"{{projectTitle}}"</strong> and provided feedback:</p>
+<div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; margin: 16px 0; border-radius: 4px; color: #991b1b;">
+  <p style="margin: 4px 0;"><strong>Reviewer Feedback:</strong></p>
+  <p style="margin: 4px 0; white-space: pre-wrap;">{{massageForAuthor}}</p>
+</div>
+<p>You can edit your project submission, update your links, and resubmit it.</p>
+    `,
+  },
+
+  // ==========================================
   // F. EVENTS & TICKETS
   // ==========================================
   {

@@ -2,8 +2,10 @@ import {
   Award,
   BadgeCheck,
   FileText,
+  FolderGit2,
   GraduationCap,
   IdCard,
+  Images,
   PenSquare,
   UserCog,
   Wrench,
@@ -11,7 +13,12 @@ import {
 } from "lucide-react"
 
 import { Role, type Role as RoleType } from "@/generated/prisma/enums"
-import { ACHIEVEMENT_CREATOR_ROLES, POST_WRITER_ROLES } from "@/lib/roles"
+import {
+  ACHIEVEMENT_CREATOR_ROLES,
+  MEDIA_ACCESS_ROLES,
+  POST_WRITER_ROLES,
+  PROJECT_CREATOR_ROLES,
+} from "@/lib/roles"
 
 export type ProfileNavCategory = "account" | "society" | "content"
 
@@ -134,6 +141,23 @@ export const PROFILE_NAV_ITEMS: ProfileNavItem[] = [
     category: "content",
   },
   {
+    key: "projects",
+    href: "/profile/projects",
+    mobileHref: "/profile/projects",
+    label: { en: "My Projects", bn: "আমার প্রজেক্ট" },
+    description: {
+      en: "Showcase student software & hardware projects",
+      bn: "শিক্ষার্থীদের তৈরি প্রজেক্ট পোর্টফোলিও",
+    },
+    icon: FolderGit2,
+    roles: [...PROJECT_CREATOR_ROLES],
+    badgeColor: {
+      bg: "bg-teal-500/10 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400",
+      text: "text-teal-600 dark:text-teal-400",
+    },
+    category: "content",
+  },
+  {
     key: "posts",
     href: "/profile/posts",
     mobileHref: "/profile/posts",
@@ -151,19 +175,19 @@ export const PROFILE_NAV_ITEMS: ProfileNavItem[] = [
     category: "content",
   },
   {
-    key: "write",
-    href: "/profile/write",
-    mobileHref: "/profile/write",
-    label: { en: "Write Post", bn: "পোস্ট লিখুন" },
+    key: "media",
+    href: "/profile/media",
+    mobileHref: "/profile/media",
+    label: { en: "My Uploaded Media", bn: "আপলোডকৃত মিডিয়া" },
     description: {
-      en: "Compose and submit a new article",
-      bn: "নতুন আর্টিকেল রচনা ও প্রকাশ",
+      en: "View, copy and manage your uploaded images",
+      bn: "আপনার আপলোডকৃত ছবি ও মিডিয়া ফাইলসমূহ",
     },
-    icon: PenSquare,
-    roles: [...POST_WRITER_ROLES],
+    icon: Images,
+    roles: [...MEDIA_ACCESS_ROLES],
     badgeColor: {
-      bg: "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400",
-      text: "text-rose-600 dark:text-rose-400",
+      bg: "bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-400",
+      text: "text-pink-600 dark:text-pink-400",
     },
     category: "content",
   },

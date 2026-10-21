@@ -50,6 +50,7 @@ const REQUIRED_MODELS = [
   "emailTemplate",
   "emailLog",
   "invitation",
+  "project",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {
@@ -81,6 +82,12 @@ const isClientValid = (client?: PrismaClient): client is PrismaClient => {
     const fields = models[model]?.fields;
 
     if (fields && !fields.some((entry) => entry.name === field)) return false;
+  }
+
+  // Stale client check: if Project model still has dropped column projectType, client is stale
+  const projectFields = models.Project?.fields;
+  if (projectFields?.some((entry) => entry.name === "projectType")) {
+    return false;
   }
 
   return true;

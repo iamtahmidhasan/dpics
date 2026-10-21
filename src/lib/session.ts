@@ -6,7 +6,9 @@ import { redirect } from "next/navigation"
 import { auth, type AuthSession } from "@/lib/auth"
 import { ApiError } from "@/lib/api-error"
 import {
+  canAccessMedia,
   canCreateAchievements,
+  canCreateProjects,
   canWritePosts,
   isAdmin,
   isRole,
@@ -131,6 +133,50 @@ export async function requireAchievementCreatorApi(): Promise<AuthSession> {
 
   if (!canCreateAchievements(session.user)) {
     throw ApiError.forbidden("Only society members and instructors can create achievements")
+  }
+
+  return session
+}
+
+/** Server component guard: signed in and allowed to submit projects. */
+export async function requireProjectCreator(): Promise<AuthSession> {
+  const session = await requireUser()
+
+  if (!canCreateProjects(session.user)) redirect("/dashboard")
+
+  return session
+}
+
+/** Route handler guard: signed in and allowed to submit projects. */
+export async function requireProjectCreatorApi(): Promise<AuthSession> {
+  const session = await getSession()
+
+  if (!session?.user) throw ApiError.unauthorized()
+
+  if (!canCreateProjects(session.user)) {
+    throw ApiError.forbidden("Only verified society members, instructors, and admins can submit projects")
+  }
+
+  return session
+}
+
+/** Server component guard: signed in and allowed to access media gallery. */
+export async function requireMediaAccess(): Promise<AuthSession> {
+  const session = await requireUser()
+
+  if (!canAccessMedia(session.user)) redirect("/dashboard")
+
+  return session
+}
+
+/** Route handler guard: signed in and allowed to access media gallery. */
+export async function requireMediaAccessApi(): Promise<AuthSession> {
+  const session = await getSession()
+
+  if (!session?.user) throw ApiError.unauthorized()
+
+  if (!canAccessMedia(session.user)) {
+    throw ApiError.forbidden("Only verified society members, instructors, and admins can access media gallery")
   }
 
   return session

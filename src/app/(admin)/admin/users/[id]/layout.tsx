@@ -12,6 +12,7 @@ import { listPostsForAdmin } from "@/lib/services/post.service"
 import { listAchievementsForAdmin } from "@/lib/services/achievement.service"
 import { listUserTemplateAssignments } from "@/lib/services/media-template-assignment.service"
 import { listMediaTemplates } from "@/lib/services/media-template.service"
+import { ProjectService } from "@/lib/services/project.service"
 import { isSuperAdmin } from "@/lib/roles"
 import { requireAdmin } from "@/lib/session"
 
@@ -33,6 +34,7 @@ export default async function AdminUserDetailLayout({
   let user
   let posts
   let achievements
+  let projects
   let enrollments
   let courses
   let templateAssignments
@@ -43,6 +45,7 @@ export default async function AdminUserDetailLayout({
       fetchedUser,
       fetchedPosts,
       fetchedAchievements,
+      fetchedProjects,
       fetchedEnrollments,
       availableCourses,
       fetchedAssignments,
@@ -51,6 +54,7 @@ export default async function AdminUserDetailLayout({
       getAdminUserDetail(id),
       listPostsForAdmin({ authorId: id }),
       listAchievementsForAdmin({ authorId: id }),
+      ProjectService.listAdminProjects({ authorId: id, pageSize: 20 }),
       EnrollmentService.listUserEnrollments(id),
       prisma.course.findMany({
         select: {
@@ -69,6 +73,7 @@ export default async function AdminUserDetailLayout({
     user = fetchedUser
     posts = fetchedPosts
     achievements = fetchedAchievements
+    projects = JSON.parse(JSON.stringify(fetchedProjects))
     enrollments = JSON.parse(JSON.stringify(fetchedEnrollments))
     courses = JSON.parse(JSON.stringify(availableCourses))
     templateAssignments = JSON.parse(JSON.stringify(fetchedAssignments))
@@ -85,6 +90,7 @@ export default async function AdminUserDetailLayout({
       initialUser={user}
       initialPosts={posts}
       initialAchievements={achievements}
+      initialProjects={projects}
       initialEnrollments={enrollments}
       availableCourses={courses}
       initialTemplateAssignments={templateAssignments}

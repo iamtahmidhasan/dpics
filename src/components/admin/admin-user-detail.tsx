@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  FolderGit2,
   FolderTree,
   GraduationCap,
   IdCard,
@@ -48,6 +49,7 @@ import { AdminUserCourses } from "./admin-user-courses"
 import { AdminUserOverview } from "./admin-user-overview"
 import { AdminUserPosts, type UserPostsPayload } from "./admin-user-posts"
 import { AdminUserAchievements } from "./admin-user-achievements"
+import { AdminUserProjects } from "./admin-user-projects"
 import { AdminUserMedia } from "./admin-user-media"
 import { AdminUserTemplates } from "./admin-user-templates"
 import type { AdminUserDetail } from "@/lib/services/admin-user.service"
@@ -61,6 +63,7 @@ const SECTIONS = [
   "instructor",
   "committee",
   "achievements",
+  "projects",
   "posts",
   "courses",
   "templates",
@@ -157,6 +160,19 @@ const SECTION_CONFIG: SectionMeta[] = [
     colorClass: {
       bg: "bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/15 dark:text-yellow-400",
       text: "text-yellow-600 dark:text-yellow-400",
+    },
+  },
+  {
+    id: "projects",
+    label: { en: "Projects", bn: "প্রজেক্টসমূহ" },
+    description: {
+      en: "Student showcase projects, prototypes & repositories",
+      bn: "প্রজেক্ট প্রদর্শনী, হার্ডওয়্যার প্রোটোটাইপ ও রিপোজিটরি",
+    },
+    icon: FolderGit2,
+    colorClass: {
+      bg: "bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-400",
+      text: "text-cyan-600 dark:text-cyan-400",
     },
   },
   {
@@ -531,6 +547,13 @@ export function AdminUserDetailView({
             userId={user.id}
             userName={user.name || user.email}
             initialAchievements={initialAchievements}
+          />
+        ) : null}
+
+        {section === "projects" ? (
+          <AdminUserProjects
+            userId={user.id}
+            userName={user.name || user.email}
           />
         ) : null}
 

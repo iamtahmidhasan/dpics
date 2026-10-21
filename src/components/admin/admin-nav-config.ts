@@ -3,6 +3,7 @@ import {
   Calendar,
   CreditCard,
   FileText,
+  FolderGit2,
   FolderTree,
   GraduationCap,
   History,
@@ -158,6 +159,22 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     badgeColor: {
       bg: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400",
       text: "text-sky-600 dark:text-sky-400",
+    },
+    category: "content",
+  },
+  {
+    key: "projects",
+    href: "/admin/projects",
+    mobileHref: "/admin/projects",
+    label: { en: "Projects", bn: "প্রজেক্টসমূহ" },
+    description: {
+      en: "Review & curate student project portfolios",
+      bn: "শিক্ষার্থীদের প্রজেক্ট পর্যালোচনা ও প্রদর্শন",
+    },
+    icon: FolderGit2,
+    badgeColor: {
+      bg: "bg-teal-500/10 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400",
+      text: "text-teal-600 dark:text-teal-400",
     },
     category: "content",
   },
