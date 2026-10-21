@@ -15,10 +15,20 @@ export function interpolateVariables(template: string, variables: Record<string,
   })
 }
 
+export interface BrandedLayoutOptions {
+  hideLogo?: boolean
+  headerTitle?: string
+  tagline?: string
+}
+
 /**
  * Wraps content inside the standard, high-deliverability DPICS email HTML shell
  */
-export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
+export function wrapInBrandedLayout(
+  innerHtml: string,
+  title?: string,
+  options?: BrandedLayoutOptions
+): string {
   if (
     innerHtml.includes("<!DOCTYPE") ||
     (innerHtml.includes("<html") && innerHtml.includes("</html>"))
@@ -29,13 +39,16 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
   const origin = SITE_URL.origin
   const logoUrl = `${origin}/DPICS_logo_vector.svg`
   const year = new Date().getFullYear()
+  const hideLogo = options?.hideLogo ?? false
+  const headerTitle = options?.headerTitle || SITE_NAME
+  const tagline = options?.tagline || "Dhaka Polytechnic Institute"
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title || SITE_NAME}</title>
+  <title>${title || headerTitle}</title>
   <style>
     body {
       margin: 0;
@@ -148,11 +161,22 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <img src="${logoUrl}" alt="DPICS Logo" class="header-logo" height="38" style="display:inline-block; vertical-align:middle; height:38px; width:auto; max-width:140px;" />
-                <div style="display:inline-block; vertical-align:middle; margin-left:12px;">
-                  <span class="header-title">${SITE_NAME}</span>
-                  <span class="header-tagline">Dhaka Polytechnic Institute</span>
+                ${
+                  hideLogo
+                    ? `
+                <div style="display:inline-block; vertical-align:middle;">
+                  <span class="header-title" style="margin-left:0; font-size:18px; display:block;">${headerTitle}</span>
+                  <span class="header-tagline" style="display:block; margin-top:3px;">${tagline}</span>
                 </div>
+                `
+                    : `
+                <img src="${logoUrl}" alt="${headerTitle} Logo" class="header-logo" height="38" style="display:inline-block; vertical-align:middle; height:38px; width:auto; max-width:140px;" />
+                <div style="display:inline-block; vertical-align:middle; margin-left:12px;">
+                  <span class="header-title">${headerTitle}</span>
+                  <span class="header-tagline">${tagline}</span>
+                </div>
+                `
+                }
               </td>
             </tr>
           </table>
@@ -170,7 +194,7 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
       <tr>
         <td class="footer">
           <p style="margin: 0 0 8px 0;">
-            This email was sent by <strong>${SITE_NAME}</strong>
+            This email was sent by <strong>${headerTitle}</strong>
           </p>
           <p style="margin: 0 0 12px 0;">
             Dhaka Polytechnic Institute, Tejgaon I/A, Dhaka-1208
@@ -182,7 +206,7 @@ export function wrapInBrandedLayout(innerHtml: string, title?: string): string {
             <a href="${origin}/privacy">Privacy Policy</a>
           </p>
           <p style="margin: 12px 0 0 0; font-size: 11px; color: #cbd5e1;">
-            &copy; ${year} DPI Computing Society. All rights reserved.
+            &copy; ${year} ${headerTitle}. All rights reserved.
           </p>
         </td>
       </tr>

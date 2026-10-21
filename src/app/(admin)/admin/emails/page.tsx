@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
 import { AdminEmailsContainer } from "@/components/admin/email/admin-emails-container"
+import { Spinner } from "@/components/ui/spinner"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 
@@ -26,7 +28,15 @@ export default async function AdminEmailsPage() {
         </p>
       </div>
 
-      <AdminEmailsContainer />
+      <Suspense
+        fallback={
+          <div className="flex h-48 items-center justify-center">
+            <Spinner className="size-6 text-primary" />
+          </div>
+        }
+      >
+        <AdminEmailsContainer />
+      </Suspense>
     </div>
   )
 }

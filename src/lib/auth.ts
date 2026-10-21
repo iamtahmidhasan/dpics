@@ -91,9 +91,22 @@ export const auth = betterAuth({
             : null
 
           if (settings && !settings.isSignupEnabled) {
-            throw new APIError("BAD_REQUEST", {
-              message: "Registration is currently closed",
-            })
+            // Check if user has an active invitation to bypass closed registration
+            const hasInvite = user.email
+              ? await prisma.invitation.findFirst({
+                  where: {
+                    email: { equals: user.email, mode: "insensitive" },
+                    status: "PENDING",
+                    expiresAt: { gt: new Date() },
+                  },
+                })
+              : null
+
+            if (!hasInvite) {
+              throw new APIError("BAD_REQUEST", {
+                message: "Registration is currently closed",
+              })
+            }
           }
 
           const image = normalizeImageList(user.image)

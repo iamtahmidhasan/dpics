@@ -49,6 +49,7 @@ const REQUIRED_MODELS = [
   "eventRegistration",
   "emailTemplate",
   "emailLog",
+  "invitation",
 ] as const;
 
 const REQUIRED_FIELDS: Record<string, string> = {

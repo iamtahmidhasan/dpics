@@ -168,7 +168,8 @@ export class EmailService {
   static async sendTemplatedEmail(
     templateKey: string,
     recipient: EmailRecipient,
-    variables: Record<string, unknown> = {}
+    variables: Record<string, unknown> = {},
+    options?: { hideLogo?: boolean }
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const cleanEmail = recipient.email?.trim().toLowerCase()
@@ -211,7 +212,8 @@ export class EmailService {
 
       const rawSubject = interpolateVariables(template.subject, mergedVariables)
       const interpolatedBody = interpolateVariables(template.bodyHtml, mergedVariables)
-      const fullHtml = wrapInBrandedLayout(interpolatedBody, rawSubject)
+      const shouldHideLogo = options?.hideLogo ?? (templateKey === "USER_INVITATION")
+      const fullHtml = wrapInBrandedLayout(interpolatedBody, rawSubject, { hideLogo: shouldHideLogo })
       const textContent = htmlToPlainText(interpolatedBody)
 
       const fromAddress = formatFromAddress(config)
@@ -495,7 +497,7 @@ export class EmailService {
                 html: fullHtml,
                 text: textContent,
               })
-            } catch (retryErr) {
+            } catch {
               // On connection drop in bulk batch, refresh transporter and retry once
               invalidateTransporterCache()
               const refreshed = await createEmailTransporter()

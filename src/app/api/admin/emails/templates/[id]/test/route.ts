@@ -33,6 +33,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Generate informative mock values for common template variables
     const mockVariables: Record<string, string> = {
       userName: session.user.name || "Test User",
+      recipientName: session.user.name || "Test Member",
+      recipientEmail: targetEmail,
+      invitedByName: session.user.name || "Society Administrator",
+      roleName: "Society Member",
+      inviteUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/invite/sample-invitation-token-123`,
+      customMessageBlock: '<div style="background-color: #f1f5f9; border-left: 4px solid #0284c7; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-style: italic; color: #334155;">"Welcome to our DPI Computing Society team! Please accept your invitation to get started."</div>',
+      expiresIn: "7 days",
       courseTitle: "Full-Stack Web Development with Next.js",
       amountPaid: "1500",
       paymentMethod: "bKash",
@@ -57,8 +64,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       venue: "Main Auditorium, Dhaka Polytechnic Institute",
       ticketUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/events/tickets/DPICS-TKT-84920`,
       committeeName: "Executive Committee 2026-2027",
-      roleName: "Technical Secretary",
       customMessage: "This is a test notification message from the DPI Computing Society administration.",
+      siteName: "DPI Computing Society",
+      siteUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}`,
       ...customVariables,
     }
 
@@ -69,7 +77,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         name: session.user.name,
         userId: session.user.id,
       },
-      mockVariables
+      mockVariables,
+      { hideLogo: template.key === "USER_INVITATION" }
     )
 
     if (!result.success) {

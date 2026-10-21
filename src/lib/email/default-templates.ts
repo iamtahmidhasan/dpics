@@ -463,6 +463,43 @@ export const DEFAULT_EMAIL_TEMPLATES: SystemTemplateDefinition[] = [
 <p><a href="{{siteUrl}}/login" class="button">Sign In</a></p>
     `,
   },
+  {
+    key: "USER_INVITATION",
+    name: "User Invitation",
+    category: EmailCategory.ACCOUNT,
+    description: "Sent to an invited user with an invitation link to join the society",
+    subject: "You're invited to join DPI Computing Society as {{roleName}}",
+    variables: [
+      "recipientName",
+      "recipientEmail",
+      "invitedByName",
+      "roleName",
+      "inviteUrl",
+      "customMessageBlock",
+      "expiresIn",
+      "siteName",
+      "siteUrl",
+    ],
+    bodyHtml: `
+<p>Hello <strong>{{recipientName}}</strong>,</p>
+<p>You have been personally invited by <strong>{{invitedByName}}</strong> to join the <strong>{{siteName}}</strong> community with the role of <strong style="color: #0284c7;">{{roleName}}</strong>.</p>
+{{customMessageBlock}}
+<p>To accept this invitation and activate your account privileges, please click the button below:</p>
+<p style="margin: 28px 0; text-align: center;">
+  <a href="{{inviteUrl}}" class="button" style="background-color: #0284c7; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">Accept Invitation</a>
+</p>
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 13px; color: #64748b;">
+  <p style="margin: 3px 0;"><strong>Invited Email:</strong> {{recipientEmail}}</p>
+  <p style="margin: 3px 0;"><strong>Assigned Role:</strong> {{roleName}}</p>
+  <p style="margin: 3px 0;"><strong>Link Expiration:</strong> {{expiresIn}}</p>
+  <p style="margin: 8px 0 0 0; color: #dc2626;"><strong>Note:</strong> For security purposes, you must sign in with Google or GitHub using <strong>{{recipientEmail}}</strong>.</p>
+</div>
+<p style="font-size: 12px; color: #94a3b8; word-break: break-all;">
+  If the button above does not work, copy and paste this link into your browser:<br/>
+  <a href="{{inviteUrl}}" style="color: #0284c7;">{{inviteUrl}}</a>
+</p>
+    `,
+  },
 
   // ==========================================
   // H. GENERAL BULK CAMPAIGN TEMPLATE

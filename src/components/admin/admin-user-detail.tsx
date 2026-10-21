@@ -49,6 +49,7 @@ export function AdminUserDetailView({
   initialTemplateAssignments = [],
   availableTemplates = [],
   isSelf,
+  isActorSuperAdmin = false,
 }: {
   initialUser: AdminUserDetail
   initialPosts?: UserPostsPayload
@@ -58,6 +59,7 @@ export function AdminUserDetailView({
   initialTemplateAssignments?: TemplateAssignmentSummary[]
   availableTemplates?: MediaTemplateSummary[]
   isSelf: boolean
+  isActorSuperAdmin?: boolean
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -244,6 +246,7 @@ export function AdminUserDetailView({
           key={`account-${user.updatedAt}`}
           user={user}
           isSelf={isSelf}
+          isActorSuperAdmin={isActorSuperAdmin}
           saving={saving}
           onSave={save}
         />

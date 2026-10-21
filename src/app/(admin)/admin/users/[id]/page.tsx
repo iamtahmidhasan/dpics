@@ -10,6 +10,7 @@ import { listPostsForAdmin } from "@/lib/services/post.service"
 import { listAchievementsForAdmin } from "@/lib/services/achievement.service"
 import { listUserTemplateAssignments } from "@/lib/services/media-template-assignment.service"
 import { listMediaTemplates } from "@/lib/services/media-template.service"
+import { isSuperAdmin } from "@/lib/roles"
 import { requireAdmin } from "@/lib/session"
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 
 export default async function AdminUserDetailPage({ params }: PageProps<"/admin/users/[id]">) {
   const session = await requireAdmin()
+  const isActorSuperAdmin = isSuperAdmin(session.user)
   const { id } = await params
 
   let user
@@ -79,6 +81,7 @@ export default async function AdminUserDetailPage({ params }: PageProps<"/admin/
       initialTemplateAssignments={templateAssignments}
       availableTemplates={availableTemplates}
       isSelf={user.id === session.user.id}
+      isActorSuperAdmin={isActorSuperAdmin}
     />
   )
 }

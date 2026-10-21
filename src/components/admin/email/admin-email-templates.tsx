@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useCallback, useEffect, useState, useTransition } from "react"
+import { useSearchParams } from "next/navigation"
 import {
   Check,
   CheckCircle2,
@@ -42,11 +43,28 @@ export interface EmailTemplateItem {
   updatedAt: string
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  ALL: "All Templates",
+  ACCOUNT: "Accounts & Invitations",
+  ENROLLMENT: "Course Enrollments",
+  MEMBERSHIP: "Memberships",
+  INSTRUCTOR: "Instructors",
+  POST: "Posts & Articles",
+  ACHIEVEMENT: "Achievements",
+  EVENT: "Events & Tickets",
+  BULK: "Bulk Campaigns",
+  SYSTEM: "System Notifications",
+}
+
 export function AdminEmailTemplates() {
+  const searchParams = useSearchParams()
   const [templates, setTemplates] = useState<EmailTemplateItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
-  const [search, setSearch] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    const cat = searchParams.get("category")
+    return cat && Object.values(EmailCategory).includes(cat as EmailCategory) ? cat : "ALL"
+  })
+  const [search, setSearch] = useState<string>(() => searchParams.get("search") || "")
 
   // Edit modal state
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplateItem | null>(null)
@@ -72,26 +90,7 @@ export function AdminEmailTemplates() {
   // Copied variable notice
   const [copiedVar, setCopiedVar] = useState<string | null>(null)
 
-  const fetchTemplates = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch("/api/admin/emails/templates")
-      const data = await res.json()
-      if (data.templates) {
-        setTemplates(data.templates)
-      }
-    } catch (err) {
-      console.error("Failed to load templates:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchTemplates()
-  }, [])
-
-  const openEditor = (template: EmailTemplateItem) => {
+  const openEditor = useCallback((template: EmailTemplateItem) => {
     setEditingTemplate(template)
     setEditSubject(template.subject)
     setEditBodyHtml(template.bodyHtml)
@@ -99,7 +98,40 @@ export function AdminEmailTemplates() {
     setEditorTab("code")
     setSaveSuccess(false)
     setSaveError(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+    async function load() {
+      try {
+        const res = await fetch("/api/admin/emails/templates")
+        const data = await res.json()
+        if (!ignore && data.templates) {
+          setTemplates(data.templates)
+          const templateParam = searchParams.get("template")
+          if (templateParam) {
+            const match = data.templates.find(
+              (t: EmailTemplateItem) =>
+                t.key.toUpperCase() === templateParam.toUpperCase() ||
+                t.id === templateParam
+            )
+            if (match) {
+              openEditor(match)
+              setSelectedCategory(match.category)
+            }
+          }
+        }
+      } catch (err) {
+        if (!ignore) console.error("Failed to load templates:", err)
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      ignore = true
+    }
+  }, [searchParams, openEditor])
 
   const handleToggleActive = async (template: EmailTemplateItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -257,6 +289,13 @@ export function AdminEmailTemplates() {
     const mockDict: Record<string, string> = {
       userName: "Tahmid Hasan",
       userEmail: "student@dgpics.org",
+      recipientName: "Tahmid Hasan",
+      recipientEmail: "invited.member@example.com",
+      invitedByName: "Society Administrator",
+      roleName: "Society Member",
+      inviteUrl: "https://dgpics.org/invite/sample-invitation-token-123",
+      customMessageBlock: '<div style="background-color: #f1f5f9; border-left: 4px solid #0284c7; padding: 14px 16px; margin: 18px 0; border-radius: 4px; font-style: italic; color: #334155;">"Welcome to our DPI Computing Society team! Please accept your invitation to get started."</div>',
+      expiresIn: "7 days",
       courseTitle: "Full-Stack Web Development with Next.js",
       amountPaid: "1500",
       paymentMethod: "bKash",
@@ -281,7 +320,6 @@ export function AdminEmailTemplates() {
       venue: "Main Auditorium, Dhaka Polytechnic Institute",
       ticketUrl: "https://dgpics.org/events/tickets/DPICS-TKT-84920",
       committeeName: "Executive Committee 2026-2027",
-      roleName: "Technical Secretary",
       customMessage: "Welcome to the new academic semester at DPI Computing Society!",
       siteName: "DPI Computing Society",
       siteUrl: "https://dgpics.org",
@@ -299,17 +337,22 @@ export function AdminEmailTemplates() {
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
             .card { background: #fff; max-width: 580px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-            .header { background: #0f172a; padding: 20px; color: #fff; font-weight: bold; }
+            .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; color: #fff; }
+            .header-title { font-size: 16px; font-weight: 700; color: #f8fafc; }
+            .header-tagline { font-size: 11px; color: #94a3b8; margin-top: 2px; }
             .content { padding: 24px; line-height: 1.6; font-size: 14px; }
             .button { display: inline-block; background-color: #0284c7; color: #fff !important; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px; margin: 12px 0; }
-            .footer { background: #f1f5f9; padding: 16px; text-align: center; font-size: 11px; color: #64748b; }
+            .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 11px; color: #64748b; }
           </style>
         </head>
         <body>
           <div class="card">
-            <div class="header">DPI Computing Society (DPICS)</div>
+            <div class="header">
+              <div class="header-title">DPI Computing Society (DPICS)</div>
+              <div class="header-tagline">Dhaka Polytechnic Institute</div>
+            </div>
             <div class="content">${result}</div>
-            <div class="footer">&copy; 2026 DPI Computing Society. Dhaka Polytechnic Institute.</div>
+            <div class="footer">&copy; 2026 DPI Computing Society. All rights reserved.</div>
           </div>
         </body>
       </html>
@@ -332,7 +375,7 @@ export function AdminEmailTemplates() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               )}
             >
-              {cat === "ALL" ? "All Categories" : cat}
+              {CATEGORY_LABELS[cat] || cat}
             </button>
           ))}
         </div>
@@ -374,9 +417,16 @@ export function AdminEmailTemplates() {
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <Badge variant="outline" className="text-[10px] font-mono tracking-wider uppercase">
-                    {template.category}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-[10px] font-mono tracking-wider uppercase">
+                      {template.category}
+                    </Badge>
+                    {template.key === "USER_INVITATION" && (
+                      <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 text-[10px] font-medium">
+                        Invitation
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                     <span className="text-[10px] text-muted-foreground">
                       {template.isActive ? "Enabled" : "Disabled"}

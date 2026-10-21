@@ -68,6 +68,10 @@ model User {
   // Activity Logs / Audit Trail
   activityLogs       ActivityLog[]
 
+  // Invitations
+  sentInvitations     Invitation[] @relation("SentInvitations")
+  acceptedInvitations Invitation[] @relation("AcceptedInvitations")
+
   @@unique([email])
   @@map("user")
 }
@@ -996,5 +1000,49 @@ model ActivityLog {
   @@index([actionName])
   @@index([createdAt])
   @@map("activity_log")
+}
+
+// ============================================================
+// INVITATIONS
+// ============================================================
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id            String           @id @default(cuid())
+  email         String
+  name          String?
+  role          Role             @default(USER)
+  token         String           @unique
+  status        InvitationStatus @default(PENDING)
+
+  invitedById   String?
+  invitedBy     User?            @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedByName String?
+  invitedByEmail String?
+
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  acceptedById  String?
+  acceptedBy    User?            @relation("AcceptedInvitations", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  resendCount   Int              @default(0)
+  lastResentAt  DateTime?
+  customMessage String?          @db.Text
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("invitation")
 }
 

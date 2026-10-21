@@ -3,6 +3,7 @@
 import { Award, Calendar, Check, Loader2, Plus, Sparkles, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { cn } from "cn"
 
 import { CheckboxField, EnumSelect, TextAreaField, TextField, fromDateTimeLocal, toDateTimeLocal } from "@/components/form-fields"
 import { BloodGroupSelect } from "@/components/media/blood-group-select"
@@ -47,11 +48,13 @@ type Errors = Record<string, string | undefined>
 export function AdminAccountForm({
   user,
   isSelf,
+  isActorSuperAdmin = false,
   onSave,
   saving,
 }: {
   user: AdminUserDetail
   isSelf: boolean
+  isActorSuperAdmin?: boolean
   onSave: (payload: Record<string, unknown>) => void
   saving: boolean
 }) {
@@ -210,18 +213,40 @@ export function AdminAccountForm({
             <Field data-invalid={!!errors.roles}>
               <span className="text-xs/relaxed font-medium">{t("Roles", "ভূমিকা")}</span>
               <div className="flex flex-wrap gap-3 pt-1">
-                {Object.values(Role).map((role) => (
-                  <label key={role} className="flex cursor-pointer items-center gap-1.5">
-                    <input
-                      type="checkbox"
-                      className="size-3.5 rounded border-input accent-primary"
-                      checked={roles.includes(role)}
-                      disabled={rolesLocked && role === Role.ADMIN}
-                      onChange={() => toggleRole(role)}
-                    />
-                    <span className="text-xs/relaxed">{role}</span>
-                  </label>
-                ))}
+                {Object.values(Role).map((role) => {
+                  const isSuperAdminRole = role === Role.SUPER_ADMIN
+                  const isSuperAdminDisabled = isSuperAdminRole && !isActorSuperAdmin
+                  const isSelfAdminDisabled = rolesLocked && role === Role.ADMIN
+
+                  return (
+                    <label
+                      key={role}
+                      className={cn(
+                        "flex items-center gap-1.5",
+                        isSuperAdminDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                      )}
+                      title={
+                        isSuperAdminDisabled
+                          ? t("Only Super Admins can assign or remove this role", "শুধুমাত্র সুপার অ্যাডমিনরা এই ভূমিকা নির্ধারণ বা সরাতে পারেন")
+                          : undefined
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-3.5 rounded border-input accent-primary"
+                        checked={roles.includes(role)}
+                        disabled={isSelfAdminDisabled || isSuperAdminDisabled}
+                        onChange={() => toggleRole(role)}
+                      />
+                      <span className="text-xs/relaxed">{role}</span>
+                      {isSuperAdminDisabled && (
+                        <span className="text-[0.625rem] text-muted-foreground">
+                          ({t("Super Admin only", "শুধুমাত্র সুপার অ্যাডমিন")})
+                        </span>
+                      )}
+                    </label>
+                  )
+                })}
               </div>
               {rolesLocked ? (
                 <p className="text-muted-foreground">
