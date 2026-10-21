@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { AdminMobileHeader } from "@/components/admin/admin-mobile-header"
+import { AdminHeaderNav } from "@/components/admin/admin-header-nav"
 import { AdminUserMenu } from "@/components/admin/admin-user-menu"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
@@ -29,21 +29,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="sticky top-0 z-40 border-b border-border bg-background">
         <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin"
-              className="flex flex-col leading-tight hover:opacity-85 transition-opacity"
-            >
-              <span className="text-sm font-bold tracking-tight">
-                {t("Admin Panel", "অ্যাডমিন প্যানেল")}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {t("DPI Computing Society", "ডিপিআই কম্পিউটিং সোসাইটি")}
-              </span>
-            </Link>
-          </div>
+          <AdminHeaderNav isSuperAdmin={isSuperAdmin} />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <AdminUserMenu user={user} isSuperAdmin={isSuperAdmin} />
           </div>
         </div>
@@ -52,7 +40,6 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 md:gap-6 md:px-8 md:py-6 md:flex-row">
         <AdminSidebar isSuperAdmin={isSuperAdmin} />
         <main className="min-w-0 flex-1">
-          <AdminMobileHeader isSuperAdmin={isSuperAdmin} />
           {children}
         </main>
       </div>

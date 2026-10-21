@@ -1,31 +1,22 @@
 import type { Metadata } from "next"
 
-import { AdminSettingsForm } from "@/components/admin/admin-settings-form"
+import { AdminSettingsMobileNav } from "@/components/admin/settings/admin-settings-mobile-nav"
+import { AdminSignupsTab } from "@/components/admin/settings/admin-signups-tab"
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
-import { getBatchMemberStats } from "@/lib/services/member-id.service"
-import { getInstructorStats } from "@/lib/services/instructor-id.service"
-import { getSettings } from "@/lib/services/settings.service"
-import { requireAdmin } from "@/lib/session"
 
 export const metadata: Metadata = {
   title: "Settings",
 }
 
 export default async function AdminSettingsPage() {
-  await requireAdmin()
-
-  const [lang, settings, batchStats, instructorStats] = await Promise.all([
-    getLang(),
-    getSettings(),
-    getBatchMemberStats(),
-    getInstructorStats(),
-  ])
+  const lang = await getLang()
   const t = makeT(lang)
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
+      {/* Mobile Title & Description (< md) */}
+      <div className="md:hidden space-y-1">
         <h1 className="font-heading text-lg font-semibold">{t("Settings", "সেটিংস")}</h1>
         <p className="text-xs/relaxed text-muted-foreground">
           {t(
@@ -35,11 +26,13 @@ export default async function AdminSettingsPage() {
         </p>
       </div>
 
-      <AdminSettingsForm
-        initialSettings={settings}
-        initialStats={batchStats}
-        initialInstructorStats={instructorStats}
-      />
+      {/* Mobile Categories Hub (< md) */}
+      <AdminSettingsMobileNav />
+
+      {/* Desktop Default View (>= md): Signups Tab */}
+      <div className="hidden md:block">
+        <AdminSignupsTab />
+      </div>
     </div>
   )
 }
