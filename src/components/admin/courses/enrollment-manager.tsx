@@ -98,15 +98,6 @@ export function EnrollmentManager({ initialEnrollments }: EnrollmentManagerProps
       {/* Top Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              href="/admin/courses"
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-            >
-              <ArrowLeft className="size-3.5" />
-              <span>{t("Back to Courses", "কোর্স তালিকায় ফিরুন")}</span>
-            </Link>
-          </div>
           <h1 className="font-heading text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Users className="size-5 text-primary" />
             <span>{t("Course Enrollment & Payment Queue", "এনরোলমেন্ট ও পেমেন্ট ভেরিফিকেশন")}</span>

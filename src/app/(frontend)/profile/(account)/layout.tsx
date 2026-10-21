@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { ProfileSidebar } from "@/components/profile/profile-sidebar"
+import { ProfileMobileHeader } from "@/components/profile/profile-mobile-header"
 import { getUserRoles, requireUser } from "@/lib/session"
 import { NOINDEX } from "@/lib/seo"
 
@@ -17,9 +18,12 @@ export default async function ProfileLayout({
   const roles = getUserRoles(session.user)
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 md:flex-row md:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 md:gap-6 md:px-8 md:py-6 md:flex-row">
       <ProfileSidebar roles={roles} />
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="min-w-0 flex-1">
+        <ProfileMobileHeader roles={roles} />
+        {children}
+      </div>
     </div>
   )
 }

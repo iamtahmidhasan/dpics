@@ -2,10 +2,12 @@
 import { ArrowRight, Mail, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
 import { useLanguage } from "@/components/language-provider"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "cn"
 import type { LocalizedText, TFn } from "@/lib/i18n"
 
 const BRAND = {
@@ -86,84 +88,96 @@ function FooterHeading({ children }: { children: ReactNode }) {
 }
 
 export function Footer() {
+  const pathname = usePathname()
   const { t } = useLanguage()
+
+  const isProfile = pathname.startsWith("/profile")
 
   return (
     <footer className="mt-auto border-t border-border bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-              <span className="flex flex-col leading-tight">
-                <span className="text-base">{BRAND.title}</span>
-                <span className="text-[10px] font-normal text-muted-foreground">
-                  {t(BRAND.tagline)}
-                </span>
-              </span>
-            </Link>
-            <p className="max-w-xs text-sm text-balance text-muted-foreground">
-              {t(BRAND.description)}
-            </p>
-            {SOCIAL_LINKS.length > 0 && (
-              <div className="flex items-center gap-4">
-                {SOCIAL_LINKS.map((social) => (
-                  <a
-                    key={social.platform}
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground capitalize transition-colors hover:text-foreground"
-                  >
-                    {social.platform}
-                  </a>
-                ))}
+      <div
+        className={cn(
+          "mx-auto max-w-7xl px-4 md:px-8",
+          isProfile ? "py-6 pb-24 md:py-6" : "py-12 pb-24 md:py-16"
+        )}
+      >
+        {!isProfile && (
+          <>
+            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+              <div className="flex flex-col gap-4">
+                <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
+                  <span className="flex flex-col leading-tight">
+                    <span className="text-base">{BRAND.title}</span>
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {t(BRAND.tagline)}
+                    </span>
+                  </span>
+                </Link>
+                <p className="max-w-xs text-sm text-balance text-muted-foreground">
+                  {t(BRAND.description)}
+                </p>
+                {SOCIAL_LINKS.length > 0 && (
+                  <div className="flex items-center gap-4">
+                    {SOCIAL_LINKS.map((social) => (
+                      <a
+                        key={social.platform}
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground capitalize transition-colors hover:text-foreground"
+                      >
+                        {social.platform}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="flex flex-col gap-4">
-            <FooterHeading>{t(HEADINGS.explore)}</FooterHeading>
-            <ul className="flex flex-col gap-2.5">
-              {EXPLORE_LINKS.map((link) => (
-                <li key={`${link.label.en}-${link.href}`}>
-                  <FooterLink link={link} t={t} />
-                </li>
-              ))}
-            </ul>
-          </div>
+              <div className="flex flex-col gap-4">
+                <FooterHeading>{t(HEADINGS.explore)}</FooterHeading>
+                <ul className="flex flex-col gap-2.5">
+                  {EXPLORE_LINKS.map((link) => (
+                    <li key={`${link.label.en}-${link.href}`}>
+                      <FooterLink link={link} t={t} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          <div className="flex flex-col gap-4">
-            <FooterHeading>{t(HEADINGS.involve)}</FooterHeading>
-            <ul className="flex flex-col gap-2.5">
-              {INVOLVE_LINKS.map((link) => (
-                <li key={`${link.label.en}-${link.href}`}>
-                  <FooterLink link={link} t={t} />
-                </li>
-              ))}
-            </ul>
-          </div>
+              <div className="flex flex-col gap-4">
+                <FooterHeading>{t(HEADINGS.involve)}</FooterHeading>
+                <ul className="flex flex-col gap-2.5">
+                  {INVOLVE_LINKS.map((link) => (
+                    <li key={`${link.label.en}-${link.href}`}>
+                      <FooterLink link={link} t={t} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          <div className="flex flex-col gap-4">
-            <FooterHeading>{t(HEADINGS.contact)}</FooterHeading>
-            <ul className="flex flex-col gap-3">
-              <li>
-                <a
-                  href={`mailto:${CONTACT.email}`}
-                  className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <Mail className="size-3.5 shrink-0" />
-                  <span>{CONTACT.email}</span>
-                </a>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                <span className="text-balance">{CONTACT.address}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+              <div className="flex flex-col gap-4">
+                <FooterHeading>{t(HEADINGS.contact)}</FooterHeading>
+                <ul className="flex flex-col gap-3">
+                  <li>
+                    <a
+                      href={`mailto:${CONTACT.email}`}
+                      className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <Mail className="size-3.5 shrink-0" />
+                      <span>{CONTACT.email}</span>
+                    </a>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                    <span className="text-balance">{CONTACT.address}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
 
-        <Separator className="my-8" />
+            <Separator className="my-8" />
+          </>
+        )}
 
         <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
           <p>
