@@ -35,7 +35,6 @@ import { resolveUserImage } from "@/lib/user-image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -751,8 +750,8 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
           )}
 
           {/* Minimal Manual Input Bar */}
-          <Card className="border border-border/70 rounded-lg bg-card shadow-none">
-            <CardContent className="p-2 sm:p-2.5">
+          <div className="border border-border/70 rounded-lg bg-card shadow-none">
+            <div className="p-2 sm:p-2.5">
               <form onSubmit={handleManualSubmit} className="flex gap-2">
                 <Input
                   placeholder={t({
@@ -777,12 +776,12 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                   <span>{t({ en: "Scan", bn: "স্ক্যান" })}</span>
                 </Button>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Minimal Camera Viewport Card */}
-          <Card className="border border-border/70 rounded-lg bg-card shadow-none overflow-hidden">
-            <CardContent className="p-2.5 sm:p-3 space-y-2.5">
+          <div className="border border-border/70 rounded-lg bg-card shadow-none overflow-hidden">
+            <div className="p-2.5 sm:p-3 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -927,12 +926,12 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                   {cameraError}
                 </p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* ACTIVE SCANNED ATTENDEE CARD (MINIMAL, NO DEPARTMENT, 1-CHECK TOGGLE) */}
           {activeResult && (
-            <Card
+            <div
               className={cn(
                 "border rounded-lg shadow-none transition-all",
                 activeResult.status === EventRegistrationStatus.ATTENDED
@@ -942,7 +941,7 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                     : "border-red-500/40 bg-red-500/[0.03]"
               )}
             >
-              <CardContent className="p-2.5 sm:p-3 space-y-2.5">
+              <div className="p-2.5 sm:p-3 space-y-2.5">
                 {/* Status & Code Bar */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -1076,8 +1075,8 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -1202,7 +1201,7 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                 const isHighlighted = highlightedTicketId === ticket.id
 
                 return (
-                  <Card
+                  <div
                     key={ticket.id}
                     className={cn(
                       "border rounded-lg bg-card transition-all shadow-none py-0",
@@ -1212,7 +1211,7 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                         : "border-border/60 hover:border-border"
                     )}
                   >
-                    <CardContent className="p-2 sm:p-2.5 flex items-center justify-between gap-2.5">
+                    <div className="p-2 sm:p-2.5 flex items-center justify-between gap-2.5">
                       {/* Left: Attendee Avatar & Info (NO DEPARTMENT) */}
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Avatar className="size-8 rounded-md shrink-0 border border-border/80">
@@ -1331,8 +1330,8 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                           <ExternalLink className="size-3" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )
               })
             )}
@@ -1361,8 +1360,8 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
           </div>
 
           {/* 1. Event Scope Card */}
-          <Card className="border border-border/70 rounded-lg bg-card shadow-none">
-            <CardContent className="p-3 space-y-2">
+          <div className="border border-border/70 rounded-lg bg-card shadow-none">
+            <div className="p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Calendar className="size-4 text-primary" />
@@ -1403,12 +1402,12 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                   ))}
                 </SelectContent>
               </Select>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* 2. Scanner Behavior Card (Auto-Admit & Sound) */}
-          <Card className="border border-border/70 rounded-lg bg-card shadow-none">
-            <CardContent className="p-3 space-y-3">
+          <div className="border border-border/70 rounded-lg bg-card shadow-none">
+            <div className="p-3 space-y-3">
               <p className="text-xs font-semibold text-foreground">
                 {t({ en: "Scanner Automation & Audio", bn: "অটোমেশন ও অডিও" })}
               </p>
@@ -1479,12 +1478,12 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                   {soundEnabled ? t({ en: "On", bn: "চালু" }) : t({ en: "Muted", bn: "নীরব" })}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* 3. Session Statistics & Reset */}
-          <Card className="border border-border/70 rounded-lg bg-card shadow-none">
-            <CardContent className="p-3 space-y-2.5">
+          <div className="border border-border/70 rounded-lg bg-card shadow-none">
+            <div className="p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-foreground">
@@ -1531,8 +1530,8 @@ export function TicketScannerHub({ events, initialData }: TicketScannerHubProps)
                   </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
