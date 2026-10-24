@@ -8,10 +8,13 @@ import {
   Check,
   CheckCircle2,
   ExternalLink,
+  Flashlight,
+  FlashlightOff,
   Loader2,
   RefreshCw,
   Search,
   ShieldCheck,
+  SwitchCamera,
   XCircle,
 } from "lucide-react"
 import jsQR from "jsqr"
@@ -60,12 +63,39 @@ interface VerificationData {
   isAdmin?: boolean
 }
 
+function playScanBeep() {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = "sine"
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12)
+    gain.gain.setValueAtTime(0.15, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    osc.stop(ctx.currentTime + 0.15)
+  } catch {
+    // Ignore audio permission/autoplay limitations
+  }
+}
+
 export default function VerificationPortalPage() {
   const { t, lang } = useLanguage()
   const isBn = lang === "bn"
 
   const [inputCode, setInputCode] = useState("")
   const [isCameraActive, setIsCameraActive] = useState(false)
+  const [cameraFacing, setCameraFacing] = useState<"environment" | "user">("environment")
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false)
+  const [hasTorch, setHasTorch] = useState(false)
+  const [torchEnabled, setTorchEnabled] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -76,30 +106,147 @@ export default function VerificationPortalPage() {
   const streamRef = useRef<MediaStream | null>(null)
   const lastScannedRef = useRef<string | null>(null)
 
-  // Start device camera
-  const startCamera = useCallback(async () => {
-    setCameraError(null)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
+  // Attach stream to video element when mounted or when camera active changes
+  useEffect(() => {
+    const video = videoRef.current
+    if (isCameraActive && video && streamRef.current) {
+      if (video.srcObject !== streamRef.current) {
+        video.srcObject = streamRef.current
       }
-      setIsCameraActive(true)
-    } catch {
-      setCameraError(
-        t({
+      video.play().catch((err) => {
+        console.warn("Video playback warning:", err)
+      })
+    }
+  }, [isCameraActive])
+
+  // Start device camera
+  const startCamera = useCallback(
+    async (facing: "environment" | "user" = cameraFacing) => {
+      setCameraError(null)
+
+      if (typeof window === "undefined" || !navigator?.mediaDevices?.getUserMedia) {
+        setCameraError(
+          t({
+            en: "Camera access requires HTTPS or localhost. Please ensure you are connected securely.",
+            bn: "ক্যামেরা ব্যবহারের জন্য HTTPS অথবা localhost প্রয়োজন।",
+          })
+        )
+        return
+      }
+
+      // Stop previous tracks if running
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+
+      try {
+        let stream: MediaStream
+        try {
+          // Attempt with desired facing mode
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: facing },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          })
+        } catch {
+          // Fallback to any available video device
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          })
+        }
+
+        streamRef.current = stream
+
+        // Ensure state is active first so the video element exists in DOM
+        setIsCameraActive(true)
+
+        // If video element is already present, assign srcObject and play
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          try {
+            await videoRef.current.play()
+          } catch (playErr) {
+            console.warn("Camera auto-play warning:", playErr)
+          }
+        }
+
+        // Check if multiple camera devices exist for switching
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices()
+          const videoDevices = devices.filter((d) => d.kind === "videoinput")
+          setHasMultipleCameras(videoDevices.length > 1)
+        } catch {
+          // Ignore enumeration failure
+        }
+
+        // Check torch support
+        const videoTrack = stream.getVideoTracks()[0]
+        const capabilities = (videoTrack?.getCapabilities?.() || {}) as { torch?: boolean }
+        setHasTorch(Boolean(capabilities.torch))
+      } catch (err: unknown) {
+        let errorMsg = t({
           en: "Could not access camera. Please allow camera permissions or enter the code manually.",
           bn: "ক্যামেরা চালু করা যায়নি। অনুগ্রহ করে ক্যামেরার অনুমতি দিন অথবা ম্যানুয়ালি কোড লিখুন।",
         })
-      )
-      setIsCameraActive(false)
+
+        if (err instanceof Error) {
+          if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            errorMsg = t({
+              en: "Camera permission denied. Please allow camera permissions in your browser.",
+              bn: "ক্যামেরার অনুমতি প্রত্যাখ্যাত হয়েছে। ব্রাউজারে অনুমতি দিন।",
+            })
+          } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+            errorMsg = t({
+              en: "No camera found on this device.",
+              bn: "এই ডিভাইসে কোনো ক্যামেরা পাওয়া যায়নি।",
+            })
+          } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+            errorMsg = t({
+              en: "Camera is currently in use by another application.",
+              bn: "ক্যামেরাটি অন্য কোনো অ্যাপে ব্যবহৃত হচ্ছে।",
+            })
+          }
+        }
+
+        setCameraError(errorMsg)
+        setIsCameraActive(false)
+      }
+    },
+    [cameraFacing, t]
+  )
+
+  // Switch between front and back camera
+  const toggleFacingMode = useCallback(() => {
+    const nextFacing = cameraFacing === "environment" ? "user" : "environment"
+    setCameraFacing(nextFacing)
+    startCamera(nextFacing)
+  }, [cameraFacing, startCamera])
+
+  // Toggle torch / flashlight
+  const toggleTorch = useCallback(async () => {
+    if (!streamRef.current) return
+    const videoTrack = streamRef.current.getVideoTracks()[0]
+    if (videoTrack && hasTorch) {
+      try {
+        const nextState = !torchEnabled
+        await (
+          videoTrack as unknown as {
+            applyConstraints: (c: unknown) => Promise<void>
+          }
+        ).applyConstraints({
+          advanced: [{ torch: nextState }],
+        })
+        setTorchEnabled(nextState)
+      } catch (err) {
+        console.warn("Torch toggle warning:", err)
+      }
     }
-  }, [t])
+  }, [hasTorch, torchEnabled])
 
   // Stop device camera
   const stopCamera = useCallback(() => {
@@ -108,6 +255,7 @@ export default function VerificationPortalPage() {
       streamRef.current = null
     }
     setIsCameraActive(false)
+    setTorchEnabled(false)
   }, [])
 
   // Verify code against API
@@ -126,9 +274,10 @@ export default function VerificationPortalPage() {
         const data: VerificationData = await res.json()
 
         if (res.ok) {
+          playScanBeep()
+          if (navigator.vibrate) navigator.vibrate([100])
           setResult(data)
           stopCamera()
-          if (navigator.vibrate) navigator.vibrate([100])
         } else {
           toast.error(t({ en: "Invalid or unrecognized code", bn: "অবৈধ বা অজানা কোড" }))
         }
@@ -146,22 +295,42 @@ export default function VerificationPortalPage() {
     if (!isCameraActive || result) return
 
     let animId: number
-    const BarcodeDetectorClass = (
-      window as unknown as {
-        BarcodeDetector?: new (options?: { formats?: string[] }) => {
-          detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>>
-        }
+    let isCancelled = false
+
+    const BarcodeDetectorClass =
+      typeof window !== "undefined"
+        ? (
+            window as unknown as {
+              BarcodeDetector?: new (options?: { formats?: string[] }) => {
+                detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>>
+              }
+            }
+          ).BarcodeDetector
+        : undefined
+
+    let detector: { detect: (s: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>> } | null = null
+    if (BarcodeDetectorClass) {
+      try {
+        detector = new BarcodeDetectorClass({ formats: ["qr_code"] })
+      } catch {
+        detector = null
       }
-    ).BarcodeDetector
+    }
 
     const scan = async () => {
+      if (isCancelled) return
+
       const video = videoRef.current
       const canvas = canvasRef.current
 
-      if (video && video.readyState === video.HAVE_ENOUGH_DATA && !isVerifying) {
+      if (
+        video &&
+        video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+        video.videoWidth > 0 &&
+        !isVerifying
+      ) {
         try {
-          if (BarcodeDetectorClass) {
-            const detector = new BarcodeDetectorClass({ formats: ["qr_code"] })
+          if (detector) {
             const barcodes = await detector.detect(video)
             if (barcodes.length > 0 && barcodes[0].rawValue) {
               const code = barcodes[0].rawValue
@@ -191,12 +360,15 @@ export default function VerificationPortalPage() {
         }
       }
 
-      animId = requestAnimationFrame(scan)
+      if (!isCancelled) {
+        animId = requestAnimationFrame(scan)
+      }
     }
 
     animId = requestAnimationFrame(scan)
 
     return () => {
+      isCancelled = true
       cancelAnimationFrame(animId)
     }
   }, [handleVerify, isCameraActive, isVerifying, result])
@@ -483,7 +655,7 @@ export default function VerificationPortalPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={startCamera}
+                    onClick={() => startCamera()}
                     className="w-full h-11 gap-2 text-xs font-semibold border-dashed"
                   >
                     <Camera className="size-4 text-primary" />
@@ -506,21 +678,72 @@ export default function VerificationPortalPage() {
               {isCameraActive && (
                 <div className="relative aspect-4/3 sm:aspect-16/9 w-full rounded-xl bg-black overflow-hidden flex items-center justify-center border border-border shadow-inner">
                   <video
-                    ref={videoRef}
+                    ref={(el) => {
+                      videoRef.current = el
+                      if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                        el.srcObject = streamRef.current
+                        el.play().catch(() => {})
+                      }
+                    }}
                     className="h-full w-full object-cover"
                     autoPlay
                     playsInline
                     muted
+                    onLoadedMetadata={(e) => {
+                      e.currentTarget.play().catch(() => {})
+                    }}
                   />
                   <canvas ref={canvasRef} className="hidden" />
 
-                  {/* Scanning box guide */}
+                  {/* Top-Right Camera Controls Overlay */}
+                  <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                    {hasTorch && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant={torchEnabled ? "default" : "secondary"}
+                        onClick={toggleTorch}
+                        className="size-8 rounded-full shadow-md backdrop-blur-xs"
+                        title={torchEnabled ? "Turn off torch" : "Turn on torch"}
+                      >
+                        {torchEnabled ? (
+                          <Flashlight className="size-4 text-amber-400" />
+                        ) : (
+                          <FlashlightOff className="size-4" />
+                        )}
+                      </Button>
+                    )}
+
+                    {hasMultipleCameras && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        onClick={toggleFacingMode}
+                        className="size-8 rounded-full shadow-md backdrop-blur-xs"
+                        title={t({ en: "Switch Camera", bn: "ক্যামেরা পরিবর্তন" })}
+                      >
+                        <SwitchCamera className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Scanning box guide & Corner Accents */}
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-                    <div className="size-48 sm:size-56 border-2 border-primary/70 rounded-xl" />
+                    <div className="relative size-48 sm:size-56 border-2 border-primary/50 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.25)]">
+                      {/* Corner Accents */}
+                      <div className="absolute top-0 left-0 size-5 border-t-4 border-l-4 border-primary rounded-tl-md" />
+                      <div className="absolute top-0 right-0 size-5 border-t-4 border-r-4 border-primary rounded-tr-md" />
+                      <div className="absolute bottom-0 left-0 size-5 border-b-4 border-l-4 border-primary rounded-bl-md" />
+                      <div className="absolute bottom-0 right-0 size-5 border-b-4 border-r-4 border-primary rounded-br-md" />
+
+                      {/* Animated Laser Scan Line */}
+                      <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-[bounce_2s_infinite]" />
+                    </div>
                   </div>
 
                   {isVerifying && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-20">
                       <div className="flex items-center gap-2 rounded-full bg-background px-4 py-2 shadow-lg">
                         <Loader2 className="size-4 animate-spin text-primary" />
                         <span className="text-xs font-bold text-foreground">
