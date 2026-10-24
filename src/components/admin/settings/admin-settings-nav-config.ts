@@ -1,6 +1,6 @@
-import { Award, CreditCard, GraduationCap, Users, type LucideIcon } from "lucide-react"
+import { Award, CreditCard, Database, GraduationCap, Users, type LucideIcon } from "lucide-react"
 
-export type SettingsTabKey = "signups" | "member-id" | "instructor-id" | "payments"
+export type SettingsTabKey = "signups" | "member-id" | "instructor-id" | "payments" | "database-backup"
 
 export type SettingsNavItem = {
   id: SettingsTabKey
@@ -74,6 +74,21 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     colorClass: {
       bg: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
       text: "text-amber-600 dark:text-amber-400",
+    },
+  },
+  {
+    id: "database-backup",
+    slug: "database-backup",
+    href: "/admin/settings/database-backup",
+    label: { en: "Database Backup", bn: "ডাটাবেজ ব্যাকআপ" },
+    description: {
+      en: "Full PostgreSQL dumps, transaction-safe restores & live database health",
+      bn: "সম্পূর্ণ ডাটাবেজ ব্যাকআপ ও রিস্টোর ইঞ্জিন",
+    },
+    icon: Database,
+    colorClass: {
+      bg: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400",
+      text: "text-indigo-600 dark:text-indigo-400",
     },
   },
 ]

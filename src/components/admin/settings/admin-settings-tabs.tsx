@@ -25,6 +25,7 @@ export function AdminSettingsTabs() {
           if (tab.id === "member-id") badge = memberPreviewPrefix
           if (tab.id === "instructor-id") badge = instructorPrefixPreview
           if (tab.id === "payments") badge = t("Shared", "শেয়ার্ড")
+          if (tab.id === "database-backup") badge = t("Backup", "ব্যাকআপ")
 
           return (
             <Link
