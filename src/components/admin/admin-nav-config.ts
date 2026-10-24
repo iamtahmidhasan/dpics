@@ -9,6 +9,7 @@ import {
   History,
   Image as ImageIcon,
   Mail,
+  QrCode,
   Settings,
   Shield,
   Ticket,
@@ -96,6 +97,22 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     badgeColor: {
       bg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
       text: "text-emerald-600 dark:text-emerald-400",
+    },
+    category: "management",
+  },
+  {
+    key: "scanner",
+    href: "/scanner",
+    mobileHref: "/scanner",
+    label: { en: "Live Scanner", bn: "লাইভ স্ক্যানার" },
+    description: {
+      en: "Gatekeeper high-speed QR ticket scanner & attendee check-in",
+      bn: "গেটকিপার দ্রুত কিউআর টিকেট স্ক্যানার ও উপস্থিতি চেক-ইন",
+    },
+    icon: QrCode,
+    badgeColor: {
+      bg: "bg-teal-500/10 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400",
+      text: "text-teal-600 dark:text-teal-400",
     },
     category: "management",
   },

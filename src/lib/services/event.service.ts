@@ -183,6 +183,7 @@ export type EventRegistrationSummary = {
   eventId: string
   eventTitle: string
   userId: string | null
+  userAvatar?: string | null
   name: string
   email: string
   phone: string
@@ -269,7 +270,7 @@ function mapSummary(row: EventRow, confirmedCount = 0): EventSummary {
     confirmedRegistrationsCount: confirmedCount,
     totalRegistrationsCount: totalCount,
     isFull,
-    ticketTemplateId: (row as any).ticketTemplateId ?? null,
+    ticketTemplateId: row.ticketTemplateId ?? null,
     author: {
       id: row.author.id,
       name: row.author.name,
@@ -954,6 +955,12 @@ export async function listEventRegistrations(
       take: pageSize,
       include: {
         event: { select: { title: true } },
+        user: {
+          select: {
+            image: true,
+            selactedImg: true,
+          },
+        },
       },
     }),
     prisma.eventRegistration.groupBy({
@@ -986,6 +993,9 @@ export async function listEventRegistrations(
       eventId: r.eventId,
       eventTitle: event?.title ?? "",
       userId: r.userId,
+      userAvatar: r.user
+        ? resolveUserImage(r.user.image, r.user.selactedImg).avatar
+        : null,
       name: r.name,
       email: r.email,
       phone: r.phone,
@@ -1084,6 +1094,12 @@ export async function listAllEventRegistrations(
             venue: true,
           },
         },
+        user: {
+          select: {
+            image: true,
+            selactedImg: true,
+          },
+        },
       },
     }),
     prisma.eventRegistration.groupBy({
@@ -1118,6 +1134,9 @@ export async function listAllEventRegistrations(
       eventStartDate: r.event.startDate.toISOString(),
       eventVenue: r.event.venue,
       userId: r.userId,
+      userAvatar: r.user
+        ? resolveUserImage(r.user.image, r.user.selactedImg).avatar
+        : null,
       name: r.name,
       email: r.email,
       phone: r.phone,
