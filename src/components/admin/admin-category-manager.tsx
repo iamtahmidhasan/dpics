@@ -16,6 +16,7 @@ import { CheckboxField, TextAreaField, TextField } from "@/components/form-field
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import {
   Card,
   CardContent,
@@ -270,10 +271,17 @@ export function AdminCategoryManager({
           })}
         </div>
 
-        <Button size="sm" className="h-8 text-xs font-medium" onClick={openCreate}>
-          <Plus className="size-3.5" />
-          {t("Add Category", "নতুন ক্যাটাগরি")}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportImportMenu
+            entity="category"
+            onImportComplete={() => window.location.reload()}
+          />
+
+          <Button size="sm" className="h-8 text-xs font-medium" onClick={openCreate}>
+            <Plus className="size-3.5" />
+            {t("Add Category", "নতুন ক্যাটাগরি")}
+          </Button>
+        </div>
       </div>
 
       {/* Search Input */}

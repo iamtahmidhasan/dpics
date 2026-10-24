@@ -17,6 +17,7 @@ import {
 import Link from "next/link"
 
 import { useLanguage } from "@/components/language-provider"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -161,15 +162,22 @@ export function AdminEventsTable({
           })}
         </div>
 
-        <Button
-          size="sm"
-          nativeButton={false}
-          render={<Link href="/admin/events/add" />}
-          className="gap-1.5 self-start sm:self-auto"
-        >
-          <Plus className="size-4" />
-          {t({ en: "New Event", bn: "নতুন ইভেন্ট" })}
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <ExportImportMenu
+            entity="events"
+            onImportComplete={() => fetchData()}
+          />
+
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/admin/events/add" />}
+            className="gap-1.5"
+          >
+            <Plus className="size-4" />
+            {t({ en: "New Event", bn: "নতুন ইভেন্ট" })}
+          </Button>
+        </div>
       </div>
 
       {/* Search Input bar */}

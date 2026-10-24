@@ -22,6 +22,7 @@ import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -277,10 +278,17 @@ export function AdminAchievementsTable({
             </Button>
           </div>
 
-          <Link href="/admin/achievements/add" className={buttonVariants({ size: "sm" })}>
-            <Plus className="size-3.5" />
-            {t("Add achievement", "অর্জন যোগ করুন")}
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ExportImportMenu
+              entity="achievements"
+              onImportComplete={() => fetchData()}
+            />
+
+            <Link href="/admin/achievements/add" className={buttonVariants({ size: "sm" })}>
+              <Plus className="size-3.5" />
+              {t("Add achievement", "অর্জন যোগ করুন")}
+            </Link>
+          </div>
         </div>
 
         {/* Table */}

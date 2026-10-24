@@ -28,6 +28,7 @@ import { toast } from "sonner"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import {
   Card,
   CardContent,
@@ -443,6 +444,10 @@ export function AdminMediaManager({
                 )}
               </CardDescription>
             </div>
+            <ExportImportMenu
+              entity="media"
+              onImportComplete={() => router.refresh()}
+            />
           </div>
         </CardHeader>
 

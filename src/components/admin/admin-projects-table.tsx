@@ -28,6 +28,7 @@ import { useLanguage } from "@/components/language-provider"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
@@ -208,20 +209,27 @@ export function AdminProjectsTable({
           ))}
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t({ en: "Search projects or tech...", bn: "প্রজেক্ট খুঁজুন..." })}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 pl-8 text-xs"
-            />
-          </div>
-          <Button type="submit" size="sm" variant="secondary" className="h-8 text-xs">
-            {t({ en: "Search", bn: "খুঁজুন" })}
-          </Button>
-        </form>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportImportMenu
+            entity="projects"
+            onImportComplete={() => fetchData()}
+          />
+
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                placeholder={t({ en: "Search projects or tech...", bn: "প্রজেক্ট খুঁজুন..." })}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+            <Button type="submit" size="sm" variant="secondary" className="h-8 text-xs">
+              {t({ en: "Search", bn: "খুঁজুন" })}
+            </Button>
+          </form>
+        </div>
       </div>
 
       {/* Table Card */}

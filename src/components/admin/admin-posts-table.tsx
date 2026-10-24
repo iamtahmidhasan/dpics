@@ -9,6 +9,7 @@ import { useAdminPosts, type AdminPostsPayload } from "@/components/admin/use-ad
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -171,6 +172,11 @@ export function AdminPostsTable({ initialData }: { initialData: AdminPostsPayloa
               <PenSquare className="size-3.5" />
             )}
           </Button>
+
+          <ExportImportMenu
+            entity="posts"
+            onImportComplete={() => setRefreshKey((value) => value + 1)}
+          />
 
           <Link href="/admin/posts/new" className={buttonVariants({ size: "sm" })}>
             {t("New post", "নতুন পোস্ট")}

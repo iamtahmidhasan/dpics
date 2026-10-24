@@ -7,6 +7,7 @@ import { AdminEmailTemplates } from "@/components/admin/email/admin-email-templa
 import { AdminBulkEmail } from "@/components/admin/email/admin-bulk-email"
 import { AdminEmailLogs } from "@/components/admin/email/admin-email-logs"
 import { AdminSmtpSettings } from "@/components/admin/email/admin-smtp-settings"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "cn"
 
@@ -77,28 +78,37 @@ export function AdminEmailsContainer() {
 
   return (
     <div className="space-y-6">
-      {/* Desktop Navigation Tab Bar (>= md) */}
-      <div className="hidden md:flex border-b border-border gap-1 overflow-x-auto pb-px scrollbar-none">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
+      {/* Navigation Tab Bar with Data Transfer */}
+      <div className="flex items-center justify-between border-b border-border pb-px gap-2">
+        <div className="hidden md:flex gap-1 overflow-x-auto scrollbar-none">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleSelectTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap",
-                isActive
-                  ? "border-primary text-primary bg-primary/5 rounded-t-lg"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-t-lg"
-              )}
-            >
-              <Icon className="size-4" />
-              <span>{t(tab.label.en, tab.label.bn)}</span>
-            </button>
-          )
-        })}
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleSelectTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap",
+                  isActive
+                    ? "border-primary text-primary bg-primary/5 rounded-t-lg"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-t-lg"
+                )}
+              >
+                <Icon className="size-4" />
+                <span>{t(tab.label.en, tab.label.bn)}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="ml-auto pb-1">
+          <ExportImportMenu
+            entity="emails"
+            onImportComplete={() => window.location.reload()}
+          />
+        </div>
       </div>
 
       {/* Mobile Tabs List (< md when on master list) */}

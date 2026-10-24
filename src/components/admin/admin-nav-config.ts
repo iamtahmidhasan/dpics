@@ -1,4 +1,5 @@
 import {
+  ArrowDownUp,
   Award,
   Calendar,
   CreditCard,
@@ -289,6 +290,22 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     badgeColor: {
       bg: "bg-slate-500/10 text-slate-600 dark:bg-slate-500/15 dark:text-slate-400",
       text: "text-slate-600 dark:text-slate-400",
+    },
+    category: "system",
+  },
+  {
+    key: "data-transfer",
+    href: "/admin/data-transfer",
+    mobileHref: "/admin/data-transfer",
+    label: { en: "Import & Export", bn: "ইমপোর্ট ও এক্সপোর্ট" },
+    description: {
+      en: "Backup, export & bulk import data in CSV or JSON",
+      bn: "সিএসভি বা জেএসনে ব্যাকআপ, এক্সপোর্ট ও বাল্ক ইমপোর্ট",
+    },
+    icon: ArrowDownUp,
+    badgeColor: {
+      bg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+      text: "text-emerald-600 dark:text-emerald-400",
     },
     category: "system",
   },

@@ -19,6 +19,7 @@ import { useMemo, useState } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import {
   Card,
   CardContent,
@@ -292,10 +293,17 @@ export function AdminCommitteeList({
           />
         </div>
 
-        <Button onClick={openCreate} size="sm">
-          <Plus className="size-3.5" data-icon="inline-start" />
-          {t("New committee", "নতুন কমিটি")}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportImportMenu
+            entity="committees"
+            onImportComplete={() => router.refresh()}
+          />
+
+          <Button onClick={openCreate} size="sm">
+            <Plus className="size-3.5" data-icon="inline-start" />
+            {t("New committee", "নতুন কমিটি")}
+          </Button>
+        </div>
       </div>
 
       {/* Committees Grid / List */}

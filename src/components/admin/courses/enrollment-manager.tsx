@@ -19,6 +19,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "cn"
@@ -104,67 +105,74 @@ export function EnrollmentManager({ initialEnrollments }: EnrollmentManagerProps
           </h1>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1 text-xs">
-          <button
-            type="button"
-            onClick={() => setSelectedStatus("PENDING")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
-              selectedStatus === "PENDING"
-                ? "bg-amber-500 text-white shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Clock className="size-3.5" />
-            <span>{t("Pending", "পেন্ডিং")}</span>
-            {pendingCount > 0 && (
-              <span className="rounded-full bg-white/30 px-1.5 py-0.2 text-[10px] text-white font-bold">
-                {pendingCount}
-              </span>
-            )}
-          </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <ExportImportMenu
+            entity="enrollments"
+            onImportComplete={() => router.refresh()}
+          />
 
-          <button
-            type="button"
-            onClick={() => setSelectedStatus("ACTIVE")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
-              selectedStatus === "ACTIVE"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <CheckCircle2 className="size-3.5" />
-            <span>{t("Approved", "অনুমোদিত")}</span>
-          </button>
+          {/* Status Filter Tabs */}
+          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setSelectedStatus("PENDING")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
+                selectedStatus === "PENDING"
+                  ? "bg-amber-500 text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Clock className="size-3.5" />
+              <span>{t("Pending", "পেন্ডিং")}</span>
+              {pendingCount > 0 && (
+                <span className="rounded-full bg-white/30 px-1.5 py-0.2 text-[10px] text-white font-bold">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSelectedStatus("REJECTED")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
-              selectedStatus === "REJECTED"
-                ? "bg-destructive text-destructive-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <XCircle className="size-3.5" />
-            <span>{t("Rejected", "প্রত্যাখ্যাত")}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSelectedStatus("ACTIVE")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
+                selectedStatus === "ACTIVE"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <CheckCircle2 className="size-3.5" />
+              <span>{t("Approved", "অনুমোদিত")}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSelectedStatus("ALL")}
-            className={cn(
-              "rounded-md px-3 py-1 font-semibold transition-colors",
-              selectedStatus === "ALL"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t("All", "সব")}
-          </button>
+            <button
+              type="button"
+              onClick={() => setSelectedStatus("REJECTED")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1 font-semibold transition-colors",
+                selectedStatus === "REJECTED"
+                  ? "bg-destructive text-destructive-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <XCircle className="size-3.5" />
+              <span>{t("Rejected", "প্রত্যাখ্যাত")}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedStatus("ALL")}
+              className={cn(
+                "rounded-md px-3 py-1 font-semibold transition-colors",
+                selectedStatus === "ALL"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t("All", "সব")}
+            </button>
+          </div>
         </div>
       </div>
 

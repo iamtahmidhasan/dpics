@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { BulkAssignTemplateModal } from "./bulk-assign-template-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import {
   Card,
   CardContent,
@@ -190,7 +191,12 @@ export function AdminTemplatesManager({
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportImportMenu
+            entity="templates"
+            onImportComplete={() => router.refresh()}
+          />
+
           <Button
             size="sm"
             variant="outline"

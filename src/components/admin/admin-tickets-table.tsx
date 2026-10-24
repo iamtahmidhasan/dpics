@@ -22,6 +22,7 @@ import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -237,8 +238,13 @@ export function AdminTicketsTable({ initialData, events }: AdminTicketsTableProp
             </Select>
           </div>
 
-          {/* Quick Scanner Launch Button */}
-          <div className="flex items-center gap-2">
+          {/* Quick Scanner & Data Transfer */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <ExportImportMenu
+              entity="tickets"
+              onImportComplete={() => fetchData(selectedEventId, status, searchInput, data.page)}
+            />
+
             <Button
               variant="outline"
               size="sm"

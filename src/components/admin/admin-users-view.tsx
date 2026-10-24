@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { UsersTable } from "@/components/admin/users-table"
 import { InvitationsTable } from "@/components/admin/invitations-table"
 import { InviteUserDialog } from "@/components/admin/invite-user-dialog"
+import { ExportImportMenu } from "@/components/admin/data-transfer/export-import-menu"
 import { Role } from "@/generated/prisma/enums"
 import type { UserListResult } from "@/lib/services/user.service"
 
@@ -61,6 +62,11 @@ export function AdminUsersView({
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <ExportImportMenu
+            entity="users"
+            onImportComplete={() => window.location.reload()}
+          />
+
           <Link href="/admin/emails?template=USER_INVITATION">
             <Button
               variant="outline"

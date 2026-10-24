@@ -121,10 +121,6 @@ export function EventTicketCard({
   }).format(startDate)
 
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   const graphicPassDownloadUrl = ticketTemplateId
     ? `/api/media/templates/${ticketTemplateId}/render?ticketCode=${encodeURIComponent(
         registration.ticketCode
@@ -186,15 +182,6 @@ export function EventTicketCard({
               <span className="sm:hidden">{t({ en: "Pass", bn: "পাস" })}</span>
             </Button>
           )}
-
-          <Button
-            size="sm"
-            onClick={handlePrint}
-            className="gap-1.5 text-xs font-semibold shadow-xs h-8 px-3"
-          >
-            <Printer className="size-3.5" />
-            <span>{t({ en: "Print", bn: "প্রিন্ট" })}</span>
-          </Button>
         </div>
       </div>
 
