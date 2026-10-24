@@ -5,7 +5,7 @@ import {
   ActivityLogService,
   type ActivityLogActor,
 } from "@/lib/services/activity-log.service"
-import { formatSqlValue, generateSqlDump } from "./sql-generator"
+import { formatSqlValue, generateSqlDump, sanitizeSqlScript } from "./sql-generator"
 import type {
   BackupFormat,
   BackupHistoryItem,
@@ -191,16 +191,25 @@ export class DatabaseBackupService {
     const tableSnapshots: Record<string, TableBackupData> = {}
     let totalRecords = 0
 
+    const columnTypesMap: Record<string, Record<string, { dataType: string; udtName: string }>> = {}
+
     // 2. Fetch column definitions & rows for each table
     for (const tableName of orderedTables) {
-      const colsRes = await prisma.$queryRaw<Array<{ column_name: string }>>`
-        SELECT column_name 
+      const colsRes = await prisma.$queryRaw<Array<{ column_name: string; data_type: string; udt_name: string }>>`
+        SELECT column_name, data_type, udt_name 
         FROM information_schema.columns 
         WHERE table_schema = 'public' 
           AND table_name = ${tableName}
         ORDER BY ordinal_position;
       `
       const columns = colsRes.map((c) => c.column_name)
+      columnTypesMap[tableName] = {}
+      for (const col of colsRes) {
+        columnTypesMap[tableName][col.column_name] = {
+          dataType: col.data_type,
+          udtName: col.udt_name,
+        }
+      }
 
       // Query rows
       const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
@@ -250,7 +259,7 @@ export class DatabaseBackupService {
     } else {
       filename = `dpics_database_backup_${dateTag}.sql`
       contentType = "application/sql; charset=utf-8"
-      data = generateSqlDump(snapshot, orderedTables)
+      data = generateSqlDump(snapshot, orderedTables, columnTypesMap)
     }
 
     // 5. Record activity log
@@ -523,10 +532,13 @@ export class DatabaseBackupService {
         timeout: 120000, // 2 minutes transaction timeout for large restores
       })
     } else {
+      // Pre-sanitize SQL script to automatically heal any legacy column type casts (e.g. guestSpeakers text[])
+      const cleanSql = sanitizeSqlScript(fileContent)
+
       // Execute SQL script within transaction
       await prisma.$transaction(async (tx) => {
         // Run SQL script statements
-        await tx.$executeRawUnsafe(fileContent)
+        await tx.$executeRawUnsafe(cleanSql)
       }, {
         timeout: 120000,
       })
