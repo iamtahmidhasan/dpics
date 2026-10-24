@@ -796,6 +796,7 @@ model MediaTemplate {
   createdBy   User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   assignments MediaTemplateAssignment[]
+  events      Event[]                   @relation("EventTicketTemplate")
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -896,6 +897,10 @@ model Event {
   authorId String
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
+  // Ticket Pass Template
+  ticketTemplateId String?
+  ticketTemplate   MediaTemplate? @relation("EventTicketTemplate", fields: [ticketTemplateId], references: [id], onDelete: SetNull)
+
   registrations EventRegistration[]
 
   createdAt DateTime @default(now())
@@ -904,6 +909,7 @@ model Event {
   @@index([status, startDate])
   @@index([categoryId])
   @@index([authorId])
+  @@index([ticketTemplateId])
   @@index([slug])
   @@map("event")
 }

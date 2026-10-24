@@ -11,6 +11,7 @@ import {
   Mail,
   Settings,
   Shield,
+  Ticket,
   Trophy,
   Users,
   type LucideIcon,
@@ -79,6 +80,22 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     badgeColor: {
       bg: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400",
       text: "text-purple-600 dark:text-purple-400",
+    },
+    category: "management",
+  },
+  {
+    key: "tickets",
+    href: "/admin/tickets",
+    mobileHref: "/admin/tickets",
+    label: { en: "Tickets", bn: "টিকেটসমূহ" },
+    description: {
+      en: "Event passes, check-in status & attendance verification",
+      bn: "ইভেন্ট পাস, চেক-ইন স্ট্যাটাস ও উপস্থিতি যাচাই",
+    },
+    icon: Ticket,
+    badgeColor: {
+      bg: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400",
+      text: "text-emerald-600 dark:text-emerald-400",
     },
     category: "management",
   },

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   CheckCircle2,
   Copy,
   ExternalLink,
   Loader2,
+  LogIn,
   Ticket,
 } from "lucide-react"
 import Link from "next/link"
@@ -52,13 +53,16 @@ export function EventRegistrationDialog({
   event,
   triggerText,
   disabled = false,
+  userTicketCode,
 }: {
   event: EventDetail
   triggerText?: string
   disabled?: boolean
+  userTicketCode?: string | null
 }) {
   const { t } = useLanguage()
   const { data: session } = useSession()
+  const isAuthenticated = Boolean(session?.user)
 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -83,6 +87,64 @@ export function EventRegistrationDialog({
   const [senderNumber, setSenderNumber] = useState("")
   const [transactionId, setTransactionId] = useState("")
   const [notes, setNotes] = useState("")
+
+  // Fetch full user profile & member data to auto-fill form by default
+  useEffect(() => {
+    if (!session?.user || !open) return
+
+    fetch("/api/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile) => {
+        if (!profile) return
+        if (profile.name) setName(profile.name)
+        if (profile.email) setEmail(profile.email)
+        if (profile.phone || profile.whatsappNumber) {
+          setPhone((prev) => prev || profile.phone || profile.whatsappNumber || "")
+        }
+        if (profile.member?.studentId || profile.member?.boardOrClassRoll) {
+          setStudentId(
+            (prev) =>
+              prev || profile.member.studentId || profile.member.boardOrClassRoll || ""
+          )
+        }
+        if (profile.member?.department) {
+          setDepartment(profile.member.department)
+        }
+        if (profile.member?.semester) {
+          setSemester(profile.member.semester)
+        }
+        if (profile.member?.shift) {
+          setShift(profile.member.shift)
+        }
+        if (profile.member) {
+          setInstitution("Dhaka Polytechnic Institute")
+        }
+      })
+      .catch(() => {
+        // Ignore fetch error, keep defaults
+      })
+  }, [session?.user, open])
+
+  // If user already has a ticket for this event (1 ticket per user limit)
+  if (userTicketCode) {
+    return (
+      <div className="space-y-2 w-full text-center">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+          <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>{t({ en: "Ticket Purchased (1 Ticket Limit)", bn: "টিকেট সংগ্রহ করা হয়েছে" })}</span>
+        </div>
+        <Button
+          size="lg"
+          nativeButton={false}
+          render={<Link href={`/events/ticket/${userTicketCode}`} />}
+          className="w-full font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+        >
+          <Ticket className="size-4" />
+          {t({ en: "View My Ticket Pass", bn: "আমার টিকেট পাস দেখুন" })}
+        </Button>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,7 +214,47 @@ export function EventRegistrationDialog({
       />
 
       <DialogContent className="sm:max-w-xl">
-        {ticketResult ? (
+        {/* VIEW 1: SIGN IN REQUIRED IF NOT LOGGED IN */}
+        {!isAuthenticated ? (
+          <div className="py-6 text-center space-y-5">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <LogIn className="size-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <DialogTitle className="text-xl font-bold">
+                {t({ en: "Sign In Required", bn: "সাইন ইন করা আবশ্যক" })}
+              </DialogTitle>
+              <DialogDescription className="max-w-sm mx-auto text-xs sm:text-sm">
+                {t({
+                  en: "Please sign in to your DPICS account to buy tickets and register for this event. Your profile details will be pre-filled automatically.",
+                  bn: "এই ইভেন্টে টিকিট ক্রয় ও নিবন্ধন করার জন্য অনুগ্রহ করে আপনার ডিপিআইসিএস অ্যাকাউন্টে সাইন ইন করুন। আপনার প্রোফাইলের তথ্য স্বয়ংক্রিয়ভাবে যুক্ত হবে।",
+                })}
+              </DialogDescription>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Button
+                size="lg"
+                nativeButton={false}
+                render={<Link href={`/join?callbackUrl=/events/${event.slug}`} />}
+                className="w-full sm:w-auto font-semibold gap-2"
+              >
+                <LogIn className="size-4" />
+                {t({ en: "Sign In to Continue", bn: "সাইন ইন করুন" })}
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => setOpen(false)}
+                className="w-full sm:w-auto text-xs"
+              >
+                {t({ en: "Cancel", bn: "বাতিল" })}
+              </Button>
+            </div>
+          </div>
+        ) : ticketResult ? (
+          /* VIEW 2: REGISTRATION SUCCESSFUL TICKET CARD */
           <div className="py-6 text-center space-y-5">
             <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
               <CheckCircle2 className="size-8" />
@@ -230,6 +332,7 @@ export function EventRegistrationDialog({
             </div>
           </div>
         ) : (
+          /* VIEW 3: REGISTRATION FORM WITH PRE-POPULATED USER DATA */
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>

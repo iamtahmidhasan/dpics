@@ -67,9 +67,11 @@ type UserSpeakerOption = {
 export function AdminEventForm({
   initialEvent,
   categories = [],
+  ticketTemplates = [],
 }: {
   initialEvent?: EventDetail
   categories: CategoryOption[]
+  ticketTemplates?: { id: string; name: string }[]
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -143,6 +145,9 @@ export function AdminEventForm({
   )
   const [maxParticipants, setMaxParticipants] = useState(
     initialEvent?.maxParticipants ? String(initialEvent.maxParticipants) : ""
+  )
+  const [ticketTemplateId, setTicketTemplateId] = useState<string>(
+    initialEvent?.ticketTemplateId ?? ""
   )
 
   // Speakers
@@ -269,6 +274,7 @@ export function AdminEventForm({
         isFree,
         registrationFee: isFree ? 0 : Number(registrationFee) || 0,
         maxParticipants: maxParticipants ? Number(maxParticipants) || null : null,
+        ticketTemplateId: ticketTemplateId ? ticketTemplateId : null,
         guestSpeakers: guestSpeakers.filter((s) => s.name.trim().length > 0),
       }
 
@@ -785,6 +791,48 @@ export function AdminEventForm({
               onChange={(e) => setIsFeatured(e.target.checked)}
               className="size-4"
             />
+          </div>
+        </div>
+
+        {/* Ticket Design Template Selector */}
+        <div className="pt-3 border-t border-border/60 space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="ticketTemplate" className="text-xs font-semibold">
+              {t({ en: "Ticket Design Template", bn: "টিকেট ডিজাইন টেমপ্লেট" })}
+            </Label>
+            <Link
+              href="/admin/templates"
+              target="_blank"
+              className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              {t({ en: "Open Visual Template Designer →", bn: "ডিজাইনারে টেমপ্লেট পরিবর্তন করুন →" })}
+            </Link>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <select
+              id="ticketTemplate"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground shadow-xs font-medium"
+              value={ticketTemplateId}
+              onChange={(e) => setTicketTemplateId(e.target.value)}
+            >
+              <option value="">
+                {t({
+                  en: "Default Official Event Pass (Built-in QR Template)",
+                  bn: "ডিফল্ট অফিসিয়াল ইভেন্ট পাস (বিল্ট-ইন কিউআর টেমপ্লেট)",
+                })}
+              </option>
+              {ticketTemplates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground flex items-center">
+              {t({
+                en: "Choose a custom Canva-style Fabric.js template for this event's tickets.",
+                bn: "এই ইভেন্টের টিকেটের জন্য কাস্টম ফ্যাব্রিক জেএস টেমপ্লেট নির্বাচন করুন।",
+              })}
+            </p>
           </div>
         </div>
       </div>

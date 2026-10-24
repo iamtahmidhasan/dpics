@@ -29,6 +29,9 @@ import { departmentLabel, semesterLabel, shiftLabel } from "@/lib/profile-labels
 import { makeT } from "@/lib/i18n"
 import { getLang } from "@/lib/i18n-server"
 
+import { getSession, isAdmin } from "@/lib/session"
+import { AdminVerifyActions } from "@/components/verify/admin-verify-actions"
+
 type Props = {
   params: Promise<{ code: string }>
 }
@@ -58,11 +61,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VerifyCodePage({ params }: Props) {
   const { code } = await params
   const decoded = decodeURIComponent(code)
-  const lang = await getLang()
+  const [lang, session, result] = await Promise.all([
+    getLang(),
+    getSession(),
+    VerificationService.verifyCode(decoded),
+  ])
   const t = makeT(lang)
   const isBn = lang === "bn"
-
-  const result = await VerificationService.verifyCode(decoded)
+  const isAdminUser = session?.user ? isAdmin(session.user) : false
 
   const formattedIssueDate = result.issuedAt
     ? new Intl.DateTimeFormat(isBn ? "bn-BD" : "en-US", {
@@ -217,6 +223,15 @@ export default async function VerifyCodePage({ params }: Props) {
                 </div>
               </div>
             </div>
+
+            {/* Admin Management Toolbar */}
+            {isAdminUser && Boolean(result.metadata?.registrationId) && (
+              <AdminVerifyActions
+                registrationId={String(result.metadata!.registrationId)}
+                currentStatus={result.status || "CONFIRMED"}
+                ticketCode={result.code}
+              />
+            )}
 
             {/* Public Link */}
             {result.detailsUrl && (

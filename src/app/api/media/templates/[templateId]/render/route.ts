@@ -21,17 +21,12 @@ export async function GET(
     const { templateId } = await params
     const { searchParams } = new URL(request.url)
 
-    const session = await getSession()
-    if (!session?.user) {
-      throw ApiError.unauthorized("Authentication required to generate images")
-    }
-
     const template = await getMediaTemplateById(templateId)
     if (!template) {
       throw ApiError.notFound("Template not found")
     }
 
-    // Determine target member / user
+    // Determine target member / user / ticket
     let targetUserId = searchParams.get("userId")
     let targetMemberId = searchParams.get("memberId")
     const isPreview = searchParams.get("preview") === "1" || searchParams.get("preview") === "true"
@@ -41,10 +36,24 @@ export async function GET(
     const imageIndexParam = searchParams.get("imageIndex")
     const imageIndex = imageIndexParam !== null ? parseInt(imageIndexParam, 10) : undefined
 
-    const userIsAdmin = isAdmin(session.user)
+    const session = await getSession()
+    const userIsAdmin = session?.user ? isAdmin(session.user) : false
 
-    // Security / IDOR Protection:
-    if (!userIsAdmin) {
+    // If ticketCode is present, verify that the registration exists
+    let validTicketRegistration = null
+    if (ticketCode) {
+      validTicketRegistration = await prisma.eventRegistration.findUnique({
+        where: { ticketCode },
+      })
+      if (!validTicketRegistration) {
+        throw ApiError.notFound("Ticket registration not found")
+      }
+    } else if (!session?.user) {
+      throw ApiError.unauthorized("Authentication required to generate images")
+    }
+
+    // Security / IDOR Protection (for member cards & personal user assets):
+    if (!ticketCode && !userIsAdmin && session?.user) {
       // Default to current user if not specified
       if (!targetUserId && !targetMemberId) {
         targetUserId = session.user.id
@@ -115,7 +124,7 @@ export async function GET(
       }
     } else {
       // Resolve specific target user data
-      const effectiveUserId = targetUserId || (!targetMemberId ? session.user.id : undefined)
+      const effectiveUserId = targetUserId || (!targetMemberId ? session?.user?.id : undefined)
       resolvedData = await resolveTemplateData(template.type, {
         userId: effectiveUserId,
         memberId: targetMemberId || undefined,

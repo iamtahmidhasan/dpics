@@ -30,7 +30,7 @@ export function LoginForm({
     const res = await signIn.social({
       provider,
       callbackURL: "/dashboard",
-      errorCallbackURL: "/sign-in",
+      errorCallbackURL: "/join",
     })
 
     if (res?.error) {

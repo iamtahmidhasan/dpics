@@ -28,11 +28,18 @@ export default async function AdminEditEventPage({ params }: Props) {
     notFound()
   }
 
-  const categories = await prisma.category.findMany({
-    where: { type: "EVENT", isActive: true },
-    select: { id: true, name: true, nameBn: true, slug: true },
-    orderBy: { name: "asc" },
-  })
+  const [categories, ticketTemplates] = await Promise.all([
+    prisma.category.findMany({
+      where: { type: "EVENT", isActive: true },
+      select: { id: true, name: true, nameBn: true, slug: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.mediaTemplate.findMany({
+      where: { type: "EVENT_PASS", isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ])
 
   return (
     <div className="space-y-4">
@@ -45,7 +52,11 @@ export default async function AdminEditEventPage({ params }: Props) {
         </p>
       </div>
 
-      <AdminEventForm initialEvent={event} categories={categories} />
+      <AdminEventForm
+        initialEvent={event}
+        categories={categories}
+        ticketTemplates={ticketTemplates}
+      />
     </div>
   )
 }

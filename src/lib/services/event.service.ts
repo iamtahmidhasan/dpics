@@ -28,7 +28,6 @@ import {
 } from "@/lib/validation"
 import {
   DEFAULT_EVENT_PAGE_SIZE,
-  EVENT_REGISTRATION_STATUSES,
   EVENT_STATUSES,
   EVENT_TYPES,
   MAX_EVENT_CONTENT_LENGTH,
@@ -99,6 +98,7 @@ export type EventSummary = {
   confirmedRegistrationsCount: number
   totalRegistrationsCount: number
   isFull: boolean
+  ticketTemplateId: string | null
   author: EventAuthor
   createdAt: string
   updatedAt: string
@@ -157,6 +157,7 @@ export type EventInput = {
   isFree?: boolean
   registrationFee?: number
   maxParticipants?: number | null
+  ticketTemplateId?: string | null
   guestSpeakers?: GuestSpeaker[]
 }
 
@@ -268,6 +269,7 @@ function mapSummary(row: EventRow, confirmedCount = 0): EventSummary {
     confirmedRegistrationsCount: confirmedCount,
     totalRegistrationsCount: totalCount,
     isFull,
+    ticketTemplateId: (row as any).ticketTemplateId ?? null,
     author: {
       id: row.author.id,
       name: row.author.name,
@@ -611,6 +613,7 @@ export async function createEventAsAdmin(
       isFree: input.isFree ?? true,
       registrationFee: input.registrationFee ?? 0,
       maxParticipants: input.maxParticipants,
+      ticketTemplateId: input.ticketTemplateId ?? null,
       guestSpeakers: (input.guestSpeakers ?? []) as unknown as Prisma.InputJsonValue,
       authorId: actor.userId,
     },
@@ -678,6 +681,11 @@ export async function updateEventAsAdmin(
     updateData.registrationFee = input.registrationFee
   if (input.maxParticipants !== undefined)
     updateData.maxParticipants = input.maxParticipants
+  if (input.ticketTemplateId !== undefined) {
+    updateData.ticketTemplate = input.ticketTemplateId
+      ? { connect: { id: input.ticketTemplateId } }
+      : { disconnect: true }
+  }
   if (input.guestSpeakers !== undefined) {
     updateData.guestSpeakers = input.guestSpeakers as unknown as Prisma.InputJsonValue
   }
@@ -1005,6 +1013,138 @@ export async function listEventRegistrations(
   }
 }
 
+export async function listAllEventRegistrations(
+  params: {
+    eventId?: string | null
+    status?: EventRegistrationStatus | null
+    q?: string | null
+    page?: number
+    pageSize?: number
+  } = {}
+): Promise<{
+  registrations: (EventRegistrationSummary & {
+    eventStartDate?: string
+    eventVenue?: string | null
+  })[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  stats: {
+    total: number
+    confirmed: number
+    pending: number
+    attended: number
+    cancelled: number
+  }
+}> {
+  const page = Math.max(1, params.page ?? 1)
+  const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 20))
+
+  const where: Prisma.EventRegistrationWhereInput = {}
+
+  if (params.eventId && params.eventId !== "ALL") {
+    where.eventId = params.eventId
+  }
+
+  if (params.status && (params.status as string) !== "ALL") {
+    where.status = params.status
+  }
+
+  if (params.q) {
+    where.OR = [
+      { name: { contains: params.q, mode: "insensitive" } },
+      { email: { contains: params.q, mode: "insensitive" } },
+      { phone: { contains: params.q, mode: "insensitive" } },
+      { ticketCode: { contains: params.q, mode: "insensitive" } },
+      { studentId: { contains: params.q, mode: "insensitive" } },
+      { transactionId: { contains: params.q, mode: "insensitive" } },
+      { event: { title: { contains: params.q, mode: "insensitive" } } },
+    ]
+  }
+
+  // Count where condition for stats scoped to event (if selected) or all
+  const statsWhere: Prisma.EventRegistrationWhereInput = {}
+  if (params.eventId && params.eventId !== "ALL") {
+    statsWhere.eventId = params.eventId
+  }
+
+  const [total, rows, counts] = await Promise.all([
+    prisma.eventRegistration.count({ where }),
+    prisma.eventRegistration.findMany({
+      where,
+      orderBy: [{ registeredAt: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        event: {
+          select: {
+            title: true,
+            startDate: true,
+            venue: true,
+          },
+        },
+      },
+    }),
+    prisma.eventRegistration.groupBy({
+      by: ["status"],
+      where: statsWhere,
+      _count: { status: true },
+    }),
+  ])
+
+  const stats = {
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    attended: 0,
+    cancelled: 0,
+  }
+
+  for (const c of counts) {
+    const n = c._count.status
+    stats.total += n
+    if (c.status === EventRegistrationStatus.CONFIRMED) stats.confirmed = n
+    else if (c.status === EventRegistrationStatus.PENDING) stats.pending = n
+    else if (c.status === EventRegistrationStatus.ATTENDED) stats.attended = n
+    else if (c.status === EventRegistrationStatus.CANCELLED) stats.cancelled = n
+  }
+
+  return {
+    registrations: rows.map((r) => ({
+      id: r.id,
+      eventId: r.eventId,
+      eventTitle: r.event.title,
+      eventStartDate: r.event.startDate.toISOString(),
+      eventVenue: r.event.venue,
+      userId: r.userId,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      studentId: r.studentId,
+      department: r.department,
+      semester: r.semester,
+      shift: r.shift,
+      institution: r.institution,
+      status: r.status,
+      ticketCode: r.ticketCode,
+      paymentMethod: r.paymentMethod,
+      senderNumber: r.senderNumber,
+      transactionId: r.transactionId,
+      amountPaid: r.amountPaid,
+      notes: r.notes,
+      registeredAt: r.registeredAt.toISOString(),
+      confirmedAt: r.confirmedAt ? r.confirmedAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize) || 1,
+    stats,
+  }
+}
+
 export async function updateEventRegistrationStatus(
   registrationId: string,
   status: EventRegistrationStatus,
@@ -1110,6 +1250,7 @@ export async function updateEventRegistrationStatus(
 export async function getEventTicket(ticketCode: string): Promise<{
   registration: EventRegistrationSummary
   event: EventSummary
+  ticketTemplateId?: string | null
 }> {
   const row = await prisma.eventRegistration.findUnique({
     where: { ticketCode },
@@ -1125,6 +1266,15 @@ export async function getEventTicket(ticketCode: string): Promise<{
   })
 
   if (!row) throw ApiError.notFound("Ticket not found")
+
+  let effectiveTemplateId = row.event.ticketTemplateId
+  if (!effectiveTemplateId) {
+    const defaultTemplate = await prisma.mediaTemplate.findFirst({
+      where: { type: "EVENT_PASS", isActive: true },
+      select: { id: true },
+    })
+    effectiveTemplateId = defaultTemplate?.id || null
+  }
 
   const confirmedCount = await prisma.eventRegistration.count({
     where: {
@@ -1159,6 +1309,7 @@ export async function getEventTicket(ticketCode: string): Promise<{
       createdAt: row.createdAt.toISOString(),
     },
     event: mapSummary(row.event as EventRow, confirmedCount),
+    ticketTemplateId: effectiveTemplateId,
   }
 }
 
@@ -1227,6 +1378,10 @@ export function parseEventInput(body: unknown): EventInput {
     body.maxParticipants !== undefined && body.maxParticipants !== null && body.maxParticipants !== ""
       ? Math.max(1, Number(body.maxParticipants) || 0)
       : null
+  const ticketTemplateId =
+    body.ticketTemplateId !== undefined && body.ticketTemplateId !== null && body.ticketTemplateId !== ""
+      ? String(body.ticketTemplateId).trim()
+      : null
 
   let guestSpeakers: GuestSpeaker[] = []
   if (Array.isArray(body.guestSpeakers)) {
@@ -1269,6 +1424,7 @@ export function parseEventInput(body: unknown): EventInput {
     isFree,
     registrationFee,
     maxParticipants,
+    ticketTemplateId,
     guestSpeakers,
   }
 }
@@ -1371,6 +1527,12 @@ export function parseEventUpdateInput(body: unknown): EventUpdateInput {
     result.maxParticipants =
       body.maxParticipants !== null && body.maxParticipants !== ""
         ? Math.max(1, Number(body.maxParticipants) || 0)
+        : null
+  }
+  if (body.ticketTemplateId !== undefined) {
+    result.ticketTemplateId =
+      body.ticketTemplateId !== null && body.ticketTemplateId !== ""
+        ? String(body.ticketTemplateId).trim()
         : null
   }
   if (body.guestSpeakers !== undefined) {

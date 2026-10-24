@@ -5,10 +5,7 @@ import {
   ExternalLink,
   Globe,
   MapPin,
-  Share2,
-  Sparkles,
   Tag,
-  UserCheck,
   Users,
   Video,
 } from "lucide-react"
@@ -31,6 +28,8 @@ import {
 } from "@/lib/event-labels"
 import { EventStatus, EventType } from "@/generated/prisma/enums"
 import { getPublishedEventBySlug } from "@/lib/services/event.service"
+import prisma from "@/lib/prisma"
+import { getSession } from "@/lib/session"
 import { absoluteUrl, NOINDEX, websiteMetadata } from "@/lib/seo"
 import { SITE_NAME, SITE_URL } from "@/lib/site"
 import { cn } from "cn"
@@ -41,15 +40,12 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-
   try {
     const event = await getPublishedEventBySlug(slug)
     const description =
       event.excerpt ||
-      `Join ${event.title} organized by DPI Computing Society on ${new Date(event.startDate).toDateString()}.`
+      `Join ${event.title} organized by DPI Computing Society. View event dates, venue and registration info.`
 
-    // websiteMetadata emits an absolute title, canonical and complete
-    // OG/Twitter blocks — no double site name, no root-metadata leakage.
     return websiteMetadata({
       title: event.title,
       description,
@@ -63,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicEventDetailPage({ params }: Props) {
   const { slug } = await params
-  const [lang] = await Promise.all([getLang()])
+  const [lang, session] = await Promise.all([getLang(), getSession()])
   const t = makeT(lang)
   const isBn = lang === "bn"
 
@@ -72,6 +68,26 @@ export default async function PublicEventDetailPage({ params }: Props) {
     event = await getPublishedEventBySlug(slug)
   } catch {
     notFound()
+  }
+
+  // Check if current logged-in user already bought a ticket for this event (1-ticket limit)
+  let userTicket = null
+  if (session?.user) {
+    userTicket = await prisma.eventRegistration.findFirst({
+      where: {
+        eventId: event.id,
+        OR: [
+          { userId: session.user.id },
+          { email: { equals: session.user.email, mode: "insensitive" } },
+        ],
+        status: { notIn: ["CANCELLED", "REJECTED"] },
+      },
+      select: {
+        id: true,
+        ticketCode: true,
+        status: true,
+      },
+    })
   }
 
   const startDate = new Date(event.startDate)
@@ -109,8 +125,6 @@ export default async function PublicEventDetailPage({ params }: Props) {
         )
       : null
 
-  // Rich-result eligible Event schema: dates, cancelled state, attendance
-  // mode, venue and organizer.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -135,20 +149,20 @@ export default async function PublicEventDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
+    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8 space-y-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Navigation breadcrumb */}
-      <div className="mb-6 flex items-center justify-between">
+      {/* Breadcrumb Navigation */}
+      <div>
         <Button
           variant="ghost"
           size="sm"
           nativeButton={false}
           render={<Link href="/events" />}
-          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 px-2"
         >
           <ArrowLeft className="size-3.5" />
           {t({ en: "Back to Events", bn: "সকল ইভেন্টে ফিরে যান" })}
@@ -157,14 +171,14 @@ export default async function PublicEventDetailPage({ params }: Props) {
 
       {/* Main Grid Layout */}
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left Column: Media, Description, Speakers, Gallery */}
-        <div className="space-y-8 lg:col-span-2">
+        {/* Left Column: Media & Information */}
+        <div className="space-y-6 lg:col-span-2">
           {/* Header & Badges */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant={eventStatusBadgeVariant(event.status)}
-                className="rounded-full px-3 py-0.5 text-xs font-medium"
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
               >
                 {t(eventStatusLabel(event.status))}
               </Badge>
@@ -188,7 +202,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
               )}
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
               {displayTitle}
             </h1>
 
@@ -201,7 +215,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
 
           {/* Cover Media */}
           {event.coverImage && (
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/80 bg-muted shadow-md">
+            <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
               <Image
                 src={event.coverImage}
                 alt={displayTitle}
@@ -213,39 +227,40 @@ export default async function PublicEventDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Markdown Content */}
-          <div className="rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-xs space-y-4">
-            <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          {/* Description Section */}
+          <div className="space-y-3 pt-2">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
               {t({ en: "About this Event", bn: "ইভেন্ট সম্পর্কে" })}
             </h2>
-
-            <MarkdownContent>{displayContent}</MarkdownContent>
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-7 shadow-xs">
+              <MarkdownContent>{displayContent}</MarkdownContent>
+            </div>
           </div>
 
           {/* Guest Speakers Section */}
           {event.guestSpeakers && event.guestSpeakers.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <div className="flex items-center gap-2">
                 <Users className="size-5 text-primary" />
-                <h2 className="text-xl font-bold tracking-tight text-foreground">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
                   {t({ en: "Featured Speakers & Mentors", bn: "বক্তা ও মেন্টরবৃন্দ" })}
                 </h2>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {event.guestSpeakers.map((speaker, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-4 rounded-xl border border-border/70 bg-card p-4 transition-all hover:border-primary/40 hover:shadow-sm"
+                    className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/40 shadow-xs"
                   >
-                    <Avatar className="size-14 rounded-xl border border-border shrink-0">
+                    <Avatar className="size-12 rounded-xl border border-border shrink-0">
                       <AvatarImage src={speaker.avatar || undefined} alt={speaker.name} />
-                      <AvatarFallback className="rounded-xl text-base font-bold bg-primary/10 text-primary">
+                      <AvatarFallback className="rounded-xl text-sm font-bold bg-primary/10 text-primary">
                         {speaker.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
 
-                    <div className="space-y-1 min-w-0">
+                    <div className="space-y-0.5 min-w-0">
                       <h4 className="font-semibold text-foreground text-sm truncate">
                         {isBn && speaker.nameBn ? speaker.nameBn : speaker.name}
                       </h4>
@@ -257,37 +272,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
                           {speaker.company}
                         </p>
                       )}
-                      {speaker.bio && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 pt-1">
-                          {speaker.bio}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Photo Gallery if any */}
-          {event.images && event.images.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">
-                {t({ en: "Event Gallery", bn: "ইভেন্ট গ্যালারি" })}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {event.images.map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative aspect-video overflow-hidden rounded-xl border border-border bg-muted"
-                  >
-                    <Image
-                      src={img}
-                      alt={`Event photo ${i + 1}`}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-300 hover:scale-105"
-                    />
                   </div>
                 ))}
               </div>
@@ -295,13 +280,13 @@ export default async function PublicEventDetailPage({ params }: Props) {
           )}
         </div>
 
-        {/* Right Column: Sticky Sidebar Card */}
-        <div className="space-y-6">
-          <div className="sticky top-20 rounded-2xl border border-border/80 bg-card p-6 shadow-sm space-y-6">
-            {/* Price & Registration CTA */}
-            <div className="border-b border-border/50 pb-5 space-y-3">
+        {/* Right Column: Sticky Registration & Details Card */}
+        <div>
+          <div className="sticky top-20 rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm space-y-5">
+            {/* Price & Action */}
+            <div className="border-b border-border/60 pb-5 space-y-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
+                <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                   {t({ en: "Registration Fee", bn: "রেজিস্ট্রেশন ফি" })}
                 </span>
                 <span className="text-2xl font-black text-primary">
@@ -311,9 +296,11 @@ export default async function PublicEventDetailPage({ params }: Props) {
                 </span>
               </div>
 
+              {/* 1 USER = 1 TICKET ENFORCEMENT */}
               <EventRegistrationDialog
                 event={event}
                 disabled={isRegistrationClosed}
+                userTicketCode={userTicket?.ticketCode}
                 triggerText={
                   event.isFull
                     ? t({ en: "Seats Full", bn: "সিট পূর্ণ" })
@@ -325,9 +312,9 @@ export default async function PublicEventDetailPage({ params }: Props) {
             </div>
 
             {/* Quick Details List */}
-            <div className="space-y-4 text-xs">
+            <div className="space-y-3.5 text-xs">
               {/* Date & Time */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-2.5">
                 <CalendarDays className="size-4 shrink-0 text-primary mt-0.5" />
                 <div>
                   <span className="font-semibold text-foreground block">
@@ -342,7 +329,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
 
               {/* Venue */}
               {displayVenue && (
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2.5">
                   <MapPin className="size-4 shrink-0 text-primary mt-0.5" />
                   <div>
                     <span className="font-semibold text-foreground block">
@@ -355,16 +342,16 @@ export default async function PublicEventDetailPage({ params }: Props) {
                         className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
                       >
                         <ExternalLink className="size-3" />
-                        {t({ en: "View on Google Maps", bn: "গুগল ম্যাপে দেখুন" })}
+                        {t({ en: "View Map", bn: "ম্যাপ দেখুন" })}
                       </Link>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Online Link if any */}
+              {/* Online Stream Link */}
               {event.onlineJoinUrl && (
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2.5">
                   <Video className="size-4 shrink-0 text-sky-500 mt-0.5" />
                   <div>
                     <span className="font-semibold text-foreground block">
@@ -376,7 +363,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
                       className="inline-flex items-center gap-1 text-[11px] text-sky-500 hover:underline mt-0.5"
                     >
                       <ExternalLink className="size-3" />
-                      {t({ en: "Join Meeting / Stream", bn: "মিটিং এ যোগ দিন" })}
+                      {t({ en: "Join Stream", bn: "স্ট্রিম লিংক" })}
                     </Link>
                   </div>
                 </div>
@@ -395,7 +382,7 @@ export default async function PublicEventDetailPage({ params }: Props) {
                     </span>
                   </div>
 
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-300",
@@ -426,11 +413,11 @@ export default async function PublicEventDetailPage({ params }: Props) {
               )}
             </div>
 
-            {/* Organizer Card */}
-            <div className="rounded-xl border border-border/60 bg-muted/30 p-3 flex items-center gap-3">
-              <Avatar className="size-10 rounded-full shrink-0">
+            {/* Organizer Footer */}
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-3 flex items-center gap-3">
+              <Avatar className="size-9 rounded-full shrink-0">
                 <AvatarImage src={event.author.avatar || undefined} alt={event.author.name} />
-                <AvatarFallback>{event.author.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-xs font-bold">{event.author.name.charAt(0)}</AvatarFallback>
               </Avatar>
 
               <div className="min-w-0">

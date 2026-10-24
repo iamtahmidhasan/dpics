@@ -1,9 +1,8 @@
-import { Calendar, Filter, Sparkles, Tag, X } from "lucide-react"
+import { Calendar, Tag, X } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
 import { EventCard } from "@/components/events/event-card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { makeT } from "@/lib/i18n"
@@ -106,28 +105,17 @@ export default async function PublicEventsPage({
 
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/10 via-primary/5 to-background p-6 md:p-10 shadow-xs">
-        <div className="relative z-10 max-w-2xl space-y-3">
-          <Badge
-            variant="outline"
-            className="gap-1.5 border-primary/30 bg-primary/10 text-primary text-xs"
-          >
-            <Sparkles className="size-3 text-primary" />
-            {t({ en: "Computing Society Events", bn: "কম্পিউটিং সোসাইটি ইভেন্টস" })}
-          </Badge>
-
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-            {t({ en: "Learn, Compete & Network", bn: "শিখুন, প্রতিযোগিতা করুন ও নেটওয়ার্ক গড়ে তুলুন" })}
-          </h1>
-
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {t({
-              en: "Hands-on workshops, programming contests, tech talks and bootcamps to elevate your career and skills.",
-              bn: "আপনার দক্ষতা এবং ক্যারিয়ার এগিয়ে নিতে হ্যান্ডস-অন ওয়ার্কশপ, প্রোগ্রামিং কনটেস্ট, টেক টক এবং বুটক্যাম্প।",
-            })}
-          </p>
-        </div>
+      {/* Page Header */}
+      <div className="space-y-1.5 pb-2">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          {t({ en: "Events & Workshops", bn: "ইভেন্ট ও কর্মশালা" })}
+        </h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          {t({
+            en: "Discover tech seminars, programming contests, and hands-on bootcamps.",
+            bn: "সেমিনার, প্রোগ্রামিং প্রতিযোগিতা এবং বুটক্যাম্পে অংশ নিন।",
+          })}
+        </p>
       </div>
 
       {/* Filter and Search Bar */}

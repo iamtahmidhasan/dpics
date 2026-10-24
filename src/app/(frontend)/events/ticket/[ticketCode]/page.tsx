@@ -1,11 +1,9 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { EventTicketCard } from "@/components/events/event-ticket-card"
 import { getEventTicket } from "@/lib/services/event.service"
+import { getSession, isAdmin } from "@/lib/session"
 import { NOINDEX } from "@/lib/seo"
 
 type Props = {
@@ -25,28 +23,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EventTicketPage({ params }: Props) {
   const { ticketCode } = await params
 
+  let data
+  let isAdminUser = false
+
   try {
-    const data = await getEventTicket(ticketCode)
-
-    return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-12 md:py-16">
-        <div className="mb-6 print:hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/events/${data.event.slug}`} />}
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back to Event
-          </Button>
-        </div>
-
-        <EventTicketCard registration={data.registration} event={data.event} />
-      </div>
-    )
+    const [ticketData, session] = await Promise.all([
+      getEventTicket(ticketCode),
+      getSession(),
+    ])
+    data = ticketData
+    isAdminUser = session?.user ? isAdmin(session.user) : false
   } catch {
     notFound()
   }
+
+  if (!data) {
+    notFound()
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-12 md:py-16">
+      <EventTicketCard
+        registration={data.registration}
+        event={data.event}
+        ticketTemplateId={data.ticketTemplateId}
+        isAdminUser={isAdminUser}
+      />
+    </div>
+  )
 }
